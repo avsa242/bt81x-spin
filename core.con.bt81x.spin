@@ -48,7 +48,16 @@ CON
     SNAPY                       = $30_2014
     SNAPSHOT                    = $30_2018
     SNAPFORMAT                  = $30_201C
+
     CPURESET                    = $30_2020
+    CPURESET_MASK               = $07
+        FLD_AUDIO_ENG           = 2
+        FLD_TOUCH_ENG           = 1
+        FLD_COPRO_ENG           = 0
+        MASK_AUDIO_ENG          = CPURESET_MASK ^ (1 << FLD_AUDIO_ENG)
+        MASK_TOUCH_ENG          = CPURESET_MASK ^ (1 << FLD_TOUCH_ENG)
+        MASK_COPROP_ENG         = CPURESET_MASK ^ (1 << FLD_COPRO_ENG)
+
     TAP_CRC                     = $30_2024
     TAP_MASK                    = $30_2028
     HCYCLE                      = $30_202C

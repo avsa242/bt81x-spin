@@ -12,6 +12,11 @@
 
 CON
 
+' CPU Reset status
+    READY       = %000
+    RST_AUDIO   = %100
+    RST_TOUCH   = %010
+    RST_COPRO   = %001
 
 VAR
 
@@ -41,6 +46,7 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
             cmd(core#ACTIVE, $00)
             time.MSleep (300)                                     'Add startup delay appropriate to your device (consult its datasheet)
             repeat until ID == $7C
+            repeat until CPUReset (-2) == READY
             return okay
 
     return FALSE                                                'If we got here, something went wrong
@@ -58,6 +64,30 @@ PUB ChipID
 '   NOTE: This value is only guaranteed immediately after POR, as
 '       it is a RAM location, thus can be overwritten
     readReg($C0000, 4, @result)
+
+PUB CPUReset(reset_mask) | tmp
+' Reset any combination of audio, touch, and coprocessor engines
+'   Valid values:
+'       Bit: 210
+'   2 - Audio engine
+'   1 - Touch engine
+'   0 - Coprocessor engine
+'   Example:
+'       CPUReset(%010)
+'           ...will reset only the touch engine
+'       CPUReset(%110)
+'           ...will reset the audio and touch engines
+'   Any other value polls the chip and returns the current reset status
+'       1 indicates that engine is in reset status
+'       0 indicates that engine is in working status (ready)
+    tmp := $00
+    readReg(core#CPURESET, 1, @tmp)
+    case reset_mask
+        %000..%111:
+        OTHER:
+            return tmp
+    reset_mask &= core#CPURESET_MASK
+    writeReg ( core#CPURESET, 1, @reset_mask)
 
 PUB ID
 ' Read ID
