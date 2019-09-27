@@ -38,6 +38,8 @@ PUB Main
 
     ser.Position (0, 5)
     ser.Hex (eve3.ID, 8)
+    ser.NewLine
+    ser.Hex (eve3.RAMID, 8)
     Flash (LED, 100)
 
 PUB Setup

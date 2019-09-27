@@ -63,7 +63,7 @@ CON
     PWRDOWN2                    = $50
     CLKEXT                      = $44
     CLKINT                      = $48
-    CLKSEL1                     = $61
+    CLKSEL1                     = $61   'Set clock freq, PLL range
     CLKSEL2                     = $62
     RST_PULSE                   = $68
     PINDRIVE                    = $70

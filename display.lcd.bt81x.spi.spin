@@ -50,9 +50,18 @@ PUB Stop
     'power down?
     spi.Stop
 
-PUB ID
+PUB ChipID
+' Read Chip ID
+'   Returns: Chip ID, LSB-first
+'       011508: BT815
+'       011608: BT816
+'   NOTE: This value is only guaranteed immediately after POR, as
+'       it is a RAM location, thus can be overwritten
+    readReg($C0000, 4, @result)
 
-    readReg(core#ID, 4, @result)
+PUB ID
+' Read ID
+    readReg(core#ID, 1, @result)
 
 PUB cmd(cmd_word, param) | cmd_packet, tmp
 
