@@ -15,6 +15,8 @@ CON
 ' SPI Configuration
     CPOL                        = 0
 
+    TPOR                        = 300           'ms
+
     READ                        = %00_000000
     WRITE                       = %10_000000
     CMD                         = %01_000000
@@ -22,6 +24,8 @@ CON
 ' Register definitions
     RAM_G_START                 = $00_0000
     RAM_G_END                   = $0F_FFFF
+    CHIPID                      = $0C_0000
+
     ROM_FONT_START              = $1E_0000
     ROM_FONT_END                = $2F_FFFB
     ROM_FONTROOT_START          = $2F_FFFC
@@ -72,8 +76,12 @@ CON
     PWRDOWN2                    = $50
     CLKEXT                      = $44
     CLKINT                      = $48
+
     CLKSEL1                     = $61   'Set clock freq, PLL range
     CLKSEL2                     = $62
+        FLD_PLL                 = 6
+        FLD_CLKFREQ             = 0
+
     RST_PULSE                   = $68
     PINDRIVE                    = $70
     PIN_PD_STATE                = $71

@@ -33,7 +33,6 @@ PUB Null
 
 PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
     if lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and lookdown(MOSI_PIN: 0..31) and lookdown(MISO_PIN: 0..31)
-'        if okay := spi.Start (CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)              'SPI Object Started?
         _CS := CS_PIN
         _SCK := SCK_PIN
         _MOSI := MOSI_PIN
@@ -41,10 +40,8 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
         outa[_CS] := 1
         dira[_CS] := 1
         if okay := spi.start (10, core#CPOL)
-            cmd(core#CLKEXT, $00)
-            cmd(core#CLKSEL1, $00)
-            cmd(core#ACTIVE, $00)
-            time.MSleep (300)                                     'Add startup delay appropriate to your device (consult its datasheet)
+            ExtClock
+            Clockfreq (60)
             repeat until ID == $7C
             repeat until CPUReset (-2) == READY
             return okay
@@ -56,6 +53,10 @@ PUB Stop
     'power down?
     spi.Stop
 
+PUB Active
+' Wake up from Standby/Sleep/PowerDown modes
+    cmd (core#ACTIVE, $00)
+
 PUB ChipID
 ' Read Chip ID
 '   Returns: Chip ID, LSB-first
@@ -63,7 +64,29 @@ PUB ChipID
 '       011608: BT816
 '   NOTE: This value is only guaranteed immediately after POR, as
 '       it is a RAM location, thus can be overwritten
-    readReg($C0000, 4, @result)
+    readReg(core#CHIPID, 4, @result)
+
+PUB Clockfreq(MHz) | tmp
+' Set clock frequency, in MHz
+'   Valid values: 24, 36, 48, *60, 72
+'   Any other value polls the chip and returns the current setting
+'   NOTE: Changing this value incurs a 300ms delay
+    tmp := $00_00_00_00
+    case MHz
+        24, 36, 48, 60, 72:
+            tmp := lookdown(MHz: 24, 36, 48, 60, 72)
+            tmp := ((lookup(tmp: 0, 0, 1, 1, 1) << 6) | tmp) + 1
+            MHz *= 1_000_000
+
+        OTHER:
+            Active
+            readReg(core#FREQUENCY, 4, @tmp)
+            return tmp / 1_000_000
+    Sleep
+    cmd (core#CLKSEL1, tmp)
+    Active
+    time.MSleep (core#TPOR)
+    writeReg(core#FREQUENCY, 4, @MHz)
 
 PUB CPUReset(reset_mask) | tmp
 ' Reset any combination of audio, touch, and coprocessor engines
@@ -89,9 +112,40 @@ PUB CPUReset(reset_mask) | tmp
     reset_mask &= core#CPURESET_MASK
     writeReg ( core#CPURESET, 1, @reset_mask)
 
+PUB ExtClock
+' Select PLL input from external crystal oscillator or clock
+'   NOTE: This will have no effect if external clock is already selected.
+'       Otherwise, the chip will be reset
+    cmd (core#CLKEXT, $00)
+
 PUB ID
 ' Read ID
     readReg(core#ID, 1, @result)
+
+PUB IntClock
+' Select PLL input from internal relaxation oscillator (default)
+'   NOTE: This will have no effect if internal clock is already selected.
+'       Otherwise, the chip will be reset
+    cmd (core#CLKINT, $00)
+
+PUB PowerDown
+' Power digital core circuits, clock, PLL and oscillator off
+' Use Active to wake up
+    cmd (core#PWRDOWN1, $00)
+
+PUB Sleep
+' Power clock gate, PLL and oscillator off
+' Use Active to wake up
+    cmd (core#SLEEP, $00)
+
+PUB SoftReset
+' Perform a soft-reset of the BT81x
+    cmd (core#RST_PULSE, $00)
+
+PUB Standby
+' Power clock gate off (PLL and oscillator remain on)
+' Use Active to wake up
+    cmd (core#STANDBY, $00)
 
 PUB cmd(cmd_word, param) | cmd_packet, tmp
 
