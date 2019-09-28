@@ -1,11 +1,12 @@
 {
     --------------------------------------------
     Filename: display.lcd.bt81x.spi.spin
-    Author:
-    Description:
+    Author: Jesse Burt
+    Description: Driver for the Bridgetek
+        Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2019
     Started Sep 25, 2019
-    Updated Sep 25, 2019
+    Updated Sep 28, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -39,6 +40,9 @@ CON
 ' Display list swap modes
     DLSWAP_LINE     = 1
     DLSWAP_FRAME    = 2
+
+' Graphics primitives
+    #1, BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L, EDGE_STRIP_A, EDGE_STRIP_B, RECTS
 
 VAR
 
@@ -93,6 +97,22 @@ PUB Stop
 PUB Active
 ' Wake up from Standby/Sleep/PowerDown modes
     cmd (core#ACTIVE, $00)
+
+PUB Begin(primitive) | tmp
+' Begin drawing a graphics primitive
+'   Valid values:
+'       BITMAPS (1), POINTS (2), LINES (3), LINE_STRIP (4), EDGE_STRIP_R (5), EDGE_STRIP_L (6),
+'       EDGE_STRIP_A (7), EDGE_STRIP_B (8), RECTS (9)
+'   Any other value is ignored
+'       (nothing added to display list and address pointer is NOT incremented)
+    tmp := $00
+    case primitive
+        BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L, EDGE_STRIP_A, EDGE_STRIP_B, RECTS:
+            primitive := core#BEGIN | primitive
+        OTHER:
+            return FALSE
+    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @primitive)
+    _displist_ptr += 4
 
 PUB ChipID
 ' Read Chip ID
@@ -388,60 +408,60 @@ PUB Swizzle(mode) | tmp
             return tmp
     writeReg(core#SWIZZLE, 1, @mode)
 
-PUB VCycle(lines) | tmp
+PUB VCycle(disp_lines) | tmp
 ' Set vertical total cycle count, in lines
 '   Valid values: 0..4095
 '   Any other value polls the chip and returns the current setting
     readReg(core#VCYCLE, 2, @tmp)
-    case lines
+    case disp_lines
         0..4095:
         OTHER:
             return tmp
-    writeReg(core#VCYCLE, 2, @lines)
+    writeReg(core#VCYCLE, 2, @disp_lines)
 
-PUB VOffset(lines) | tmp
+PUB VOffset(disp_lines) | tmp
 ' Set vertical display start offset, in lines
 '   Valid values: 0..4095
 '   Any other value polls the chip and returns the current setting
     readReg(core#VOFFSET, 2, @tmp)
-    case lines
+    case disp_lines
         0..4095:
         OTHER:
             return tmp
-    writeReg(core#VOFFSET, 2, @lines)
+    writeReg(core#VOFFSET, 2, @disp_lines)
 
-PUB VSize(lines) | tmp
+PUB VSize(disp_lines) | tmp
 ' Set vertical display line count
 '   Valid values: 0..4095
 '   Any other value polls the chip and returns the current setting
     readReg(core#VSIZE, 2, @tmp)
-    case lines
+    case disp_lines
         0..4095:
         OTHER:
             return tmp
-    writeReg(core#VSIZE, 2, @lines)
+    writeReg(core#VSIZE, 2, @disp_lines)
 
-PUB VSync0(lines) | tmp
+PUB VSync0(offset_lines) | tmp
 ' Set vertical sync fall offset, in lines
 '   Valid values: 0..1023
 '   Any other value polls the chip and returns the current setting
     readReg(core#VSYNC0, 2, @tmp)
-    case lines
+    case offset_lines
         0..1023:
         OTHER:
             return tmp
-    writeReg(core#VSYNC0, 2, @lines)
+    writeReg(core#VSYNC0, 2, @offset_lines)
 
-PUB VSync1(lines) | tmp
+PUB VSync1(offset_lines) | tmp
 ' Set vertical sync rise offset, in lines
 '   Valid values: 0..1023
 '   Any other value polls the chip and returns the current setting
     readReg(core#VSYNC1, 2, @tmp)
-    case lines
+    case offset_lines
         0..1023:
         OTHER:
             return tmp
-    writeReg(core#VSYNC1, 2, @lines)
+    writeReg(core#VSYNC1, 2, @offset_lines)
 
 PUB cmd(cmd_word, param) | cmd_packet, tmp
 

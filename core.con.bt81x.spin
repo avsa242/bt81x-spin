@@ -1,11 +1,11 @@
 {
     --------------------------------------------
     Filename: core.con.bt81x.spin
-    Author:
-    Description:
+    Author: Jesse Burt
+    Description: Low-level constants
     Copyright (c) 2019
     Started Sep 25, 2019
-    Updated Sep 25, 2019
+    Updated Sep 28, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -185,6 +185,7 @@ CON
 ' Display List Commands
     DISPLAY                     = $00_00_00_00
     CLEAR_COLOR_RGB             = $02_00_00_00
+    BEGIN                       = $1F_00_00_00
     CLEAR                       = $26_00_00_07
         FLD_COLOR               = 2
         FLD_STENCIL             = 1

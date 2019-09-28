@@ -1,11 +1,11 @@
 {
     --------------------------------------------
     Filename: BT81X-Test.spin
-    Author:
-    Description:
+    Author: Jesse Burt
+    Description: Test of the BT81x driver
     Copyright (c) 2019
     Started Sep 25, 2019
-    Updated Sep 25, 2019
+    Updated Sep 28, 2019
     See end of file for terms of use.
     --------------------------------------------
 }

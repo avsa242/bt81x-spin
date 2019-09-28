@@ -1,23 +1,25 @@
 # bt81x-spin 
----------------
+------------
 
-This is a P8X32A/Propeller [driver] object for ____.
+This is a P8X32A/Propeller driver object for the Bridgetek BT81x series Advanced Embedded Video Engine.
 
 ## Salient Features
 
-* Feature 1
-* Feature 2
+* SPI connection at up to 1MHz
 
 ## Requirements
 
-* Requirement 1
+* 1 extra core/cog for the PASM SPI driver
 
 ## Limitations
 
-* Limitation 1
-* Limitation 2
+* Very early in development - may malfunction, or outright fail to build
+* Initialization is currently hardcoded for 5.0" 800x480 model
+* Single-channel SPI only (doesn't support DSPI, QSPI)
 
 ## TODO
 
-* Task item 1
-* Task item 2
+- [ ] Implement enough support to run the 'Getting started' example in the Bridgetek AN033
+- [ ] Implement all display list commands
+- [ ] Support different display sizes/resolutions
+- [ ] Re-implement using the 20MHz W/10MHz R SPI driver
