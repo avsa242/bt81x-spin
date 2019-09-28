@@ -112,11 +112,86 @@ PUB CPUReset(reset_mask) | tmp
     reset_mask &= core#CPURESET_MASK
     writeReg ( core#CPURESET, 1, @reset_mask)
 
+
+PUB DisplayHeight(pixels)
+
+    VSize (pixels)
+
+PUB DisplayTimings(hc, ho, hs0, hs1, vc, vo, vs0, vs1)
+
+    HCycle (hc)
+    HOffset (ho)
+    HSync0 (hs0)
+    HSync1 (hs1)
+    VCycle (vc)
+    VOffset (vo)
+    VSync0 (vs0)
+    VSync1 (vs1)
+
+PUB DisplayWidth(pixels)
+
+    HSize (pixels)
+
 PUB ExtClock
 ' Select PLL input from external crystal oscillator or clock
 '   NOTE: This will have no effect if external clock is already selected.
 '       Otherwise, the chip will be reset
     cmd (core#CLKEXT, $00)
+
+PUB HCycle(pclks) | tmp
+' Set horizontal total cycle count, in pixel clocks
+'   Valid values: 0..4095
+'   Any other value polls the chip and returns the current setting
+    readReg(core#HCYCLE, 2, @tmp)
+    case pclks
+        0..4095:
+        OTHER:
+            return tmp
+    writeReg(core#HCYCLE, 2, @tmp)
+
+PUB HOffset(pclk_cycles) | tmp
+' Set horizontal display start offset, in pixel clock cycles
+'   Valid values: 0..4095
+'   Any other value polls the chip and returns the current setting
+    readReg(core#HOFFSET, 2, @tmp)
+    case pclk_cycles
+        0..4095:
+        OTHER:
+            return tmp
+    writeReg(core#HOFFSET, 2, @pclk_cycles)
+
+PUB HSize(pclks) | tmp
+' Set horizontal display pixel count
+'   Valid values: 0..4095
+'   Any other value polls the chip and returns the current setting
+    readReg(core#HSIZE, 2, @tmp)
+    case pclks
+        0..4095:
+        OTHER:
+            return tmp
+    writeReg(core#HSIZE, 2, @tmp)
+
+PUB HSync0(pclk_cycles) | tmp
+' Set horizontal sync fall offset, in pixel clock cycles
+'   Valid values: 0..4095
+'   Any other value polls the chip and returns the current setting
+    readReg(core#HSYNC0, 2, @tmp)
+    case pclk_cycles
+        0..4095:
+        OTHER:
+            return tmp
+    writeReg(core#HSYNC0, 2, @pclk_cycles)
+
+PUB HSync1(pclk_cycles) | tmp
+' Set horizontal sync rise offset, in pixel clock cycles
+'   Valid values: 0..4095
+'   Any other value polls the chip and returns the current setting
+    readReg(core#HSYNC1, 2, @tmp)
+    case pclk_cycles
+        0..4095:
+        OTHER:
+            return tmp
+    writeReg(core#HSYNC1, 2, @pclk_cycles)
 
 PUB ID
 ' Read ID
@@ -146,6 +221,61 @@ PUB Standby
 ' Power clock gate off (PLL and oscillator remain on)
 ' Use Active to wake up
     cmd (core#STANDBY, $00)
+
+PUB VCycle(lines) | tmp
+' Set vertical total cycle count, in lines
+'   Valid values: 0..4095
+'   Any other value polls the chip and returns the current setting
+    readReg(core#VCYCLE, 2, @tmp)
+    case lines
+        0..4095:
+        OTHER:
+            return tmp
+    writeReg(core#VCYCLE, 2, @lines)
+
+PUB VOffset(lines) | tmp
+' Set vertical display start offset, in lines
+'   Valid values: 0..4095
+'   Any other value polls the chip and returns the current setting
+    readReg(core#VOFFSET, 2, @tmp)
+    case lines
+        0..4095:
+        OTHER:
+            return tmp
+    writeReg(core#VOFFSET, 2, @lines)
+
+PUB VSize(lines) | tmp
+' Set vertical display line count
+'   Valid values: 0..4095
+'   Any other value polls the chip and returns the current setting
+    readReg(core#VSIZE, 2, @tmp)
+    case lines
+        0..4095:
+        OTHER:
+            return tmp
+    writeReg(core#VSIZE, 2, @lines)
+
+PUB VSync0(lines) | tmp
+' Set vertical sync fall offset, in lines
+'   Valid values: 0..1023
+'   Any other value polls the chip and returns the current setting
+    readReg(core#VSYNC0, 2, @tmp)
+    case lines
+        0..1023:
+        OTHER:
+            return tmp
+    writeReg(core#VSYNC0, 2, @lines)
+
+PUB VSync1(lines) | tmp
+' Set vertical sync rise offset, in lines
+'   Valid values: 0..1023
+'   Any other value polls the chip and returns the current setting
+    readReg(core#VSYNC1, 2, @tmp)
+    case lines
+        0..1023:
+        OTHER:
+            return tmp
+    writeReg(core#VSYNC1, 2, @lines)
 
 PUB cmd(cmd_word, param) | cmd_packet, tmp
 
