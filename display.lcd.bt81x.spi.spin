@@ -62,6 +62,8 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
             Clockfreq (60)
             repeat until ID == $7C
             repeat until CPUReset (-2) == READY
+            DisplayTimings (928, 88, 0, 48, 525, 32, 0, 3)
+            Swizzle (SWIZZLE_RGBM)
             return okay
 
     return FALSE                                                'If we got here, something went wrong
@@ -235,6 +237,19 @@ PUB IntClock
 '   NOTE: This will have no effect if internal clock is already selected.
 '       Otherwise, the chip will be reset
     cmd (core#CLKINT, $00)
+
+PUB PixelClockDivisor(divisor) | tmp
+' Set pixel clock divisor
+'   Valid values: 0..1023
+'   Any other value polls the chip and returns the current setting
+'   NOTE: A setting of 0 disables the pixel clock output
+    tmp := $0000
+    readReg(core#PCLK, 2, @tmp)
+    case divisor
+        0..1023:
+        OTHER:
+            return tmp
+    writeReg(core#PCLK, 2, @divisor)
 
 PUB PixClockPolarity(edge) | tmp
 ' Set pixel clock polarity
