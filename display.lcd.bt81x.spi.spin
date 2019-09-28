@@ -13,10 +13,24 @@
 CON
 
 ' CPU Reset status
-    READY       = %000
-    RST_AUDIO   = %100
-    RST_TOUCH   = %010
-    RST_COPRO   = %001
+    READY           = %000
+    RST_AUDIO       = %100
+    RST_TOUCH       = %010
+    RST_COPRO       = %001
+
+' Output RGB signal swizzle
+    SWIZZLE_RGBM    = 0
+    SWIZZLE_RGBL    = 1
+    SWIZZLE_BGRM    = 2
+    SWIZZLE_BGRL    = 3
+    SWIZZLE_BRGM    = 8
+    SWIZZLE_BRGL    = 9
+    SWIZZLE_GRBM    = 10
+    SWIZZLE_GRBL    = 11
+    SWIZZLE_GBRM    = 12
+    SWIZZLE_GBRL    = 13
+    SWIZZLE_RBGM    = 14
+    SWIZZLE_RBGL    = 15
 
 VAR
 
@@ -221,6 +235,31 @@ PUB Standby
 ' Power clock gate off (PLL and oscillator remain on)
 ' Use Active to wake up
     cmd (core#STANDBY, $00)
+
+PUB Swizzle(mode) | tmp
+' Control arrangement of output color pins
+'   Valid values:
+'       Constant(value)     Pixel order, bit order
+'      *SWIZZLE_RGBM(0)     RGB, MSB-first
+'       SWIZZLE_RGBL(1)     RGB, LSB-first
+'       SWIZZLE_BGRM(2)     BGR, MSB-first
+'       SWIZZLE_BGRL(3)     BGR, LSB-first
+'       SWIZZLE_BRGM(8)     BRG, MSB-first
+'       SWIZZLE_BRGL(9)     BRG, LSB-first
+'       SWIZZLE_GRBM(10)    GRB, MSB-first
+'       SWIZZLE_GRBL(11)    GRB, LSB-first
+'       SWIZZLE_GBRM(12)    GBR, MSB-first
+'       SWIZZLE_GBRL(13)    GBR, LSB-first
+'       SWIZZLE_RBGM(14)    RBG, MSB-first
+'       SWIZZLE_RBGL(15)    RBG, LSB-first
+'   Any other value polls the chip and returns the current setting
+    tmp := $00
+    readReg(core#SWIZZLE, 1, @tmp)
+    case mode
+        %0000..%0011, %1000..%1111:
+        OTHER:
+            return tmp
+    writeReg(core#SWIZZLE, 1, @mode)
 
 PUB VCycle(lines) | tmp
 ' Set vertical total cycle count, in lines
