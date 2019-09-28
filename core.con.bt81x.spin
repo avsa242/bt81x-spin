@@ -182,6 +182,12 @@ CON
     PINDRIVE                    = $70
     PIN_PD_STATE                = $71
 
-
+' Display List Commands
+    DISPLAY                     = $00_00_00_00
+    CLEAR_COLOR_RGB             = $02_00_00_00
+    CLEAR                       = $26_00_00_07
+        FLD_COLOR               = 2
+        FLD_STENCIL             = 1
+        FLD_TAG                 = 0
 PUB Null
 ' This is not a top-level object

@@ -36,8 +36,13 @@ CON
     PCLKPOL_RISING  = 0
     PCLKPOL_FALLING = 1
 
+' Display list swap modes
+    DLSWAP_LINE     = 1
+    DLSWAP_FRAME    = 2
+
 VAR
 
+    word _displist_ptr
     byte _CS, _MOSI, _MISO, _SCK
 
 OBJ
@@ -64,6 +69,18 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
             repeat until CPUReset (-2) == READY
             DisplayTimings (928, 88, 0, 48, 525, 32, 0, 3)
             Swizzle (SWIZZLE_RGBM)
+            PixClockPolarity (PCLKPOL_FALLING)
+            ClockSpread (FALSE)
+            DisplayWidth (800)
+            DisplayHeight (480)
+            _displist_ptr := 0
+            ClearColor (0, 0, 0)
+            Clear (TRUE, TRUE, TRUE)
+            Display
+            DisplayListSwap (DLSWAP_FRAME)
+            GPIODir ($FFFF)
+            GPIO ($FFFF)
+            PixelClockDivisor (2)
             return okay
 
     return FALSE                                                'If we got here, something went wrong
@@ -85,6 +102,24 @@ PUB ChipID
 '   NOTE: This value is only guaranteed immediately after POR, as
 '       it is a RAM location, thus can be overwritten
     readReg(core#CHIPID, 4, @result)
+
+PUB Clear(color, stencil, tag) | tmp
+' Clear buffers to preset values
+'   Valid values: FALSE (0), TRUE (-1 or 1) for color, stencil, tag
+    tmp := core#CLEAR | ( (||color & %1) << core#FLD_COLOR) | ( (||stencil & %1) << core#FLD_STENCIL) | (||tag & %1)
+    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
+    _displist_ptr += 4
+
+PUB ClearColor(r, g, b) | tmp
+' Set color value used by a following Clear
+'   Valid values: 0..255 for r, g, b
+'   Any other value will be clipped to min/max limits
+    r := 0 #> r <# 255
+    g := 0 #> g <# 255
+    b := 0 #> b <# 255
+    tmp := core#CLEAR_COLOR_RGB | (r << 16) | (g << 8) | b
+    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
+    _displist_ptr += 4
 
 PUB Clockfreq(MHz) | tmp
 ' Set clock frequency, in MHz
@@ -147,10 +182,32 @@ PUB CPUReset(reset_mask) | tmp
     reset_mask &= core#CPURESET_MASK
     writeReg ( core#CPURESET, 1, @reset_mask)
 
+PUB Display
+' Mark the end of the display list and reset the display list address pointer
+    result := core#DISPLAY
+    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @result)
+    _displist_ptr := 0
 
 PUB DisplayHeight(pixels)
 
     VSize (pixels)
+
+PUB DisplayListSwap(mode) | tmp
+' Set when the graphics engine will render the screen
+'   Valid values:
+'       DLSWAP_LINE (1): Render screen immediately after current line is scanned out (may cause visual tearing)
+'       DLSWAP_FRAME (2): Render screen immediately after current frame is scanned out
+'   Any other value polls the chip and returns the availability of the display list buffer
+'   Returns:
+'       0 - buffer ready
+'       1 - buffer not ready
+    tmp := $00_00_00_00
+    readReg(core#DLSWAP, 4, @tmp)
+    case mode
+        DLSWAP_LINE, DLSWAP_FRAME:
+        OTHER:
+            return tmp & %11
+    writeReg(core#DLSWAP, 4, @mode)
 
 PUB DisplayTimings(hc, ho, hs0, hs1, vc, vo, vs0, vs1)
 
@@ -173,6 +230,28 @@ PUB ExtClock
 '       Otherwise, the chip will be reset
     cmd (core#CLKEXT, $00)
 
+PUB GPIO(state) | tmp
+
+    tmp := $0000
+    readReg(core#GPIOX, 2, @tmp)
+    case state
+        $0000..$FFFF:
+        OTHER:
+            return tmp
+
+    writeReg(core#GPIOX, 2, @state)
+
+PUB GPIODir(mask) | tmp
+
+    tmp := $0000
+    readReg(core#GPIOX_DIR, 2, @tmp)
+    case mask
+        $0000..$FFFF:
+        OTHER:
+            return tmp
+
+    writeReg(core#GPIOX_DIR, 2, @mask)
+
 PUB HCycle(pclks) | tmp
 ' Set horizontal total cycle count, in pixel clocks
 '   Valid values: 0..4095
@@ -182,7 +261,7 @@ PUB HCycle(pclks) | tmp
         0..4095:
         OTHER:
             return tmp
-    writeReg(core#HCYCLE, 2, @tmp)
+    writeReg(core#HCYCLE, 2, @pclks)
 
 PUB HOffset(pclk_cycles) | tmp
 ' Set horizontal display start offset, in pixel clock cycles
@@ -204,7 +283,7 @@ PUB HSize(pclks) | tmp
         0..4095:
         OTHER:
             return tmp
-    writeReg(core#HSIZE, 2, @tmp)
+    writeReg(core#HSIZE, 2, @pclks)
 
 PUB HSync0(pclk_cycles) | tmp
 ' Set horizontal sync fall offset, in pixel clock cycles
@@ -386,7 +465,7 @@ PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
     repeat tmp from 0 to 2
         spi.SHIFTOUT (_MOSI, _SCK, spi#MSBFIRST, 8, cmd_packet.byte[tmp])
     spi.SHIFTIN (_MISO, _SCK, spi#MSBPRE, 8)    ' Dummy byte
-    repeat tmp from 0 to nr_bytes
+    repeat tmp from 0 to nr_bytes-1
         byte[buff_addr][tmp] := spi.SHIFTIN (_MISO, _SCK, spi#MSBPRE, 8)
     outa[_CS] := 1
 '    spi.Read (cmd_packet, buff_addr, nr_bytes)
@@ -400,7 +479,7 @@ PUB writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
     outa[_CS] := 0
     repeat tmp from 0 to 2                                                      'reg/address
         spi.SHIFTOUT (_MOSI, _SCK, spi#MSBFIRST, 8, cmd_packet.byte[tmp])
-    repeat tmp from 0 to nr_bytes                                               'data
+    repeat tmp from 0 to nr_bytes-1                                               'data
         spi.SHIFTOUT (_MOSI, _SCK, spi#MSBFIRST, 8, byte[buff_addr][tmp])
     outa[_CS] := 1
 
