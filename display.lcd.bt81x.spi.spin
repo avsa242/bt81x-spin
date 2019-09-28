@@ -32,6 +32,10 @@ CON
     SWIZZLE_RBGM    = 14
     SWIZZLE_RBGL    = 15
 
+' Pixel clock polarity
+    PCLKPOL_RISING  = 0
+    PCLKPOL_FALLING = 1
+
 VAR
 
     byte _CS, _MOSI, _MISO, _SCK
@@ -216,6 +220,20 @@ PUB IntClock
 '   NOTE: This will have no effect if internal clock is already selected.
 '       Otherwise, the chip will be reset
     cmd (core#CLKINT, $00)
+
+PUB PixClockPolarity(edge) | tmp
+' Set pixel clock polarity
+'   Valid values:
+'       PCLKCPOL_RISING (0): Output on pixel clock rising edge
+'       PCLKCPOL_FALLING (1): Output on pixel clock falling edge
+'   Any other value polls the chip and returns the current setting
+    tmp := $00
+    readReg(core#PCLK_POL, 1, @tmp)
+    case edge
+        PCLKPOL_RISING, PCLKPOL_FALLING:
+        OTHER:
+            return tmp
+    writeReg(core#PCLK_POL, 1, @edge)
 
 PUB PowerDown
 ' Power digital core circuits, clock, PLL and oscillator off
