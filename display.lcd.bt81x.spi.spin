@@ -106,6 +106,21 @@ PUB Clockfreq(MHz) | tmp
     time.MSleep (core#TPOR)
     writeReg(core#FREQUENCY, 4, @MHz)
 
+PUB ClockSpread(enabled) | tmp
+' Enable output clock spreading, to reduce switching noise
+'   Valid values: TRUE (-1 or 1), FALSE (0)
+'   Any other value polls the chip and returns the current setting
+    tmp := $00
+    readReg(core#CSPREAD, 1, @tmp)
+    case ||enabled
+        0, 1:
+            enabled := ||enabled
+        OTHER:
+            return (tmp & %1) * TRUE
+
+    enabled &= %1
+    writeReg(core#CSPREAD, 1, @enabled)
+
 PUB CPUReset(reset_mask) | tmp
 ' Reset any combination of audio, touch, and coprocessor engines
 '   Valid values:
