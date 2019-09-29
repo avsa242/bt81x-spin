@@ -44,6 +44,8 @@ CON
 ' Graphics primitives
     #1, BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L, EDGE_STRIP_A, EDGE_STRIP_B, RECTS
 
+    OPT_CENTER      = 1536
+
 VAR
 
     word _displist_ptr
@@ -69,6 +71,7 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
         if okay := spi.start (10, core#CPOL)
             ExtClock
             Clockfreq (60)
+            get_cmdoffset
             repeat until ID == $7C
             repeat until CPUReset (-2) == READY
             DisplayTimings (928, 88, 0, 48, 525, 32, 0, 3)
@@ -77,10 +80,11 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
             ClockSpread (FALSE)
             DisplayWidth (800)
             DisplayHeight (480)
-            _displist_ptr := 0
-            ClearColor (0, 0, 0)
-            Clear (TRUE, TRUE, TRUE)
-            Display
+'            _displist_ptr := 0
+'            ClearColor (0, 0, 0)
+'            Clear (TRUE, TRUE, TRUE)
+'            Display
+            tmpinit
             DisplayListSwap (DLSWAP_FRAME)
             GPIODir ($FFFF)
             GPIO ($FFFF)
@@ -93,6 +97,14 @@ PUB Stop
 
     'power down?
     spi.Stop
+
+PUB tmpinit | tmp[3]
+
+    tmp[0] := core#CLEAR_COLOR_RGB | $00_00_00
+    tmp[1] := core#CLEAR | (1 << core#FLD_COLOR) | (1 << core#FLD_STENCIL) | 1
+    tmp[2] := $00_00_00_00
+
+    writeReg(core#RAM_DISP_LIST_START, 12, @tmp)
 
 PUB Active
 ' Wake up from Standby/Sleep/PowerDown modes
@@ -111,8 +123,9 @@ PUB Begin(primitive) | tmp
             primitive := core#BEGIN | primitive
         OTHER:
             return FALSE
-    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @primitive)
-    _displist_ptr += 4
+'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @primitive)
+'    _displist_ptr += 4
+    start_cmd(primitive)
     return primitive
 
 PUB ChipID
@@ -128,8 +141,9 @@ PUB Clear(color, stencil, tag) | tmp
 ' Clear buffers to preset values
 '   Valid values: FALSE (0), TRUE (-1 or 1) for color, stencil, tag
     tmp := core#CLEAR | ( (||color & %1) << core#FLD_COLOR) | ( (||stencil & %1) << core#FLD_STENCIL) | (||tag & %1)
-    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
-    _displist_ptr += 4
+'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
+'    _displist_ptr += 4
+    start_cmd(tmp)
     return tmp
 
 PUB ClearColor(r, g, b) | tmp
@@ -140,8 +154,9 @@ PUB ClearColor(r, g, b) | tmp
     g := 0 #> g <# 255
     b := 0 #> b <# 255
     tmp := core#CLEAR_COLOR_RGB | (r << 16) | (g << 8) | b
-    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
-    _displist_ptr += 4
+'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
+'    _displist_ptr += 4
+    start_cmd(tmp)
     return tmp
 
 PUB Clockfreq(MHz) | tmp
@@ -219,13 +234,25 @@ PUB CPUReset(reset_mask) | tmp
 PUB Display
 ' Mark the end of the display list and reset the display list address pointer
     result := core#DISPLAY
-    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @result)
-    _displist_ptr := 0
+'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @result)
+'    _displist_ptr := 0
+    start_cmd(result)
     return result
 
 PUB DisplayHeight(pixels)
 
     VSize (pixels)
+
+PUB DisplayListStart
+
+    start_cmd(core#CMD_DLSTART)
+
+PUB DisplayListEnd | tmp[2]
+
+    tmp[0] := core#DISPLAY
+    tmp[1] := core#CMD_DLSWAP
+    start_cmd(tmp[0])
+    start_cmd(tmp[1])
 
 PUB DisplayListSwap(mode) | tmp
 ' Set when the graphics engine will render the screen
@@ -263,11 +290,16 @@ PUB DP
 
     return _displist_ptr
 
+PUB DP2
+
+    readReg(core#CMD_DL, 2, @result)
+
 PUB End | tmp
 ' End drawing a graphics primitive
     tmp := core#END
-    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
-    _displist_ptr += 4
+'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
+'    _displist_ptr += 4
+    start_cmd(tmp)
     return tmp
 
 PUB ExtClock
@@ -363,6 +395,10 @@ PUB IntClock
 '       Otherwise, the chip will be reset
     cmd (core#CLKINT, $00)
 
+PUB BeginLine
+
+    start_cmd(core#BEGIN | core#LINES)
+
 PUB PixelClockDivisor(divisor) | tmp
 ' Set pixel clock divisor
 '   Valid values: 0..1023
@@ -394,8 +430,9 @@ PUB PointSize(radius) | tmp
 
     radius := 0 #> radius <# 8191
     tmp := core#POINT_SIZE | radius
-    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
-    _displist_ptr += 4
+'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
+'    _displist_ptr += 4
+    start_cmd(tmp)
     return tmp
 
 PUB PowerDown
@@ -416,6 +453,16 @@ PUB Standby
 ' Power clock gate off (PLL and oscillator remain on)
 ' Use Active to wake up
     cmd (core#STANDBY, $00)
+
+PUB Str(x, y, font, opts, str_ptr) | i, j
+
+  start_cmd(core#CMD_TEXT)
+  start_cmd((y << 16) + x)
+  start_cmd((opts << 16) + font)
+  j := (strsize(str_ptr) + 4) / 4
+  repeat i from 1 to j
+    start_cmd(byte[str_ptr + 3] << 24 + byte[str_ptr + 2] << 16 + byte[str_ptr + 1] << 8 + byte[str_ptr])
+    str_ptr += 4
 
 PUB Swizzle(mode) | tmp
 ' Control arrangement of output color pins
@@ -453,6 +500,13 @@ PUB VCycle(disp_lines) | tmp
             return tmp
     writeReg(core#VCYCLE, 2, @disp_lines)
 
+PUB Vertex2F(x, y) | tmp
+
+    x <<= 4
+    y <<= 4
+    tmp := core#VERTEX2F | (x << core#FLD_2F_X) | y
+    start_cmd(tmp)
+
 PUB Vertex2II(x, y, handle, cell) | tmp
 ' Start the operation of graphics primitive at the specified coordinates in pixel precision
     x := 0 #> x <# 511
@@ -466,8 +520,9 @@ PUB Vertex2II(x, y, handle, cell) | tmp
         OTHER:
             return
     tmp := core#VERTEX2II | (x << core#FLD_X) | (y << core#FLD_Y) | (handle << core#FLD_HANDLE) | cell
-    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
-    _displist_ptr += 4
+'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
+'    _displist_ptr += 4
+    start_cmd(tmp)
     return tmp
 
 PUB VOffset(disp_lines) | tmp
@@ -514,6 +569,22 @@ PUB VSync1(offset_lines) | tmp
             return tmp
     writeReg(core#VSYNC1, 2, @offset_lines)
 
+PUB start_cmd(command)
+
+    writeReg(core#CMDB_WRITE, 4, @command)
+
+PUB WaitIdle
+
+    repeat
+        time.MSleep(10)
+    until Idle
+
+PUB Idle | cmd_rd, cmd_wr
+
+    readReg(core#CMD_READ, 4, @cmd_rd)
+    readReg(core#CMD_WRITE, 4, @cmd_wr)
+    return (cmd_rd == cmd_wr)
+
 PUB cmd(cmd_word, param) | cmd_packet, tmp
 
     cmd_packet.byte[0] := cmd_word
@@ -531,15 +602,15 @@ PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
     cmd_packet.byte[0] := reg.byte[2] | core#READ       ' %00 + reg ..
     cmd_packet.byte[1] := reg.byte[1]                   ' .. address
     cmd_packet.byte[2] := reg.byte[0]                   ' ..
+    cmd_packet.byte[3] := $00                           ' Dummy byte
 
     outa[_CS] := 0
-    repeat tmp from 0 to 2
+    repeat tmp from 0 to 3
         spi.SHIFTOUT (_MOSI, _SCK, spi#MSBFIRST, 8, cmd_packet.byte[tmp])
-    spi.SHIFTIN (_MISO, _SCK, spi#MSBPRE, 8)    ' Dummy byte
+
     repeat tmp from 0 to nr_bytes-1
         byte[buff_addr][tmp] := spi.SHIFTIN (_MISO, _SCK, spi#MSBPRE, 8)
     outa[_CS] := 1
-'    spi.Read (cmd_packet, buff_addr, nr_bytes)
 
 PUB writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 ' Write nr_bytes to register 'reg' stored at buf_addr
@@ -553,8 +624,6 @@ PUB writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
     repeat tmp from 0 to nr_bytes-1                                               'data
         spi.SHIFTOUT (_MOSI, _SCK, spi#MSBFIRST, 8, byte[buff_addr][tmp])
     outa[_CS] := 1
-
-'    spi.Write (TRUE, buff_addr, nr_bytes)
 
 DAT
 {

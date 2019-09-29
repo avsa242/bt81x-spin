@@ -41,8 +41,23 @@ PUB Main
     ser.NewLine
     ser.Hex (eve3.ChipID, 8)
     ser.NewLine
-    Example1
+'    Example1
+    tmp1
     Flash (LED, 100)
+
+PUB tmp1
+
+    eve3.WaitIdle 'wait for command buffer to empty
+    'Start co-processor display list
+    eve3.DisplayListStart
+    eve3.ClearColor (0, 0, 128)
+    eve3.Clear (TRUE, TRUE, TRUE)
+    eve3.Str (300, 30, 31, eve3#OPT_CENTER, string("Line"))
+    eve3.BeginLine
+    eve3.Vertex2F (0, 10)
+    eve3.Vertex2F (479, 125)
+    eve3.End
+    eve3.DisplayListEnd
 
 PUB Example1
 

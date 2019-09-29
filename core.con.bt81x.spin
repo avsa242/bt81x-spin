@@ -182,6 +182,35 @@ CON
     PINDRIVE                    = $70
     PIN_PD_STATE                = $71
 
+' Coprocessor commands
+
+    CMD_DLSTART                 = $FFFFFF00
+    CMD_DLSWAP                  = $FFFFFF01
+    CMD_BUTTON                  = $FFFFFF0D
+    CMD_CLOCK                   = $FFFFFF14
+    CMD_GAUGE                   = $FFFFFF13
+    CMD_ROMFONT                 = $FFFFFF3F
+    CMD_TEXT                    = $FFFFFF0C
+    CMD_TRACK                   = $FFFFFF2C
+    CMD_SETBASE                 = $FFFFFF38
+    CMD_NUMBER                  = $FFFFFF2E
+    CMD_CALIBRATE               = $FFFFFF15
+    CMD_DIAL                    = $FFFFFF2D
+    CMD_SLIDER                  = $FFFFFF10
+    CMD_LOADIMAGE               = $FFFFFF24
+    CMD_MEMZERO                 = $FFFFFF1C
+    CMD_FGCOLOR                 = $FFFFFF0A
+    CMD_BGCOLOR                 = $FFFFFF09
+    CMD_SPINNER                 = $FFFFFF16
+    CMD_PROGRESS                = $FFFFFF0F
+    CMD_PLAYVIDEO               = $FFFFFF3A
+    CMD_MEDIAFIFO               = $FFFFFF39
+    CMD_ROTATE                  = $FFFFFF29
+    CMD_SCALE                   = $FFFFFF28
+    CMD_TRANSLATE               = $FFFFFF27
+    CMD_LOADIDENTITY            = $FFFFFF26
+    CMD_SETMATRIX               = $FFFFFF2A
+
 ' Display List Commands
     DISPLAY                     = $00_00_00_00
     CLEAR_COLOR_RGB             = $02_00_00_00
@@ -193,6 +222,11 @@ CON
     POINT_SIZE                  = $0D_00_00_00
 
     BEGIN                       = $1F_00_00_00
+        LINES                   = $03
+
+    VERTEX2F                    = $40_00_00_00
+        FLD_2F_X                = 15
+        FLD_2F_Y                = 0
 
     VERTEX2II                   = $80_00_00_00
         FLD_X                   = 21
@@ -202,9 +236,10 @@ CON
 
     END                         = $21_00_00_00
 
-    CLEAR                       = $26_00_00_07
+    CLEAR                       = $26_00_00_00
         FLD_COLOR               = 2
         FLD_STENCIL             = 1
         FLD_TAG                 = 0
+
 PUB Null
 ' This is not a top-level object
