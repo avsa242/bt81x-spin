@@ -185,7 +185,23 @@ CON
 ' Display List Commands
     DISPLAY                     = $00_00_00_00
     CLEAR_COLOR_RGB             = $02_00_00_00
+    COLOR_RGB                   = $04_00_00_00
+        FLD_RED                 = 16
+        FLD_GREEN               = 8
+        FLD_BLUE                = 0
+
+    POINT_SIZE                  = $0D_00_00_00
+
     BEGIN                       = $1F_00_00_00
+
+    VERTEX2II                   = $80_00_00_00
+        FLD_X                   = 21
+        FLD_Y                   = 12
+        FLD_HANDLE              = 7
+        FLD_CELL                = 0
+
+    END                         = $21_00_00_00
+
     CLEAR                       = $26_00_00_07
         FLD_COLOR               = 2
         FLD_STENCIL             = 1

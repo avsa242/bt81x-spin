@@ -113,6 +113,7 @@ PUB Begin(primitive) | tmp
             return FALSE
     writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @primitive)
     _displist_ptr += 4
+    return primitive
 
 PUB ChipID
 ' Read Chip ID
@@ -129,6 +130,7 @@ PUB Clear(color, stencil, tag) | tmp
     tmp := core#CLEAR | ( (||color & %1) << core#FLD_COLOR) | ( (||stencil & %1) << core#FLD_STENCIL) | (||tag & %1)
     writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
     _displist_ptr += 4
+    return tmp
 
 PUB ClearColor(r, g, b) | tmp
 ' Set color value used by a following Clear
@@ -140,6 +142,7 @@ PUB ClearColor(r, g, b) | tmp
     tmp := core#CLEAR_COLOR_RGB | (r << 16) | (g << 8) | b
     writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
     _displist_ptr += 4
+    return tmp
 
 PUB Clockfreq(MHz) | tmp
 ' Set clock frequency, in MHz
@@ -178,6 +181,17 @@ PUB ClockSpread(enabled) | tmp
     enabled &= %1
     writeReg(core#CSPREAD, 1, @enabled)
 
+PUB ColorRGB(r, g, b) | tmp
+
+    tmp := $00_00_00_00
+    r := 0 #> r <# 255
+    g := 0 #> g <# 255
+    b := 0 #> b <# 255
+    tmp := core#COLOR_RGB | (r << core#FLD_RED) | (g << core#FLD_GREEN) | b
+    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
+    _displist_ptr += 4
+    return tmp
+
 PUB CPUReset(reset_mask) | tmp
 ' Reset any combination of audio, touch, and coprocessor engines
 '   Valid values:
@@ -193,20 +207,21 @@ PUB CPUReset(reset_mask) | tmp
 '   Any other value polls the chip and returns the current reset status
 '       1 indicates that engine is in reset status
 '       0 indicates that engine is in working status (ready)
-    tmp := $00
-    readReg(core#CPURESET, 1, @tmp)
+    tmp := $0000
+    readReg(core#CPURESET, 2, @tmp)
     case reset_mask
         %000..%111:
         OTHER:
             return tmp
     reset_mask &= core#CPURESET_MASK
-    writeReg ( core#CPURESET, 1, @reset_mask)
+    writeReg ( core#CPURESET, 2, @reset_mask)
 
 PUB Display
 ' Mark the end of the display list and reset the display list address pointer
     result := core#DISPLAY
     writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @result)
     _displist_ptr := 0
+    return result
 
 PUB DisplayHeight(pixels)
 
@@ -222,12 +237,12 @@ PUB DisplayListSwap(mode) | tmp
 '       0 - buffer ready
 '       1 - buffer not ready
     tmp := $00_00_00_00
-    readReg(core#DLSWAP, 4, @tmp)
+    readReg(core#DLSWAP, 1, @tmp)
     case mode
         DLSWAP_LINE, DLSWAP_FRAME:
         OTHER:
             return tmp & %11
-    writeReg(core#DLSWAP, 4, @mode)
+    writeReg(core#DLSWAP, 1, @mode)
 
 PUB DisplayTimings(hc, ho, hs0, hs1, vc, vo, vs0, vs1)
 
@@ -243,6 +258,17 @@ PUB DisplayTimings(hc, ho, hs0, hs1, vc, vo, vs0, vs1)
 PUB DisplayWidth(pixels)
 
     HSize (pixels)
+
+PUB DP
+
+    return _displist_ptr
+
+PUB End | tmp
+' End drawing a graphics primitive
+    tmp := core#END
+    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
+    _displist_ptr += 4
+    return tmp
 
 PUB ExtClock
 ' Select PLL input from external crystal oscillator or clock
@@ -364,6 +390,14 @@ PUB PixClockPolarity(edge) | tmp
             return tmp
     writeReg(core#PCLK_POL, 1, @edge)
 
+PUB PointSize(radius) | tmp
+
+    radius := 0 #> radius <# 8191
+    tmp := core#POINT_SIZE | radius
+    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
+    _displist_ptr += 4
+    return tmp
+
 PUB PowerDown
 ' Power digital core circuits, clock, PLL and oscillator off
 ' Use Active to wake up
@@ -418,6 +452,23 @@ PUB VCycle(disp_lines) | tmp
         OTHER:
             return tmp
     writeReg(core#VCYCLE, 2, @disp_lines)
+
+PUB Vertex2II(x, y, handle, cell) | tmp
+' Start the operation of graphics primitive at the specified coordinates in pixel precision
+    x := 0 #> x <# 511
+    y := 0 #> y <# 511
+    case handle
+        0..31:
+        OTHER:
+            return
+    case cell
+        0..127:
+        OTHER:
+            return
+    tmp := core#VERTEX2II | (x << core#FLD_X) | (y << core#FLD_Y) | (handle << core#FLD_HANDLE) | cell
+    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
+    _displist_ptr += 4
+    return tmp
 
 PUB VOffset(disp_lines) | tmp
 ' Set vertical display start offset, in lines
