@@ -48,7 +48,6 @@ CON
 
 VAR
 
-    word _displist_ptr
     byte _CS, _MOSI, _MISO, _SCK
 
 OBJ
@@ -80,7 +79,6 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
             ClockSpread (FALSE)
             DisplayWidth (800)
             DisplayHeight (480)
-'            _displist_ptr := 0
             ClearColor (0, 0, 0)
             Clear (TRUE, TRUE, TRUE)
             DisplayListEnd
@@ -101,20 +99,26 @@ PUB Active
     cmd (core#ACTIVE, $00)
 
 PUB ChipID
-' Read Chip ID
-'   Returns: Chip ID, LSB-first
-'       011508: BT815
-'       011608: BT816
+' Read Chip ID/model
+'   Returns: Chip ID
+'       815: BT815
+'       816: BT816
+'       Any other value returns the raw value
 '   NOTE: This value is only guaranteed immediately after POR, as
 '       it is a RAM location, thus can be overwritten
     readReg(core#CHIPID, 4, @result)
+    case result
+        011508:
+            return 815
+        011608:
+            return 816
+        OTHER:
+            return
 
 PUB Clear(color, stencil, tag) | tmp
 ' Clear buffers to preset values
 '   Valid values: FALSE (0), TRUE (-1 or 1) for color, stencil, tag
     tmp := core#CLEAR | ( (||color & %1) << core#FLD_COLOR) | ( (||stencil & %1) << core#FLD_STENCIL) | (||tag & %1)
-'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
-'    _displist_ptr += 4
     CoProcCmd(tmp)
     return tmp
 
@@ -126,8 +130,6 @@ PUB ClearColor(r, g, b) | tmp
     g := 0 #> g <# 255
     b := 0 #> b <# 255
     tmp := core#CLEAR_COLOR_RGB | (r << 16) | (g << 8) | b
-'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
-'    _displist_ptr += 4
     CoProcCmd(tmp)
     return tmp
 
@@ -396,7 +398,7 @@ PUB Plot(x, y) | tmp
     PrimitiveEnd
 
 PUB PointSize(radius) | tmp
-
+' Set point size/radius of following Plot, in 1/16th pixels
     radius := 0 #> radius <# 8191
     tmp := core#POINT_SIZE | radius
     CoProcCmd(tmp)
@@ -420,8 +422,6 @@ PUB PrimitiveBegin(primitive) | tmp
             primitive := core#BEGIN | primitive
         OTHER:
             return FALSE
-'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @primitive)
-'    _displist_ptr += 4
     CoProcCmd(primitive)
     return primitive
 
@@ -446,7 +446,15 @@ PUB Standby
     cmd (core#STANDBY, $00)
 
 PUB Str(x, y, font, opts, str_ptr) | i, j
-
+' Draw a text string
+'   Valid values:
+'       x: 0..799
+'       y: 0..479
+'       font: 0..31 XXX expand/clarify
+'       opts: Options for the drawn text XXX expand/clarify
+'       str_ptr: Pointer to string
+    x := 0 #> x <# 799
+    y := 0 #> y <# 479
     CoProcCmd(core#CMD_TEXT)
     CoProcCmd((y << 16) + x)
     CoProcCmd((opts << 16) + font)
@@ -513,8 +521,6 @@ PUB Vertex2II(x, y, handle, cell) | tmp
         OTHER:
             return
     tmp := core#VERTEX2II | (x << core#FLD_X) | (y << core#FLD_Y) | (handle << core#FLD_HANDLE) | cell
-'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
-'    _displist_ptr += 4
     CoProcCmd(tmp)
     return tmp
 
