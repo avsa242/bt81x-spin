@@ -52,86 +52,97 @@ PUB tmp1
     eve3.DisplayListStart
     eve3.ClearColor (0, 0, 128)
     eve3.Clear (TRUE, TRUE, TRUE)
-    eve3.Str (300, 30, 31, eve3#OPT_CENTER, string("Line"))
+    eve3.Str (300, 30, 31, eve3#OPT_CENTER, string("Testing 1 2 3..."))
     eve3.BeginLine
-    eve3.Vertex2F (0, 10)
-    eve3.Vertex2F (479, 125)
+    eve3.Vertex2F (10, 10)
+    eve3.Vertex2F (789, 469)
+    eve3.End
+    eve3.BeginLine
+    eve3.Vertex2F (789, 10)
+    eve3.Vertex2F (10, 469)
     eve3.End
     eve3.DisplayListEnd
 
 PUB Example1
 
-    ser.Dec (eve3.DP)
+    eve3.WaitIdle
+    eve3.DisplayListStart
+    ser.Dec (eve3.DisplayListPtr)
+    ser.NewLine
+
+    ser.Hex (eve3.ClearColor (0, 0, 0), 8)
+    ser.Char (" ")
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
     ser.Hex (eve3.Clear (1, 1, 1), 8)                   '4
     ser.Char (" ")
-    ser.Dec (eve3.DP)
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
-    ser.Hex (eve3.ColorRGB (160, 22, 22), 8)            '8
+    ser.Hex (eve3.ColorRGB (255, 255, 255), 8)            '8
     ser.Char (" ")
-    ser.Dec (eve3.DP)
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
     ser.Hex (eve3.Begin (eve3#BITMAPS), 8)              '12
     ser.Char (" ")
-    ser.Dec (eve3.DP)
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
     ser.Hex (eve3.Vertex2II (220, 110, 31, "T"), 8)     '16
     ser.Char (" ")
-    ser.Dec (eve3.DP)
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
     ser.Hex (eve3.Vertex2II (244, 110, 31, "E"), 8)     '20
     ser.Char (" ")
-    ser.Dec (eve3.DP)
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
     ser.Hex (eve3.Vertex2II (270, 110, 31, "X"), 8)     '24
     ser.Char (" ")
-    ser.Dec (eve3.DP)
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
     ser.Hex (eve3.Vertex2II (299, 110, 31, "T"), 8)     '28
     ser.Char (" ")
-    ser.Dec (eve3.DP)
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
     ser.Hex (eve3.End, 8)                               '32
     ser.Char (" ")
-    ser.Dec (eve3.DP)
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
     ser.Hex (eve3.ColorRGB (160, 22, 22), 8)            '36
     ser.Char (" ")
-    ser.Dec (eve3.DP)
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
     ser.Hex (eve3.PointSize (320), 8)                   '40
     ser.Char (" ")
-    ser.Dec (eve3.DP)
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
     ser.Hex (eve3.Begin (eve3#POINTS), 8)               '44
     ser.Char (" ")
-    ser.Dec (eve3.DP)
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
     ser.Hex (eve3.Vertex2II (192, 133, 0, 0), 8)        '48
     ser.Char (" ")
-    ser.Dec (eve3.DP)
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
     ser.Hex (eve3.End, 8)                               '52
     ser.Char (" ")
-    ser.Dec (eve3.DP)
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
-    ser.Hex (eve3.Display, 8)                           '56
+    ser.Hex (eve3.DisplayListEnd, 8)                           '56
     ser.Char (" ")
-    ser.Dec (eve3.DP)
+    ser.Dec (eve3.DisplayListPtr)
     ser.NewLine
 
 PUB Setup

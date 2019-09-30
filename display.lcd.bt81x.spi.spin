@@ -71,7 +71,7 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
         if okay := spi.start (10, core#CPOL)
             ExtClock
             Clockfreq (60)
-            get_cmdoffset
+            'get_cmdoffset
             repeat until ID == $7C
             repeat until CPUReset (-2) == READY
             DisplayTimings (928, 88, 0, 48, 525, 32, 0, 3)
@@ -81,11 +81,9 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
             DisplayWidth (800)
             DisplayHeight (480)
 '            _displist_ptr := 0
-'            ClearColor (0, 0, 0)
-'            Clear (TRUE, TRUE, TRUE)
-'            Display
-            tmpinit
-            DisplayListSwap (DLSWAP_FRAME)
+            ClearColor (0, 0, 0)
+            Clear (TRUE, TRUE, TRUE)
+            DisplayListEnd
             GPIODir ($FFFF)
             GPIO ($FFFF)
             PixelClockDivisor (2)
@@ -97,14 +95,6 @@ PUB Stop
 
     'power down?
     spi.Stop
-
-PUB tmpinit | tmp[3]
-
-    tmp[0] := core#CLEAR_COLOR_RGB | $00_00_00
-    tmp[1] := core#CLEAR | (1 << core#FLD_COLOR) | (1 << core#FLD_STENCIL) | 1
-    tmp[2] := $00_00_00_00
-
-    writeReg(core#RAM_DISP_LIST_START, 12, @tmp)
 
 PUB Active
 ' Wake up from Standby/Sleep/PowerDown modes
@@ -127,6 +117,10 @@ PUB Begin(primitive) | tmp
 '    _displist_ptr += 4
     start_cmd(primitive)
     return primitive
+
+PUB BeginLine
+
+    start_cmd(core#BEGIN | core#LINES)
 
 PUB ChipID
 ' Read Chip ID
@@ -203,8 +197,7 @@ PUB ColorRGB(r, g, b) | tmp
     g := 0 #> g <# 255
     b := 0 #> b <# 255
     tmp := core#COLOR_RGB | (r << core#FLD_RED) | (g << core#FLD_GREEN) | b
-    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
-    _displist_ptr += 4
+    start_cmd(tmp)
     return tmp
 
 PUB CPUReset(reset_mask) | tmp
@@ -230,14 +223,6 @@ PUB CPUReset(reset_mask) | tmp
             return tmp
     reset_mask &= core#CPURESET_MASK
     writeReg ( core#CPURESET, 2, @reset_mask)
-
-PUB Display
-' Mark the end of the display list and reset the display list address pointer
-    result := core#DISPLAY
-'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @result)
-'    _displist_ptr := 0
-    start_cmd(result)
-    return result
 
 PUB DisplayHeight(pixels)
 
@@ -286,19 +271,13 @@ PUB DisplayWidth(pixels)
 
     HSize (pixels)
 
-PUB DP
-
-    return _displist_ptr
-
-PUB DP2
-
+PUB DisplayListPtr
+' Returns: Current address pointer offset within display list RAM
     readReg(core#CMD_DL, 2, @result)
 
 PUB End | tmp
 ' End drawing a graphics primitive
     tmp := core#END
-'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
-'    _displist_ptr += 4
     start_cmd(tmp)
     return tmp
 
@@ -387,6 +366,7 @@ PUB HSync1(pclk_cycles) | tmp
 
 PUB ID
 ' Read ID
+'   Returns: $7C
     readReg(core#ID, 1, @result)
 
 PUB IntClock
@@ -394,10 +374,6 @@ PUB IntClock
 '   NOTE: This will have no effect if internal clock is already selected.
 '       Otherwise, the chip will be reset
     cmd (core#CLKINT, $00)
-
-PUB BeginLine
-
-    start_cmd(core#BEGIN | core#LINES)
 
 PUB PixelClockDivisor(divisor) | tmp
 ' Set pixel clock divisor
@@ -430,8 +406,6 @@ PUB PointSize(radius) | tmp
 
     radius := 0 #> radius <# 8191
     tmp := core#POINT_SIZE | radius
-'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
-'    _displist_ptr += 4
     start_cmd(tmp)
     return tmp
 
@@ -456,13 +430,13 @@ PUB Standby
 
 PUB Str(x, y, font, opts, str_ptr) | i, j
 
-  start_cmd(core#CMD_TEXT)
-  start_cmd((y << 16) + x)
-  start_cmd((opts << 16) + font)
-  j := (strsize(str_ptr) + 4) / 4
-  repeat i from 1 to j
-    start_cmd(byte[str_ptr + 3] << 24 + byte[str_ptr + 2] << 16 + byte[str_ptr + 1] << 8 + byte[str_ptr])
-    str_ptr += 4
+    start_cmd(core#CMD_TEXT)
+    start_cmd((y << 16) + x)
+    start_cmd((opts << 16) + font)
+    j := (strsize(str_ptr) + 4) / 4
+    repeat i from 1 to j
+        start_cmd(byte[str_ptr][3] << 24 + byte[str_ptr][2] << 16 + byte[str_ptr][1] << 8 + byte[str_ptr][0])
+        str_ptr += 4
 
 PUB Swizzle(mode) | tmp
 ' Control arrangement of output color pins
