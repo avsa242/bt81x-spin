@@ -100,28 +100,6 @@ PUB Active
 ' Wake up from Standby/Sleep/PowerDown modes
     cmd (core#ACTIVE, $00)
 
-PUB Begin(primitive) | tmp
-' Begin drawing a graphics primitive
-'   Valid values:
-'       BITMAPS (1), POINTS (2), LINES (3), LINE_STRIP (4), EDGE_STRIP_R (5), EDGE_STRIP_L (6),
-'       EDGE_STRIP_A (7), EDGE_STRIP_B (8), RECTS (9)
-'   Any other value is ignored
-'       (nothing added to display list and address pointer is NOT incremented)
-    tmp := $00
-    case primitive
-        BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L, EDGE_STRIP_A, EDGE_STRIP_B, RECTS:
-            primitive := core#BEGIN | primitive
-        OTHER:
-            return FALSE
-'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @primitive)
-'    _displist_ptr += 4
-    start_cmd(primitive)
-    return primitive
-
-PUB BeginLine
-
-    start_cmd(core#BEGIN | core#LINES)
-
 PUB ChipID
 ' Read Chip ID
 '   Returns: Chip ID, LSB-first
@@ -275,12 +253,6 @@ PUB DisplayListPtr
 ' Returns: Current address pointer offset within display list RAM
     readReg(core#CMD_DL, 2, @result)
 
-PUB End | tmp
-' End drawing a graphics primitive
-    tmp := core#END
-    start_cmd(tmp)
-    return tmp
-
 PUB ExtClock
 ' Select PLL input from external crystal oscillator or clock
 '   NOTE: This will have no effect if external clock is already selected.
@@ -375,6 +347,13 @@ PUB IntClock
 '       Otherwise, the chip will be reset
     cmd (core#CLKINT, $00)
 
+PUB Line(x1, y1, x2, y2)
+' Draw a line from x1, y1 to x2, y2 in the current color
+    PrimitiveBegin(core#LINES)
+    Vertex2F (x1, y1)
+    Vertex2F (x2, y2)
+    PrimitiveEnd
+
 PUB PixelClockDivisor(divisor) | tmp
 ' Set pixel clock divisor
 '   Valid values: 0..1023
@@ -413,6 +392,30 @@ PUB PowerDown
 ' Power digital core circuits, clock, PLL and oscillator off
 ' Use Active to wake up
     cmd (core#PWRDOWN1, $00)
+
+PUB PrimitiveBegin(primitive) | tmp
+' Begin drawing a graphics primitive
+'   Valid values:
+'       BITMAPS (1), POINTS (2), LINES (3), LINE_STRIP (4), EDGE_STRIP_R (5), EDGE_STRIP_L (6),
+'       EDGE_STRIP_A (7), EDGE_STRIP_B (8), RECTS (9)
+'   Any other value is ignored
+'       (nothing added to display list and address pointer is NOT incremented)
+    tmp := $00
+    case primitive
+        BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L, EDGE_STRIP_A, EDGE_STRIP_B, RECTS:
+            primitive := core#BEGIN | primitive
+        OTHER:
+            return FALSE
+'    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @primitive)
+'    _displist_ptr += 4
+    start_cmd(primitive)
+    return primitive
+
+PUB PrimitiveEnd | tmp
+' End drawing a graphics primitive
+    tmp := core#END
+    start_cmd(tmp)
+    return tmp
 
 PUB Sleep
 ' Power clock gate, PLL and oscillator off
