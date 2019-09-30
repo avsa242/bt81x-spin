@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2019
     Started Sep 25, 2019
-    Updated Sep 28, 2019
+    Updated Sep 30, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -385,6 +385,15 @@ PUB PixClockPolarity(edge) | tmp
         OTHER:
             return tmp
     writeReg(core#PCLK_POL, 1, @edge)
+
+PUB Plot(x, y) | tmp
+' Plot pixel at x, y in current color
+    X := 0 #> x <# 799
+    y := 0 #> y <# 479
+
+    PrimitiveBegin(POINTS)
+    Vertex2F(x, y)
+    PrimitiveEnd
 
 PUB PointSize(radius) | tmp
 

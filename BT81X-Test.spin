@@ -5,7 +5,7 @@
     Description: Test of the BT81x driver
     Copyright (c) 2019
     Started Sep 25, 2019
-    Updated Sep 28, 2019
+    Updated Sep 30, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -42,8 +42,27 @@ PUB Main
     ser.Hex (eve3.ChipID, 8)
     ser.NewLine
 '    Example1
-    tmp1
+'    tmp1
+    tmp2
+    time.Sleep (5)
+    eve3.PowerDown
     Flash (LED, 100)
+
+PUB tmp2
+
+    eve3.WaitIdle
+    eve3.DisplayListStart
+    eve3.ClearColor (0, 0, 0)
+    eve3.Clear (TRUE, TRUE, TRUE)
+    eve3.ColorRGB (0, 100, 128)
+    eve3.Str (400, 30, 31, eve3#OPT_CENTER, string("Plot(x, y)"))
+    eve3.ColorRGB (255, 0, 0)
+    eve3.Plot (400+0, 240-20)
+    eve3.ColorRGB (0, 255, 0)
+    eve3.Plot (400+20, 240+20)
+    eve3.ColorRGB (0, 0, 255)
+    eve3.Plot (400-20, 240+20)
+    eve3.DisplayListEnd
 
 PUB tmp1
 
