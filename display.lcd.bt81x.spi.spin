@@ -115,7 +115,7 @@ PUB Clear(color, stencil, tag) | tmp
     tmp := core#CLEAR | ( (||color & %1) << core#FLD_COLOR) | ( (||stencil & %1) << core#FLD_STENCIL) | (||tag & %1)
 '    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
 '    _displist_ptr += 4
-    start_cmd(tmp)
+    CoProcCmd(tmp)
     return tmp
 
 PUB ClearColor(r, g, b) | tmp
@@ -128,7 +128,7 @@ PUB ClearColor(r, g, b) | tmp
     tmp := core#CLEAR_COLOR_RGB | (r << 16) | (g << 8) | b
 '    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
 '    _displist_ptr += 4
-    start_cmd(tmp)
+    CoProcCmd(tmp)
     return tmp
 
 PUB Clockfreq(MHz) | tmp
@@ -169,14 +169,19 @@ PUB ClockSpread(enabled) | tmp
     writeReg(core#CSPREAD, 1, @enabled)
 
 PUB ColorRGB(r, g, b) | tmp
-
+' Specify color for following graphics primitive
     tmp := $00_00_00_00
     r := 0 #> r <# 255
     g := 0 #> g <# 255
     b := 0 #> b <# 255
     tmp := core#COLOR_RGB | (r << core#FLD_RED) | (g << core#FLD_GREEN) | b
-    start_cmd(tmp)
+    CoProcCmd(tmp)
     return tmp
+
+PUB CoProcCmd(command)
+' Queue a coprocessor command
+'   NOTE: This method will always write 4 bytes to the FIFO, per Bridgetek AN033
+    writeReg(core#CMDB_WRITE, 4, @command)
 
 PUB CPUReset(reset_mask) | tmp
 ' Reset any combination of audio, touch, and coprocessor engines
@@ -208,14 +213,14 @@ PUB DisplayHeight(pixels)
 
 PUB DisplayListStart
 
-    start_cmd(core#CMD_DLSTART)
+    CoProcCmd(core#CMD_DLSTART)
 
 PUB DisplayListEnd | tmp[2]
 
     tmp[0] := core#DISPLAY
     tmp[1] := core#CMD_DLSWAP
-    start_cmd(tmp[0])
-    start_cmd(tmp[1])
+    CoProcCmd(tmp[0])
+    CoProcCmd(tmp[1])
 
 PUB DisplayListSwap(mode) | tmp
 ' Set when the graphics engine will render the screen
@@ -385,7 +390,7 @@ PUB PointSize(radius) | tmp
 
     radius := 0 #> radius <# 8191
     tmp := core#POINT_SIZE | radius
-    start_cmd(tmp)
+    CoProcCmd(tmp)
     return tmp
 
 PUB PowerDown
@@ -408,13 +413,13 @@ PUB PrimitiveBegin(primitive) | tmp
             return FALSE
 '    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @primitive)
 '    _displist_ptr += 4
-    start_cmd(primitive)
+    CoProcCmd(primitive)
     return primitive
 
 PUB PrimitiveEnd | tmp
 ' End drawing a graphics primitive
     tmp := core#END
-    start_cmd(tmp)
+    CoProcCmd(tmp)
     return tmp
 
 PUB Sleep
@@ -433,12 +438,12 @@ PUB Standby
 
 PUB Str(x, y, font, opts, str_ptr) | i, j
 
-    start_cmd(core#CMD_TEXT)
-    start_cmd((y << 16) + x)
-    start_cmd((opts << 16) + font)
+    CoProcCmd(core#CMD_TEXT)
+    CoProcCmd((y << 16) + x)
+    CoProcCmd((opts << 16) + font)
     j := (strsize(str_ptr) + 4) / 4
     repeat i from 1 to j
-        start_cmd(byte[str_ptr][3] << 24 + byte[str_ptr][2] << 16 + byte[str_ptr][1] << 8 + byte[str_ptr][0])
+        CoProcCmd(byte[str_ptr][3] << 24 + byte[str_ptr][2] << 16 + byte[str_ptr][1] << 8 + byte[str_ptr][0])
         str_ptr += 4
 
 PUB Swizzle(mode) | tmp
@@ -478,11 +483,13 @@ PUB VCycle(disp_lines) | tmp
     writeReg(core#VCYCLE, 2, @disp_lines)
 
 PUB Vertex2F(x, y) | tmp
-
+' Specify coordinates for following graphics primitive
+    x := 0 #> x <# 799
+    y := 0 #> y <# 479
     x <<= 4
     y <<= 4
     tmp := core#VERTEX2F | (x << core#FLD_2F_X) | y
-    start_cmd(tmp)
+    CoProcCmd(tmp)
 
 PUB Vertex2II(x, y, handle, cell) | tmp
 ' Start the operation of graphics primitive at the specified coordinates in pixel precision
@@ -499,7 +506,7 @@ PUB Vertex2II(x, y, handle, cell) | tmp
     tmp := core#VERTEX2II | (x << core#FLD_X) | (y << core#FLD_Y) | (handle << core#FLD_HANDLE) | cell
 '    writeReg(core#RAM_DISP_LIST_START + _displist_ptr, 4, @tmp)
 '    _displist_ptr += 4
-    start_cmd(tmp)
+    CoProcCmd(tmp)
     return tmp
 
 PUB VOffset(disp_lines) | tmp
@@ -546,18 +553,15 @@ PUB VSync1(offset_lines) | tmp
             return tmp
     writeReg(core#VSYNC1, 2, @offset_lines)
 
-PUB start_cmd(command)
-
-    writeReg(core#CMDB_WRITE, 4, @command)
-
 PUB WaitIdle
-
+' Waits until the coprocessor is idle
     repeat
         time.MSleep(10)
     until Idle
 
 PUB Idle | cmd_rd, cmd_wr
-
+' Return idle status
+'   Returns: TRUE (-1) if coprocessor is idle, FALSE (0) if busy
     readReg(core#CMD_READ, 4, @cmd_rd)
     readReg(core#CMD_WRITE, 4, @cmd_wr)
     return (cmd_rd == cmd_wr)
