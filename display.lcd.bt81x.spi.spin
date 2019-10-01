@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2019
     Started Sep 25, 2019
-    Updated Sep 30, 2019
+    Updated Oct 1, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -97,6 +97,18 @@ PUB Stop
 PUB Active
 ' Wake up from Standby/Sleep/PowerDown modes
     cmd (core#ACTIVE, $00)
+
+PUB Brightness(level) | tmp
+' Set display brightness
+'   Valid values: 0..128*
+'   Any other value polls the chip and returns the current setting
+    tmp := $00
+    readReg(core#PWM_DUTY, 1, @tmp)
+    case level
+        0..128:
+        OTHER:
+            return tmp
+    writeReg(core#PWM_DUTY, 1, @level)
 
 PUB ChipID
 ' Read Chip ID/model
