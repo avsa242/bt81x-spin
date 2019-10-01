@@ -117,6 +117,27 @@ PUB Brightness(level) | tmp
             return tmp
     writeReg(core#PWM_DUTY, 1, @level)
 
+PUB Button(x, y, width, height, font, opts, str_ptr) | i, j
+' Draw a button
+'   Valid values:
+'       x, width: 0..799
+'       y, height: 0..479
+'       font: 0..31
+'       opts: 0 (3D), 256 (FLAT)
+'       str_ptr: Pointer to string to be displayed on button
+    x := 0 #> x <# 799
+    y := 0 #> y <# 479
+    width := 0 #> width <# 799
+    height := 0 #> height <# 479
+    CoProcCmd(core#CMD_BUTTON)
+    CoProcCmd((y << 16) + x)
+    CoProcCmd((height << 16) + width)
+    CoProcCmd((opts << 16) + font)
+    j := (strsize(str_ptr) + 4) / 4
+    repeat i from 1 to j
+        CoProcCmd(byte[str_ptr][3] << 24 + byte[str_ptr][2] << 16 + byte[str_ptr][1] << 8 + byte[str_ptr][0])
+        str_ptr += 4
+
 PUB ChipID
 ' Read Chip ID/model
 '   Returns: Chip ID
