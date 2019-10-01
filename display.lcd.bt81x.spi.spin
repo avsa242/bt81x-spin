@@ -98,6 +98,13 @@ PUB Active
 ' Wake up from Standby/Sleep/PowerDown modes
     cmd (core#ACTIVE, $00)
 
+PUB Box(x1, y1, x2, y2) | tmp
+' Draw a box from x1, y1 to x2, y2 in the current color
+    PrimitiveBegin(RECTS)
+    Vertex2F(x1, y1)
+    Vertex2F(x2, y2)
+    PrimitiveEnd
+
 PUB Brightness(level) | tmp
 ' Set display brightness
 '   Valid values: 0..128*
