@@ -468,6 +468,16 @@ PUB SoftReset
 ' Perform a soft-reset of the BT81x
     cmd (core#RST_PULSE, $00)
 
+PUB Spinner(x, y, style, scale) | tmp
+' Draw a spinner/busy indicator
+    x := 0 #> x <# 799
+    y := 0 #> y <# 479
+    style := 0 #> style <# 3
+    scale := 0 #> scale <# 2
+    CoProcCmd(core#CMD_SPINNER)
+    CoProcCmd(y << 16 + x)
+    CoProcCmd(scale << 16 + style)
+
 PUB Standby
 ' Power clock gate off (PLL and oscillator remain on)
 ' Use Active to wake up
