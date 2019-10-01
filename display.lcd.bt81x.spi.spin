@@ -380,6 +380,15 @@ PUB Line(x1, y1, x2, y2)
     Vertex2F (x2, y2)
     PrimitiveEnd
 
+PUB LineWidth(pixels) | tmp
+' Set width of line, in pixels
+'   NOTE: This affects the Line, LineStrip, Box, and EdgeStrip primitives
+    pixels := 1 #> pixels <# 255
+    pixels <<= 4
+    tmp := core#LINE_WIDTH | pixels
+    CoProcCmd(tmp)
+    return tmp
+
 PUB PixelClockDivisor(divisor) | tmp
 ' Set pixel clock divisor
 '   Valid values: 0..1023

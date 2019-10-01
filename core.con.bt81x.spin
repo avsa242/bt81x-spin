@@ -220,7 +220,7 @@ CON
         FLD_BLUE                = 0
 
     POINT_SIZE                  = $0D_00_00_00
-
+    LINE_WIDTH                  = $0E_00_00_00
     BEGIN                       = $1F_00_00_00
         LINES                   = $03
 
