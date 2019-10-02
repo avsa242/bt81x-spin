@@ -330,6 +330,20 @@ PUB ExtClock
 '       Otherwise, the chip will be reset
     cmd (core#CLKEXT, $00)
 
+PUB Gauge(x, y, radius, opts, major, minor, val, range) | tmp
+' Draw a gauge
+    x := 0 #> x <# 799
+    y := 0 #> y <# 479
+    radius := 0 #> radius <# 799
+'    x <<= 4
+'    y <<= 4
+'    radius <<= 4
+    CoProcCmd(core#CMD_GAUGE)
+    CoProcCmd((y << 16) | x)
+    CoProcCmd((opts << 16) | radius)
+    CoProcCmd((minor << 16) | major)
+    CoProcCmd((range << 16) | val)
+
 PUB GPIO(state) | tmp
 
     tmp := $0000
