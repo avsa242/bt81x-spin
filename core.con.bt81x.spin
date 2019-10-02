@@ -211,6 +211,7 @@ CON
     CMD_TRANSLATE               = $FFFFFF27
     CMD_LOADIDENTITY            = $FFFFFF26
     CMD_SETMATRIX               = $FFFFFF2A
+    CMD_GRADIENTA               = $FFFFFF57
 
 ' Display List Commands
     DISPLAY                     = $00_00_00_00

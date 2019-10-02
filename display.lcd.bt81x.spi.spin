@@ -379,6 +379,21 @@ PUB Gradient(x0, y0, rgb0, x1, y1, rgb1)
     CoProcCmd((y1 << 16) | x1)
     CoProcCmd(rgb1)
 
+PUB GradientTransparency(x0, y0, argb0, x1, y1, argb1)
+' Draw a smooth color gradient, with transparency
+    x0 := 0 #> x0 <# 799
+    y0 := 0 #> y0 <# 479
+    argb0 := $00_00_00_00 #> argb0 <# $FF_FF_FF_FF
+    x1 := 0 #> x1 <# 799
+    y1 := 0 #> y1 <# 479
+    argb1 := $00_00_00_00 #> argb1 <# $FF_FF_FF_FF
+
+    CoProcCmd(core#CMD_GRADIENTA)
+    CoProcCmd((y0 << 16) | x0)
+    CoProcCmd(argb0)
+    CoProcCmd((y1 << 16) | x1)
+    CoProcCmd(argb1)
+
 PUB HCycle(pclks) | tmp
 ' Set horizontal total cycle count, in pixel clocks
 '   Valid values: 0..4095
