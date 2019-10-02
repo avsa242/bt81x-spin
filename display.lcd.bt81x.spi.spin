@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2019
     Started Sep 25, 2019
-    Updated Oct 1, 2019
+    Updated Oct 2, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -44,7 +44,31 @@ CON
 ' Graphics primitives
     #1, BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L, EDGE_STRIP_A, EDGE_STRIP_B, RECTS
 
+' Various rendering options
+    OPT_3D          = 0
+    OPT_RGB565      = 0
+    OPT_MONO        = 1
+    OPT_NODL        = 2
+    OPT_FLAT        = 256
+    OPT_SIGNED      = 256
+    OPT_CENTERX     = 512
+    OPT_CENTERY     = 1024
     OPT_CENTER      = 1536
+    OPT_RIGHTX      = 2048
+    OPT_NOBACK      = 4096
+    OPT_FILL        = 8192
+    OPT_FLASH       = 64
+    OPT_FORMAT      = 4096
+    OPT_NOTICKS     = 8192
+    OPT_NOHM        = 16384
+    OPT_NOPOINTER   = 16384
+    OPT_NOSECS      = 32768
+    OPT_NOHANDS     = 49152
+    OPT_NOTEAR      = 4
+    OPT_FULLSCREEN  = 8
+    OPT_MEDIAFIFO   = 16
+    OPT_SOUND       = 32
+
 
 VAR
 
@@ -632,6 +656,22 @@ PUB WaitIdle
     repeat
         time.MSleep(10)
     until Idle
+
+PUB WidgetBGColor(rgb)
+' Set background color for widgets (gauges, sliders, etc), as a 24-bit RGB number
+'   Valid values: $00_00_00..$FF_FF_FF
+'   Any other value will be clamped to min/max limits
+    rgb := $00_00_00 #> rgb <# $FF_FF_FF
+    CoProcCmd(core#CMD_BGCOLOR)
+    CoProcCmd(rgb)
+
+PUB WidgetFGColor(rgb)
+' Set foreground color for widgets (gauges, sliders, etc), as a 24-bit RGB number
+'   Valid values: $00_00_00..$FF_FF_FF
+'   Any other value will be clamped to min/max limits
+    rgb := $00_00_00 #> rgb <# $FF_FF_FF
+    CoProcCmd(core#CMD_FGCOLOR)
+    CoProcCmd(rgb)
 
 PUB Idle | cmd_rd, cmd_wr
 ' Return idle status
