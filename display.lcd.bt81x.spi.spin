@@ -335,9 +335,7 @@ PUB Gauge(x, y, radius, opts, major, minor, val, range) | tmp
     x := 0 #> x <# 799
     y := 0 #> y <# 479
     radius := 0 #> radius <# 799
-'    x <<= 4
-'    y <<= 4
-'    radius <<= 4
+
     CoProcCmd(core#CMD_GAUGE)
     CoProcCmd((y << 16) | x)
     CoProcCmd((opts << 16) | radius)
@@ -365,6 +363,21 @@ PUB GPIODir(mask) | tmp
             return tmp
 
     writeReg(core#GPIOX_DIR, 2, @mask)
+
+PUB Gradient(x0, y0, rgb0, x1, y1, rgb1)
+' Draw a smooth color gradient
+    x0 := 0 #> x0 <# 799
+    y0 := 0 #> y0 <# 479
+    rgb0 := $000000 #> rgb0 <# $FFFFFF
+    x1 := 0 #> x1 <# 799
+    y1 := 0 #> y1 <# 479
+    rgb1 := $000000 #> rgb1 <# $FFFFFF
+
+    CoProcCmd(core#CMD_GRADIENT)
+    CoProcCmd((y0 << 16) | x0)
+    CoProcCmd(rgb0)
+    CoProcCmd((y1 << 16) | x1)
+    CoProcCmd(rgb1)
 
 PUB HCycle(pclks) | tmp
 ' Set horizontal total cycle count, in pixel clocks

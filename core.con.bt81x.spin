@@ -186,6 +186,7 @@ CON
 
     CMD_DLSTART                 = $FFFFFF00
     CMD_DLSWAP                  = $FFFFFF01
+    CMD_GRADIENT                = $FFFFFF0B
     CMD_BUTTON                  = $FFFFFF0D
     CMD_CLOCK                   = $FFFFFF14
     CMD_GAUGE                   = $FFFFFF13
