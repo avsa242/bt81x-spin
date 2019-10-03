@@ -557,6 +557,18 @@ PUB PrimitiveEnd | tmp
     CoProcCmd(tmp)
     return tmp
 
+PUB ProgressBar(x, y, width, height, opts, val, range) | tmp
+' Draw a progress bar
+    x := 0 #> x <# 799
+    y := 0 #> y <# 479
+    width := 0 #> width <# 799
+    height := 0 #> height <# 479
+    CoProcCmd(core#CMD_PROGRESS)
+    CoProcCmd((y << 16) | x)
+    CoProcCmd((height << 16) | width)
+    CoProcCmd((val << 16) | opts)
+    CoProcCmd(range)
+
 PUB Scissor(x, y, width, height)
 ' Specify scissor clip rectangle
     ScissorXY(x, y)
