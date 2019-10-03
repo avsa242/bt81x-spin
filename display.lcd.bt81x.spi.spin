@@ -607,6 +607,18 @@ PUB Sleep
 ' Use Active to wake up
     cmd (core#SLEEP, $00)
 
+PUB Slider(x, y, width, height, opts, val, range)
+' Draw a slider
+    x := 0 #> x <# 799
+    y := 0 #> y <# 479
+    width := 0 #> width <# 799
+    height := 0 #> height <# 479
+    CoProcCmd(core#CMD_SLIDER)
+    CoProcCmd((y << 16) | x)
+    CoProcCmd((height << 16) | width)
+    CoProcCmd((val << 16) | opts)
+    CoProcCmd(range)
+
 PUB SoftReset
 ' Perform a soft-reset of the BT81x
     cmd (core#RST_PULSE, $00)
