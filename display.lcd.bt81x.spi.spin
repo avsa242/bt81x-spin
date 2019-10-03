@@ -273,6 +273,17 @@ PUB CPUReset(reset_mask) | tmp
     reset_mask &= core#CPURESET_MASK
     writeReg ( core#CPURESET, 2, @reset_mask)
 
+PUB Dial(x, y, radius, opts, val)
+' Draw a dial
+    x := 0 #> x <# 799
+    y := 0 #> y <# 479
+    radius := 0 #> radius <# 799
+
+    CoProcCmd(core#CMD_DIAL)
+    CoProcCmd((y << 16) | x)
+    CoProcCmd((opts << 16) | radius)
+    CoProcCmd(val)
+
 PUB DisplayHeight(pixels)
 
     VSize (pixels)
