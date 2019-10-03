@@ -458,6 +458,19 @@ PUB IntClock
 '       Otherwise, the chip will be reset
     cmd (core#CLKINT, $00)
 
+PUB Keys(x, y, width, height, font, opts, str_ptr) | i, j
+' Draw an array of keys
+    x := 0 #> x <# 799
+    y := 0 #> y <# 479
+    CoProcCmd(core#CMD_KEYS)
+    CoProcCmd((y << 16) | x)
+    CoProcCmd((height << 16) | width)
+    CoProcCmd((opts << 16) | font)
+    j := (strsize(str_ptr) + 4) / 4
+    repeat i from 1 to j
+        CoProcCmd(byte[str_ptr][3] << 24 + byte[str_ptr][2] << 16 + byte[str_ptr][1] << 8 + byte[str_ptr][0])
+        str_ptr += 4
+
 PUB Line(x1, y1, x2, y2)
 ' Draw a line from x1, y1 to x2, y2 in the current color
     PrimitiveBegin(core#LINES)

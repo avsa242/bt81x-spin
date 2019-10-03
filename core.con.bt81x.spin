@@ -188,6 +188,7 @@ CON
     CMD_DLSWAP                  = $FFFFFF01
     CMD_GRADIENT                = $FFFFFF0B
     CMD_BUTTON                  = $FFFFFF0D
+    CMD_KEYS                    = $FFFFFF0E
     CMD_CLOCK                   = $FFFFFF14
     CMD_GAUGE                   = $FFFFFF13
     CMD_ROMFONT                 = $FFFFFF3F
