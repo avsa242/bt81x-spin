@@ -692,6 +692,12 @@ PUB Swizzle(mode) | tmp
             return tmp
     writeReg(core#SWIZZLE, 1, @mode)
 
+PUB TextWrap(pixels)
+' Set pixel width for text wrapping
+    pixels := 0 #> pixels <# 799
+    CoProcCmd(core#CMD_FILLWIDTH)
+    CoProcCmd(pixels)
+
 PUB Toggle(x, y, width, font, opts, state, str_ptr) | i, j
 ' Draw a toggle switch
 '   NOTE: String labels are UTF-8 formatted. A value of 255 separates label strings.

@@ -215,6 +215,7 @@ CON
     CMD_PLAYVIDEO               = $FFFFFF3A
     CMD_MEDIAFIFO               = $FFFFFF39
     CMD_GRADIENTA               = $FFFFFF57
+    CMD_FILLWIDTH               = $FFFFFF58
 
 ' Display List Commands
     DISPLAY                     = $00_00_00_00
