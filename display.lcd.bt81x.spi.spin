@@ -692,6 +692,21 @@ PUB Swizzle(mode) | tmp
             return tmp
     writeReg(core#SWIZZLE, 1, @mode)
 
+PUB Toggle(x, y, width, font, opts, state, str_ptr) | i, j
+' Draw a toggle switch
+'   NOTE: String labels are UTF-8 formatted. A value of 255 separates label strings.
+    x := 0 #> x <# 799
+    y := 0 #> y <# 479
+    width := 0 #> width <# 799
+    CoProcCmd(core#CMD_TOGGLE)
+    CoProcCmd((y << 16) | x)
+    CoProcCmd((font << 16) | width)
+    CoProcCmd((state << 16) | opts)
+    j := (strsize(str_ptr) + 4) / 4
+    repeat i from 1 to j
+        CoProcCmd(byte[str_ptr][3] << 24 + byte[str_ptr][2] << 16 + byte[str_ptr][1] << 8 + byte[str_ptr][0])
+        str_ptr += 4
+
 PUB VCycle(disp_lines) | tmp
 ' Set vertical total cycle count, in lines
 '   Valid values: 0..4095

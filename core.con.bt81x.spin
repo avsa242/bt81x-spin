@@ -195,6 +195,7 @@ CON
     CMD_PROGRESS                = $FFFFFF0F
     CMD_SLIDER                  = $FFFFFF10
     CMD_SCROLLBAR               = $FFFFFF11
+    CMD_TOGGLE                  = $FFFFFF12
     CMD_GAUGE                   = $FFFFFF13
     CMD_CLOCK                   = $FFFFFF14
     CMD_CALIBRATE               = $FFFFFF15
