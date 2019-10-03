@@ -223,6 +223,15 @@ CON
 
     POINT_SIZE                  = $0D_00_00_00
     LINE_WIDTH                  = $0E_00_00_00
+
+    SCISSOR_XY                  = $1B_00_00_00
+        FLD_SCISSOR_X           = 11
+        FLD_SCISSOR_Y           = 0
+
+    SCISSOR_SIZE                = $1C_00_00_00
+        FLD_WIDTH               = 12
+        FLD_HEIGHT              = 0
+
     BEGIN                       = $1F_00_00_00
         LINES                   = $03
 

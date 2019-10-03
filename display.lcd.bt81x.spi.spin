@@ -544,6 +544,25 @@ PUB PrimitiveEnd | tmp
     CoProcCmd(tmp)
     return tmp
 
+PUB Scissor(x, y, width, height)
+' Specify scissor clip rectangle
+    ScissorXY(x, y)
+    ScissorSize(width, height)
+
+PUB ScissorXY(x, y) | tmp
+' Specify top left corner of scissor clip rectangle
+    x := 0 #> x <# 2047
+    y := 0 #> y <# 2047
+    tmp := core#SCISSOR_XY | (x << core#FLD_SCISSOR_X) | y
+    CoProcCmd(tmp)
+
+PUB ScissorSize(width, height) | tmp
+' Specify size of scissor clip rectangle
+    width := 0 #> width <# 2048
+    height := 0 #> height <# 2048
+    tmp := core#SCISSOR_SIZE | (width << core#FLD_WIDTH) | height
+    CoProcCmd(tmp)
+
 PUB Sleep
 ' Power clock gate, PLL and oscillator off
 ' Use Active to wake up
