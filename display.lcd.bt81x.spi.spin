@@ -557,7 +557,7 @@ PUB PrimitiveEnd | tmp
     CoProcCmd(tmp)
     return tmp
 
-PUB ProgressBar(x, y, width, height, opts, val, range) | tmp
+PUB ProgressBar(x, y, width, height, opts, val, range)
 ' Draw a progress bar
     x := 0 #> x <# 799
     y := 0 #> y <# 479
@@ -587,6 +587,20 @@ PUB ScissorSize(width, height) | tmp
     height := 0 #> height <# 2048
     tmp := core#SCISSOR_SIZE | (width << core#FLD_WIDTH) | height
     CoProcCmd(tmp)
+
+PUB Scrollbar(x, y, width, height, opts, val, size, range)
+' Draw a scrollbar
+'   NOTE: If width is greater than height, the scroll bar will be drawn horizontally,
+'       else it will be drawn vertically
+    x := 0 #> x <# 799
+    y := 0 #> y <# 479
+    width := 0 #> width <# 799
+    height := 0 #> height <# 479
+    CoProcCmd(core#CMD_SCROLLBAR)
+    CoProcCmd((y << 16) | x)
+    CoProcCmd((height << 16) | width)
+    CoProcCmd((val << 16) | opts)
+    CoProcCmd((range << 16) | size)
 
 PUB Sleep
 ' Power clock gate, PLL and oscillator off
