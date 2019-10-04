@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2019
     Started Sep 25, 2019
-    Updated Oct 3, 2019
+    Updated Oct 4, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -94,7 +94,6 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
         if okay := spi.start (10, core#CPOL)
             ExtClock
             Clockfreq (60)
-            'get_cmdoffset
             repeat until ID == $7C
             repeat until CPUReset (-2) == READY
             DisplayTimings (928, 88, 0, 48, 525, 32, 0, 3)
@@ -498,6 +497,18 @@ PUB LineWidth(pixels) | tmp
     CoProcCmd(tmp)
     return tmp
 
+PUB Num(x, y, font, opts, val)
+' Draw a number, with base specified by SetBase
+'   Valid options:
+'       OPT_CENTERX, OPT_CENTERY, OPT_CENTER, OPT_SIGNED
+' NOTE: If no preceeding SetBase is used, decimal will be used
+    x := 0 #> x <# 799
+    y := 0 #> y <# 479
+    CoProcCmd(core#CMD_NUMBER)
+    CoProcCmd((y << 16) | x)
+    CoProcCmd((opts << 16) | font)
+    CoProcCmd(val)
+
 PUB PixelClockDivisor(divisor) | tmp
 ' Set pixel clock divisor
 '   Valid values: 0..1023
@@ -613,6 +624,17 @@ PUB Scrollbar(x, y, width, height, opts, val, size, range)
     CoProcCmd((val << 16) | opts)
     CoProcCmd((range << 16) | size)
 
+PUB SetBase(radix)
+' Set base/radix for numbers drawn with the Num method
+'   Valid values: 2..36
+'   Any other value is ignored
+    case radix
+        2..36:
+            CoProcCmd(core#CMD_SETBASE)
+            CoProcCmd(radix)
+        OTHER:
+            return FALSE
+
 PUB Sleep
 ' Power clock gate, PLL and oscillator off
 ' Use Active to wake up
@@ -694,6 +716,7 @@ PUB Swizzle(mode) | tmp
 
 PUB TextWrap(pixels)
 ' Set pixel width for text wrapping
+'   NOTE: This setting applies to the Str and Button (when using the OPT_FILL option) methods
     pixels := 0 #> pixels <# 799
     CoProcCmd(core#CMD_FILLWIDTH)
     CoProcCmd(pixels)
