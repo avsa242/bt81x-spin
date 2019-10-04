@@ -200,6 +200,7 @@ CON
     CMD_CLOCK                   = $FFFFFF14
     CMD_CALIBRATE               = $FFFFFF15
     CMD_SPINNER                 = $FFFFFF16
+    CMD_STOP                    = $FFFFFF17
     CMD_MEMZERO                 = $FFFFFF1C
     CMD_LOADIMAGE               = $FFFFFF24
     CMD_LOADIDENTITY            = $FFFFFF26

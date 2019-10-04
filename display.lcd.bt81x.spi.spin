@@ -694,6 +694,10 @@ PUB Standby
 ' Use Active to wake up
     cmd (core#STANDBY, $00)
 
+PUB StopOperation
+' Stop a running Sketch, Spinner, or Screensaver operation
+    CoProcCmd(core#CMD_STOP)
+
 PUB Str(x, y, font, opts, str_ptr) | i, j
 ' Draw a text string
 '   Valid values:
