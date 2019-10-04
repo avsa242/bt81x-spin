@@ -69,6 +69,8 @@ CON
     OPT_MEDIAFIFO   = 16
     OPT_SOUND       = 32
 
+' Transform and screen rotation
+    #0, ROT_LAND, ROT_INV_LAND, ROT_PORT, ROT_INV_PORT, ROT_MIR_LAND, ROT_MIR_INV_LAND, ROT_MIR_PORT, ROT_MIR_INV_PORT
 
 VAR
 
@@ -590,6 +592,21 @@ PUB ProgressBar(x, y, width, height, opts, val, range)
     CoProcCmd((height << 16) | width)
     CoProcCmd((val << 16) | opts)
     CoProcCmd(range)
+
+PUB RotateScreen(orientation)
+' Rotate the screen
+'   Valid values:
+'       ROT_LAND (0), ROT_INV_LAND (1), ROT_MIR_LAND (4), ROT_MIR_INV_LAND (5):
+'           Landscape, inverted landscape, mirrored landscape, mirrored inverted landscape
+'       ROT_PORT (2), ROT_INV_PORT (3), ROT_MIR_PORT (6), ROT_MIR_INV_PORT (7):
+'           Portrait, inverted portrait, mirrored portrait, mirrored inverted portrait
+'   Any other value is ignored
+    case orientation
+        ROT_LAND, ROT_INV_LAND, ROT_PORT, ROT_INV_PORT, ROT_MIR_LAND, ROT_MIR_INV_LAND, ROT_MIR_PORT, ROT_MIR_INV_PORT:
+            CoProcCmd(core#CMD_SETROTATE)
+            CoProcCmd(orientation)
+        OTHER:
+            return
 
 PUB Scissor(x, y, width, height)
 ' Specify scissor clip rectangle

@@ -210,6 +210,7 @@ CON
     CMD_TRACK                   = $FFFFFF2C
     CMD_DIAL                    = $FFFFFF2D
     CMD_NUMBER                  = $FFFFFF2E
+    CMD_SETROTATE               = $FFFFFF36
     CMD_SETBASE                 = $FFFFFF38
     CMD_ROMFONT                 = $FFFFFF3F
     CMD_PLAYVIDEO               = $FFFFFF3A
