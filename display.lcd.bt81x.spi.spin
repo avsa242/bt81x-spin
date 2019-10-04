@@ -14,63 +14,69 @@
 CON
 
 ' CPU Reset status
-    READY           = %000
-    RST_AUDIO       = %100
-    RST_TOUCH       = %010
-    RST_COPRO       = %001
+    READY               = %000
+    RST_AUDIO           = %100
+    RST_TOUCH           = %010
+    RST_COPRO           = %001
 
 ' Output RGB signal swizzle
-    SWIZZLE_RGBM    = 0
-    SWIZZLE_RGBL    = 1
-    SWIZZLE_BGRM    = 2
-    SWIZZLE_BGRL    = 3
-    SWIZZLE_BRGM    = 8
-    SWIZZLE_BRGL    = 9
-    SWIZZLE_GRBM    = 10
-    SWIZZLE_GRBL    = 11
-    SWIZZLE_GBRM    = 12
-    SWIZZLE_GBRL    = 13
-    SWIZZLE_RBGM    = 14
-    SWIZZLE_RBGL    = 15
+    SWIZZLE_RGBM        = 0
+    SWIZZLE_RGBL        = 1
+    SWIZZLE_BGRM        = 2
+    SWIZZLE_BGRL        = 3
+    SWIZZLE_BRGM        = 8
+    SWIZZLE_BRGL        = 9
+    SWIZZLE_GRBM        = 10
+    SWIZZLE_GRBL        = 11
+    SWIZZLE_GBRM        = 12
+    SWIZZLE_GBRL        = 13
+    SWIZZLE_RBGM        = 14
+    SWIZZLE_RBGL        = 15
 
 ' Pixel clock polarity
-    PCLKPOL_RISING  = 0
-    PCLKPOL_FALLING = 1
+    PCLKPOL_RISING      = 0
+    PCLKPOL_FALLING     = 1
 
 ' Display list swap modes
-    DLSWAP_LINE     = 1
-    DLSWAP_FRAME    = 2
+    DLSWAP_LINE         = 1
+    DLSWAP_FRAME        = 2
 
 ' Graphics primitives
     #1, BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L, EDGE_STRIP_A, EDGE_STRIP_B, RECTS
 
 ' Various rendering options
-    OPT_3D          = 0
-    OPT_RGB565      = 0
-    OPT_MONO        = 1
-    OPT_NODL        = 2
-    OPT_FLAT        = 256
-    OPT_SIGNED      = 256
-    OPT_CENTERX     = 512
-    OPT_CENTERY     = 1024
-    OPT_CENTER      = 1536
-    OPT_RIGHTX      = 2048
-    OPT_NOBACK      = 4096
-    OPT_FILL        = 8192
-    OPT_FLASH       = 64
-    OPT_FORMAT      = 4096
-    OPT_NOTICKS     = 8192
-    OPT_NOHM        = 16384
-    OPT_NOPOINTER   = 16384
-    OPT_NOSECS      = 32768
-    OPT_NOHANDS     = 49152
-    OPT_NOTEAR      = 4
-    OPT_FULLSCREEN  = 8
-    OPT_MEDIAFIFO   = 16
-    OPT_SOUND       = 32
+    OPT_3D              = 0
+    OPT_RGB565          = 0
+    OPT_MONO            = 1
+    OPT_NODL            = 2
+    OPT_FLAT            = 256
+    OPT_SIGNED          = 256
+    OPT_CENTERX         = 512
+    OPT_CENTERY         = 1024
+    OPT_CENTER          = 1536
+    OPT_RIGHTX          = 2048
+    OPT_NOBACK          = 4096
+    OPT_FILL            = 8192
+    OPT_FLASH           = 64
+    OPT_FORMAT          = 4096
+    OPT_NOTICKS         = 8192
+    OPT_NOHM            = 16384
+    OPT_NOPOINTER       = 16384
+    OPT_NOSECS          = 32768
+    OPT_NOHANDS         = 49152
+    OPT_NOTEAR          = 4
+    OPT_FULLSCREEN      = 8
+    OPT_MEDIAFIFO       = 16
+    OPT_SOUND           = 32
 
 ' Transform and screen rotation
     #0, ROT_LAND, ROT_INV_LAND, ROT_PORT, ROT_INV_PORT, ROT_MIR_LAND, ROT_MIR_INV_LAND, ROT_MIR_PORT, ROT_MIR_INV_PORT
+
+' Spinner styles
+    SPIN_CIRCLE_DOTS    = 0
+    SPIN_LINE_DOTS      = 1
+    SPIN_CLOCKHAND      = 2
+    SPIN_ORBIT_DOTS     = 3
 
 VAR
 
