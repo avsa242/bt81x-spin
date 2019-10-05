@@ -59,7 +59,11 @@ PUB Main
     DemoTextWrap
     DemoNumbers
     DemoRotateScreen
-    time.Sleep (5)
+
+    eve3.DisplayListStart
+    eve3.ClearColor (0, 0, 0)
+    eve3.Clear (TRUE, TRUE, TRUE)
+    eve3.DisplayListEnd
     DemoFade (30)
     eve3.PowerDown
     Flash (LED, 100)

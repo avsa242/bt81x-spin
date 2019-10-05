@@ -84,9 +84,9 @@ VAR
 
 OBJ
 
-    spi : "com.spi.4w"                                             'PASM SPI Driver
-    core: "core.con.bt81x"                       'File containing your device's register set
-    time: "time"                                                'Basic timing functions
+    spi : "com.spi.4w"
+    core: "core.con.bt81x"
+    time: "time"
 
 PUB Null
 ''This is not a top-level object
@@ -110,6 +110,7 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
             ClockSpread (FALSE)
             DisplayWidth (800)
             DisplayHeight (480)
+            DisplayListStart
             ClearColor (0, 0, 0)
             Clear (TRUE, TRUE, TRUE)
             DisplayListEnd
@@ -135,6 +136,54 @@ PUB Box(x1, y1, x2, y2) | tmp
     Vertex2F(x1, y1)
     Vertex2F(x2, y2)
     PrimitiveEnd
+
+PUB BoxBeveled(x0, y0, width, height, bevel_size, bevel_mask) | corner
+' Draw a box with zero or more beveled corners, specified by bevel_mask
+'   bevel_mask:
+'       Bit 0 (LSB): Upper left
+'       Bit 1: Upper right
+'       Bit 2: Lower right
+'       Bit 3 (MSB): Lower left
+'   bevel_size: number of pixels
+    x0 := 0 #> x0 <# 799
+    y0 := 0 #> y0 <# 479
+    width := 0 #> width <# 799
+    height := 0 #> height <# 479
+    Line (x0 + bevel_size, y0, x0 + width - bevel_size, y0)
+    Line (x0 + width - bevel_size, y0 + height, x0 + bevel_size, y0 + height)
+    Line (x0 + width, y0 + bevel_size, x0 + width, y0 + height - bevel_size)
+    Line (x0, y0 + height - bevel_size, x0, y0 + bevel_size)
+
+    corner := %0001
+    repeat
+        case corner
+            %0001: 'UL
+                if bevel_mask & corner
+                    Line (x0, y0 + bevel_size, x0 + bevel_size, y0)
+                else
+                    Line (x0, y0, x0 + bevel_size, y0)
+                    Line (x0, y0, x0, y0 + bevel_size)
+            %0010: 'UR
+                if bevel_mask & corner
+                    Line (x0 + width - bevel_size, y0, x0 + width, y0 + bevel_size)
+                else
+                    Line (x0 + width, y0, x0 + width - bevel_size, y0)
+                    Line (x0 + width, y0, x0 + width, y0 + bevel_size)
+            %0100: 'LR
+                if bevel_mask & corner
+                    Line (x0 + width, y0 + height - bevel_size, x0 + width - bevel_size, y0 + height)
+                else
+                    Line (x0 + width, y0 + height, x0 + width - bevel_size, y0 + height)
+                    Line (x0 + width, y0 + height, x0 + width, y0 + height - bevel_size)
+            %1000: 'LL
+                if bevel_mask & corner
+                    Line (x0, y0 + height - bevel_size, x0 + bevel_size, y0 + height)
+                else
+                    Line (x0, y0 + height, x0 + bevel_size, y0 + height)
+                    Line (x0, y0 + height, x0, y0 + height - bevel_size)
+            OTHER:
+        corner <<= 1
+    until corner > 8
 
 PUB Brightness(level) | tmp
 ' Set display brightness
