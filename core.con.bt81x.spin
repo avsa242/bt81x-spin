@@ -5,7 +5,7 @@
     Description: Low-level constants
     Copyright (c) 2019
     Started Sep 25, 2019
-    Updated Oct 3, 2019
+    Updated Oct 4, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -14,6 +14,7 @@ CON
 
 ' SPI Configuration
     CPOL                        = 0
+    CLKDELAY                    = 1
 
     TPOR                        = 300           'ms
 

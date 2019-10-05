@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2019
     Started Sep 25, 2019
-    Updated Oct 4, 2019
+    Updated Oct 5, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -99,7 +99,7 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
         _MISO := MISO_PIN
         outa[_CS] := 1
         dira[_CS] := 1
-        if okay := spi.start (10, core#CPOL)
+        if okay := spi.start (core#CLKDELAY, core#CPOL)
             ExtClock
             Clockfreq (60)
             repeat until ID == $7C
