@@ -164,6 +164,8 @@ CON
     ADAPTIVE_FRAMERATE          = $30_257C
     PLAYBACK_PAUSE              = $30_25EC
     FLASH_STATUS                = $30_25F0
+    COPRO_PATCH_PTR             = $30_9162
+    EVE_ERR                     = $30_9800
 
 ' Commands
     ACTIVE                      = $00
@@ -184,9 +186,8 @@ CON
     PIN_PD_STATE                = $71
 
 ' Coprocessor commands
-
     CMD_DLSTART                 = $FFFFFF00
-    CMD_DLSWAP                  = $FFFFFF01
+    CMD_SWAP                    = $FFFFFF01
     CMD_BGCOLOR                 = $FFFFFF09
     CMD_FGCOLOR                 = $FFFFFF0A
     CMD_GRADIENT                = $FFFFFF0B

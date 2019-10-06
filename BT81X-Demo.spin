@@ -44,21 +44,37 @@ PUB Main
     eve3.Brightness (BRIGHTNESS)
 
     DemoLines
+    ser.Str (string("Lines", ser#NL))
     DemoBoxes
+    ser.Str (string("Boxes", ser#NL))
     DemoSpinner
+    ser.Str (string("Spinner", ser#NL))
     DemoButton
+    ser.Str (string("Button", ser#NL))
     DemoGauge
+    ser.Str (string("Gauge", ser#NL))
     DemoGradient
+    ser.Str (string("Gradient", ser#NL))
     DemoGradientTransparency
+    ser.Str (string("GradientTransparency", ser#NL))
     DemoKeys
+    ser.Str (string("Keys", ser#NL))
     DemoProgressBar
+    ser.Str (string("ProgressBar", ser#NL))
     DemoScrollbar
+    ser.Str (string("Scrollbar", ser#NL))
     DemoSlider
+    ser.Str (string("Slider", ser#NL))
     DemoDial
+    ser.Str (string("Dial", ser#NL))
     DemoToggle
+    ser.Str (string("Toggle", ser#NL))
     DemoTextWrap
+    ser.Str (string("TextWrap", ser#NL))
     DemoNumbers
+    ser.Str (string("Numbers", ser#NL))
     DemoRotateScreen
+    ser.Str (string("RotateScreen", ser#NL))
 
     eve3.DisplayListStart
     eve3.ClearColor (0, 0, 0)

@@ -253,6 +253,11 @@ PUB ClearColor(r, g, b) | tmp
     CoProcCmd(tmp)
     return tmp
 
+PUB ClearScreen(color)
+' Clear screen using color
+    ClearColor((color >> 16) & $FF, (color >> 8) & $FF, color & $FF)
+    Clear(TRUE, TRUE, TRUE)
+
 PUB Clockfreq(MHz) | tmp
 ' Set clock frequency, in MHz
 '   Valid values: 24, 36, 48, *60, 72
@@ -305,6 +310,12 @@ PUB CoProcCmd(command)
 '   NOTE: This method will always write 4 bytes to the FIFO, per Bridgetek AN033
     writeReg(core#CMDB_WRITE, 4, @command)
 
+PUB CoProcError | tmp
+' Coprocessor error status
+'   Returns: TRUE if the coprocessor has returned a fault
+    readReg(core#CMD_READ, 2, @tmp)
+    return (tmp == $FFF)
+
 PUB CPUReset(reset_mask) | tmp
 ' Reset any combination of audio, touch, and coprocessor engines
 '   Valid values:
@@ -348,12 +359,10 @@ PUB DisplayListStart
 
     CoProcCmd(core#CMD_DLSTART)
 
-PUB DisplayListEnd | tmp[2]
+PUB DisplayListEnd
 
-    tmp[0] := core#DISPLAY
-    tmp[1] := core#CMD_DLSWAP
-    CoProcCmd(tmp[0])
-    CoProcCmd(tmp[1])
+    CoProcCmd(core#DISPLAY)
+    CoProcCmd(core#CMD_SWAP)
 
 PUB DisplayListSwap(mode) | tmp
 ' Set when the graphics engine will render the screen
@@ -647,6 +656,23 @@ PUB ProgressBar(x, y, width, height, opts, val, range)
     CoProcCmd((height << 16) | width)
     CoProcCmd((val << 16) | opts)
     CoProcCmd(range)
+
+PUB ReadErr(buff_addr)
+' Read errors/faults reported by the coprocessor, in plaintext
+'   NOTE: buff_addr must be at least 128 bytes long
+    readReg(core#EVE_ERR, 128, buff_addr)
+
+PUB ResetCoPro | ptr_tmp, tmp
+' Reset the Coprocessor
+'   NOTE: To be used after the coprocessor generates a fault
+    readReg(core#COPRO_PATCH_PTR, 2, @ptr_tmp)
+    CPUReset(%001)
+    tmp := $0000
+    writeReg(core#CMD_READ, 2, @tmp)
+    writeReg(core#CMD_WRITE, 2, @tmp)
+    writeReg(core#CMD_DL, 2, @tmp)
+    CPUReset(%000)
+    writeReg(core#COPRO_PATCH_PTR, 2, @ptr_tmp)
 
 PUB RotateScreen(orientation)
 ' Rotate the screen
