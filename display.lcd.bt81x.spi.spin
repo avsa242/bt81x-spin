@@ -2,11 +2,11 @@
     --------------------------------------------
     Filename: display.lcd.bt81x.spi.spin
     Author: Jesse Burt
-    Description: Driver for the Bridgetek
+    Description: Driver for the Bridgetek BT815/816
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2019
     Started Sep 25, 2019
-    Updated Oct 5, 2019
+    Updated Oct 6, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
