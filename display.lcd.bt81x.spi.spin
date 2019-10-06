@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2019
     Started Sep 25, 2019
-    Updated Oct 5, 2019
+    Updated Oct 6, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -399,6 +399,19 @@ PUB DisplayWidth(pixels)
 PUB DisplayListPtr
 ' Returns: Current address pointer offset within display list RAM
     readReg(core#CMD_DL, 2, @result)
+
+PUB Dither(enabled) | tmp
+' Enable dithering on RGB output
+'   Valid values: *TRUE (-1 or 1), FALSE (0)
+'   Any other value polls the chip and returns the current setting
+    tmp := $00
+    readReg(core#DITHER, 1, @tmp)
+    case ||enabled
+        0, 1:
+            enabled := ||enabled & %1
+        OTHER:
+            return (tmp & %1) * TRUE
+    writeReg(core#DITHER, 1, @enabled)
 
 PUB ExtClock
 ' Select PLL input from external crystal oscillator or clock
