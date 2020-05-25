@@ -41,6 +41,7 @@ VAR
 PUB Main
 
     Setup
+
     eve.Brightness (BRIGHTNESS)
     eve.Dither (FALSE)
     DemoLines

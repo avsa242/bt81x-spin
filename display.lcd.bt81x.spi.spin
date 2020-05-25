@@ -102,22 +102,10 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
         if okay := spi.start (core#CLKDELAY, core#CPOL)
             ExtClock
             Clockfreq (60)
-            repeat until ID == $7C
             repeat until CPUReset (-2) == READY
-            DisplayTimings (928, 88, 0, 48, 525, 32, 0, 3)
-            Swizzle (SWIZZLE_RGBM)
-            PixClockPolarity (PCLKPOL_FALLING)
-            ClockSpread (FALSE)
-            DisplayWidth (800)
-            DisplayHeight (480)
-            DisplayListStart
-            ClearColor (0, 0, 0)
-            Clear (TRUE, TRUE, TRUE)
-            DisplayListEnd
-            GPIODir ($FFFF)
-            GPIO ($FFFF)
-            PixelClockDivisor (2)
-            return okay
+            if lookdown(DeviceID: $00_08_15_01, $00_08_16_01)
+                Defaults800x480
+                return okay
 
     return FALSE                                                'If we got here, something went wrong
 
@@ -125,6 +113,22 @@ PUB Stop
 
     'power down?
     spi.Stop
+
+PUB Defaults800x480
+
+    DisplayTimings (928, 88, 0, 48, 525, 32, 0, 3)
+    Swizzle (SWIZZLE_RGBM)
+    PixClockPolarity (PCLKPOL_FALLING)
+    ClockSpread (FALSE)
+    DisplayWidth (800)
+    DisplayHeight (480)
+    DisplayListStart
+    ClearColor (0, 0, 0)
+    Clear (TRUE, TRUE, TRUE)
+    DisplayListEnd
+    GPIODir ($FFFF)
+    GPIO ($FFFF)
+    PixelClockDivisor (2)
 
 PUB Active
 ' Wake up from Standby/Sleep/PowerDown modes
@@ -217,23 +221,6 @@ PUB Button(x, y, width, height, font, opts, str_ptr) | i, j
     repeat i from 1 to j
         CoProcCmd(byte[str_ptr][3] << 24 + byte[str_ptr][2] << 16 + byte[str_ptr][1] << 8 + byte[str_ptr][0])
         str_ptr += 4
-
-PUB ChipID
-' Read Chip ID/model
-'   Returns: Chip ID
-'       815: BT815
-'       816: BT816
-'       Any other value returns the raw value
-'   NOTE: This value is only guaranteed immediately after POR, as
-'       it is a RAM location, thus can be overwritten
-    readReg(core#CHIPID, 4, @result)
-    case result
-        011508:
-            return 815
-        011608:
-            return 816
-        OTHER:
-            return
 
 PUB Clear(color, stencil, tag) | tmp
 ' Clear buffers to preset values
@@ -339,6 +326,19 @@ PUB CPUReset(reset_mask) | tmp
             return tmp
     reset_mask &= core#CPURESET_MASK
     writeReg ( core#CPURESET, 2, @reset_mask)
+
+PUB DeviceID
+' Read Chip ID/model
+'   Returns: Chip ID
+'       $00081501: BT815
+'       $00081601: BT816
+'   NOTE: This value is only guaranteed immediately after POR, as
+'       it is a RAM location, thus can be overwritten
+    readReg(core#CHIPID, 4, @result)
+    result.byte[3] := result.byte[2]
+    result.byte[2] := result.byte[0]
+    result.byte[0] := result.byte[3]
+    result.byte[3] := 0
 
 PUB Dial(x, y, radius, opts, val)
 ' Draw a dial
