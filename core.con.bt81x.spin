@@ -5,7 +5,7 @@
     Description: Low-level constants
     Copyright (c) 2019
     Started Sep 25, 2019
-    Updated Oct 4, 2019
+    Updated Oct 6, 2019
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -113,7 +113,7 @@ CON
     CMD_READ                    = $30_20F8
     CMD_WRITE                   = $30_20FC
     CMD_DL                      = $30_2100
-    TOUCH_MODE                  = $30_2104
+    CTOUCH_MODE               = $30_2104
     TOUCH_ADC_MODE              = $30_2108
     CTOUCH_EXTENDED             = $30_2108
     TOUCH_CHARGE                = $30_210C
@@ -145,7 +145,28 @@ CON
     TOUCH_TRANSFORM_D           = $30_215C
     TOUCH_TRANSFORM_E           = $30_2160
     TOUCH_TRANSFORM_F           = $30_2164
+
     TOUCH_CONFIG                = $30_2168
+    TOUCH_CONFIG_MASK           = $0000DFFF
+        FLD_WORKINGMODE         = 15
+        FLD_HOSTMODE            = 14
+        FLD_IGNORE_SHORT        = 12
+        FLD_LOWPOWER            = 11
+        FLD_TOUCH_I2C_ADDR      = 4
+        FLD_CAPTOUCH_VENDOR     = 3
+        FLD_SUPPRESS_300MS      = 2
+        FLD_SAMPLER_CLOCKS      = 0
+        BITS_TOUCH_I2C_ADDR     = %1111111
+        BITS_SAMPLER_CLOCKS     = %11
+        MASK_WORKINGMODE        = TOUCH_CONFIG_MASK ^ (1 << FLD_WORKINGMODE)
+        MASK_HOSTMODE           = TOUCH_CONFIG_MASK ^ (1 << FLD_HOSTMODE)
+        MASK_IGNORE_SHORT       = TOUCH_CONFIG_MASK ^ (1 << FLD_IGNORE_SHORT)
+        MASK_LOWPOWER           = TOUCH_CONFIG_MASK ^ (1 << FLD_LOWPOWER)
+        MASK_TOUCH_I2C_ADDR     = TOUCH_CONFIG_MASK ^ (1 << FLD_TOUCH_I2C_ADDR)
+        MASK_CAPTOUCH_VENDOR    = TOUCH_CONFIG_MASK ^ (1 << FLD_CAPTOUCH_VENDOR)
+        MASK_SUPPRESS_300MS     = TOUCH_CONFIG_MASK ^ (BITS_TOUCH_I2C_ADDR << FLD_TOUCH_I2C_ADDR)
+        MASK_SAMPLER_CLOCKS     = TOUCH_CONFIG_MASK ^ (BITS_SAMPLER_CLOCKS << FLD_SAMPLER_CLOCKS)
+
     CTOUCH_TOUCH4_X             = $30_216C
     EHOST_TOUCH_ACK             = $30_2170
     BIST_EN                     = $30_2174
@@ -224,6 +245,8 @@ CON
 ' Display List Commands
     DISPLAY                     = $00_00_00_00
     CLEAR_COLOR_RGB             = $02_00_00_00
+    ATTACH_TAG                  = $03_00_00_00
+
     COLOR_RGB                   = $04_00_00_00
         FLD_RED                 = 16
         FLD_GREEN               = 8

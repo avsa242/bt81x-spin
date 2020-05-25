@@ -30,7 +30,7 @@ CON
 OBJ
 
     cfg     : "core.con.boardcfg.flip"
-    ser     : "com.serial.terminal"
+    ser     : "com.serial.terminal.ansi"
     time    : "time"
     eve     : "display.lcd.bt81x.spi"
 
@@ -44,37 +44,37 @@ PUB Main
     eve.Brightness (BRIGHTNESS)
     eve.Dither (FALSE)
     DemoLines
-    ser.Str (string("Lines", ser#NL))
+    ser.Str (string("Lines", ser#CR, ser#LF))
     DemoBoxes
-    ser.Str (string("Boxes", ser#NL))
+    ser.Str (string("Boxes", ser#CR, ser#LF))
     DemoSpinner
-    ser.Str (string("Spinner", ser#NL))
+    ser.Str (string("Spinner", ser#CR, ser#LF))
     DemoButton
-    ser.Str (string("Button", ser#NL))
+    ser.Str (string("Button", ser#CR, ser#LF))
     DemoGauge
-    ser.Str (string("Gauge", ser#NL))
+    ser.Str (string("Gauge", ser#CR, ser#LF))
     DemoGradient
-    ser.Str (string("Gradient", ser#NL))
+    ser.Str (string("Gradient", ser#CR, ser#LF))
     DemoGradientTransparency
-    ser.Str (string("GradientTransparency", ser#NL))
+    ser.Str (string("GradientTransparency", ser#CR, ser#LF))
     DemoKeys
-    ser.Str (string("Keys", ser#NL))
+    ser.Str (string("Keys", ser#CR, ser#LF))
     DemoProgressBar
-    ser.Str (string("ProgressBar", ser#NL))
+    ser.Str (string("ProgressBar", ser#CR, ser#LF))
     DemoScrollbar
-    ser.Str (string("Scrollbar", ser#NL))
+    ser.Str (string("Scrollbar", ser#CR, ser#LF))
     DemoSlider
-    ser.Str (string("Slider", ser#NL))
+    ser.Str (string("Slider", ser#CR, ser#LF))
     DemoDial
-    ser.Str (string("Dial", ser#NL))
+    ser.Str (string("Dial", ser#CR, ser#LF))
     DemoToggle
-    ser.Str (string("Toggle", ser#NL))
+    ser.Str (string("Toggle", ser#CR, ser#LF))
     DemoTextWrap
-    ser.Str (string("TextWrap", ser#NL))
+    ser.Str (string("TextWrap", ser#CR, ser#LF))
     DemoNumbers
-    ser.Str (string("Numbers", ser#NL))
+    ser.Str (string("Numbers", ser#CR, ser#LF))
     DemoRotateScreen
-    ser.Str (string("RotateScreen", ser#NL))
+    ser.Str (string("RotateScreen", ser#CR, ser#LF))
 
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
@@ -551,12 +551,13 @@ PUB DemoFade(delay_ms) | i
 PUB Setup
 
     repeat until _ser_cog := ser.Start (115_200)
+    time.MSleep(30)
     ser.Clear
-    ser.Str(string("Serial terminal started", ser#NL))
+    ser.Str(string("Serial terminal started", ser#CR, ser#LF))
     if eve.Start (CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
-        ser.Str(string("BT81x driver started", ser#NL))
+        ser.Str(string("BT81x driver started", ser#CR, ser#LF))
     else
-        ser.Str(string("BT81x driver failed to start - halting", ser#NL))
+        ser.Str(string("BT81x driver failed to start - halting", ser#CR, ser#LF))
         eve.Stop
         time.MSleep (500)
         ser.Stop

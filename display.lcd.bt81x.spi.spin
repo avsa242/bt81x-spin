@@ -829,6 +829,11 @@ PUB Swizzle(mode) | tmp
             return tmp
     writeReg(core#SWIZZLE, 1, @mode)
 
+PUB TagAttach(val)
+' Attach tag value for the following objects drawn on the screen
+    val := 0 #> val <# 255
+    CoProcCmd(core#ATTACH_TAG | val)
+
 PUB TextWrap(pixels)
 ' Set pixel width for text wrapping
 '   NOTE: This setting applies to the Str and Button (when using the OPT_FILL option) methods
@@ -851,6 +856,80 @@ PUB Toggle(x, y, width, font, opts, state, str_ptr) | i, j
         CoProcCmd(byte[str_ptr][3] << 24 + byte[str_ptr][2] << 16 + byte[str_ptr][1] << 8 + byte[str_ptr][0])
         str_ptr += 4
 
+PUB TouchHostMode(enabled) | tmp
+' Enable host mode (touchscreen data handled by the MCU, fed to the EVE)
+'   Valid values: TRUE (-1 or 1), FALSE (0)
+'   Any other value polls the chip and returns the current setting
+    tmp := $0000
+    readReg(core#TOUCH_CONFIG, 2, @tmp)
+    case ||enabled
+        0, 1:
+            enabled := ||enabled << core#FLD_HOSTMODE
+        OTHER:
+            result := ((tmp >> core#FLD_HOSTMODE) & %1) * TRUE
+            return
+    tmp &= core#MASK_HOSTMODE
+    tmp := (tmp | enabled) & core#TOUCH_CONFIG_MASK
+    writeReg(core#TOUCH_CONFIG, 2, @tmp)
+
+PUB TouchI2CAddr(addr) | tmp
+' Set I2C slave address of attached touchscreen
+'   NOTE: Slave address must be 7-bit format
+    tmp := $0000
+    readReg(core#TOUCH_CONFIG, 2, @tmp)
+    case addr
+        $01..$7F:
+            addr <<= core#FLD_TOUCH_I2C_ADDR
+        OTHER:
+            result := ((tmp >> core#FLD_TOUCH_I2C_ADDR) & core#BITS_TOUCH_I2C_ADDR)
+            return
+    tmp &= core#MASK_TOUCH_I2C_ADDR
+    tmp := (tmp | addr) & core#TOUCH_CONFIG_MASK
+    writeReg(core#TOUCH_CONFIG, 2, @tmp)
+
+PUB TouchLowPowerMode(enabled) | tmp
+' Enable touchscreen low-power mode
+'   Valid values: TRUE (-1 or 1), FALSE (0)
+'   Any other value polls the chip and returns the current setting
+    tmp := $0000
+    readReg(core#TOUCH_CONFIG, 2, @tmp)
+    case ||enabled
+        0, 1:
+            enabled := ||enabled << core#FLD_LOWPOWER
+        OTHER:
+            result := ((tmp >> core#FLD_LOWPOWER) & %1) * TRUE
+            return
+    tmp &= core#MASK_LOWPOWER
+    tmp := (tmp | enabled) & core#TOUCH_CONFIG_MASK
+    writeReg(core#TOUCH_CONFIG, 2, @tmp)
+
+PUB TouchSampleClocks(clocks) | tmp
+' Set number of touchscreen sampler clocks
+'   Valid values: 0..7
+'   Any other value polls the chip and returns the current setting
+    tmp := $0000
+    readReg(core#TOUCH_CONFIG, 2, @tmp)
+    case clocks
+        0..7:
+        OTHER:
+            return tmp & core#BITS_SAMPLER_CLOCKS
+    tmp &= core#MASK_SAMPLER_CLOCKS
+    tmp := (tmp | clocks) & core#TOUCH_CONFIG_MASK
+    writeReg(core#TOUCH_CONFIG, 2, @tmp)
+
+PUB TouchScreenSupport
+' Touchscreen type supported by connected EVE chip
+'   Returns:
+'       0 - Capactive (BT815)
+'       1 - Resistive (BT816)
+    readReg(core#TOUCH_CONFIG, 2, @result)
+    result := (result >> core#FLD_WORKINGMODE) & %1
+    return
+
+{PUB TouchXY
+
+'    readReg(core#CTOUCH_TOUCH0_XY, 4, @result)
+    readReg(core#}
 PUB VCycle(disp_lines) | tmp
 ' Set vertical total cycle count, in lines
 '   Valid values: 0..4095
