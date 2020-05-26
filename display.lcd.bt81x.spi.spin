@@ -4,9 +4,9 @@
     Author: Jesse Burt
     Description: Driver for the Bridgetek
         Advanced Embedded Video Engine (EVE) Graphic controller
-    Copyright (c) 2019
+    Copyright (c) 2020
     Started Sep 25, 2019
-    Updated Oct 6, 2019
+    Updated May 26, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -84,7 +84,7 @@ VAR
 
 OBJ
 
-    spi : "com.spi.4w"
+    spi : "com.spi.fast"
     core: "core.con.bt81x"
     time: "time"
 
@@ -92,14 +92,13 @@ PUB Null
 ''This is not a top-level object
 
 PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
+
     if lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and lookdown(MOSI_PIN: 0..31) and lookdown(MISO_PIN: 0..31)
         _CS := CS_PIN
         _SCK := SCK_PIN
         _MOSI := MOSI_PIN
         _MISO := MISO_PIN
-        outa[_CS] := 1
-        dira[_CS] := 1
-        if okay := spi.start (core#CLKDELAY, core#CPOL)
+        if okay := spi.Start (CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
             ExtClock
             Clockfreq (60)
             repeat until CPUReset (-2) == READY
@@ -1045,10 +1044,7 @@ PUB cmd(cmd_word, param) | cmd_packet, tmp
     cmd_packet.byte[1] := param
     cmd_packet.byte[2] := $00
 
-    outa[_CS] := 0
-    repeat tmp from 0 to 2
-        spi.SHIFTOUT (_MOSI, _SCK, spi#MSBFIRST, 8, cmd_packet.byte[tmp])
-    outa[_CS] := 1
+    spi.Write(TRUE, @cmd_packet, 3, TRUE)
 
 PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 ' Read nr_bytes from register 'reg' to address 'buf_addr'
@@ -1058,13 +1054,8 @@ PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
     cmd_packet.byte[2] := reg.byte[0]                   ' ..
     cmd_packet.byte[3] := $00                           ' Dummy byte
 
-    outa[_CS] := 0
-    repeat tmp from 0 to 3
-        spi.SHIFTOUT (_MOSI, _SCK, spi#MSBFIRST, 8, cmd_packet.byte[tmp])
-
-    repeat tmp from 0 to nr_bytes-1
-        byte[buff_addr][tmp] := spi.SHIFTIN (_MISO, _SCK, spi#MSBPRE, 8)
-    outa[_CS] := 1
+    spi.Write(TRUE, @cmd_packet, 4, FALSE)
+    spi.Read(buff_addr, nr_bytes)
 
 PUB writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
 ' Write nr_bytes to register 'reg' stored at buf_addr
@@ -1072,12 +1063,8 @@ PUB writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
     cmd_packet.byte[1] := reg.byte[1]                   ' .. address
     cmd_packet.byte[2] := reg.byte[0]                   ' ..
 
-    outa[_CS] := 0
-    repeat tmp from 0 to 2                                                      'reg/address
-        spi.SHIFTOUT (_MOSI, _SCK, spi#MSBFIRST, 8, cmd_packet.byte[tmp])
-    repeat tmp from 0 to nr_bytes-1                                               'data
-        spi.SHIFTOUT (_MOSI, _SCK, spi#MSBFIRST, 8, byte[buff_addr][tmp])
-    outa[_CS] := 1
+    spi.Write(TRUE, @cmd_packet, 3, FALSE)
+    spi.Write(TRUE, buff_addr, nr_bytes, TRUE)
 
 DAT
 {
