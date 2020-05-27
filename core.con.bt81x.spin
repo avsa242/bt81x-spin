@@ -114,7 +114,7 @@ CON
     CMD_READ                    = $30_20F8
     CMD_WRITE                   = $30_20FC
     CMD_DL                      = $30_2100
-    CTOUCH_MODE               = $30_2104
+    CTOUCH_MODE                 = $30_2104
     TOUCH_ADC_MODE              = $30_2108
     CTOUCH_EXTENDED             = $30_2108
     TOUCH_CHARGE                = $30_210C
@@ -255,6 +255,9 @@ CON
 
     POINT_SIZE                  = $0D_00_00_00
     LINE_WIDTH                  = $0E_00_00_00
+
+    TAG_MASK                    = $14_00_00_00
+        FLD_MASK                = 0
 
     SCISSOR_XY                  = $1B_00_00_00
         FLD_SCISSOR_X           = 11

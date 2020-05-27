@@ -828,10 +828,38 @@ PUB Swizzle(mode) | tmp
             return tmp
     writeReg(core#SWIZZLE, 1, @mode)
 
+PUB TagActive
+' Tag that is currently active
+'   Returns: u8
+'       If tag is active:       1..255
+'       If no tag is active:    0
+    readReg(core#TOUCH_TAG, 4, @result)
+
+PUB TagArea(tag_nr, sx, sy, w, h) | tmp
+' Define screen area to be associated with tag
+'   Valid values:
+'       tag_nr: 1..255 (must be the number of a tag previously defined with TagAttach())
+'       sx, sy: Starting coordinates of region (within your display's maximum)
+'       w, h: Width, height from sx, sy
+    CoProcCmd(core#CMD_TRACK)
+    CoProcCmd(sx << 16 + sx)
+    CoProcCmd(h << 16 + w)
+    CoProcCmd(tag_nr)
+
 PUB TagAttach(val)
 ' Attach tag value for the following objects drawn on the screen
-    val := 0 #> val <# 255
+    val := 1 #> val <# 255
     CoProcCmd(core#ATTACH_TAG | val)
+
+PUB TaggingEnabled(enabled) | tmp
+' Enable numbered tags to be assigned to display regions
+'   Valid values: TRUE (-1 or 1), FALSE (0)
+    case ||enabled
+        0, 1:
+            enabled := ||enabled
+        OTHER:
+
+    CoProcCmd(core#TAG_MASK | enabled)
 
 PUB TextWrap(pixels)
 ' Set pixel width for text wrapping
@@ -873,6 +901,9 @@ PUB TouchHostMode(enabled) | tmp
 
 PUB TouchI2CAddr(addr) | tmp
 ' Set I2C slave address of attached touchscreen
+'   Valid values: $01..$7F
+'       Focaltec: $3B (default)
+'       Goodix: $5D
 '   NOTE: Slave address must be 7-bit format
     tmp := $0000
     readReg(core#TOUCH_CONFIG, 2, @tmp)
@@ -925,10 +956,13 @@ PUB TouchScreenSupport
     result := (result >> core#FLD_WORKINGMODE) & %1
     return
 
-{PUB TouchXY
+PUB TouchXY
+' Coordinates of touch event
+'   Returns:
+'       If touched: u16 X coordinate (MSW), u16 Y coordinate (LSW)
+'       If not touched: $8000_8000
+    readReg(core#TOUCH_SCREEN_XY, 4, @result)
 
-'    readReg(core#CTOUCH_TOUCH0_XY, 4, @result)
-    readReg(core#}
 PUB VCycle(disp_lines) | tmp
 ' Set vertical total cycle count, in lines
 '   Valid values: 0..4095
