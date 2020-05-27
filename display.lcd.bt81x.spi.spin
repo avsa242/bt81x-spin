@@ -128,6 +128,7 @@ PUB Defaults800x480
     GPIODir ($FFFF)
     GPIO ($FFFF)
     PixelClockDivisor (2)
+    TouchI2CAddr ($5D)                                          ' Goodix touchscreen
 
 PUB Active
 ' Wake up from Standby/Sleep/PowerDown modes
