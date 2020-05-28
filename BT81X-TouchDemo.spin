@@ -5,7 +5,7 @@
     Description: Demo of the BT81x driver touchscreen functionality
     Copyright (c) 2020
     Started Sep 30, 2019
-    Updated May 27, 2020
+    Updated May 28, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -50,13 +50,16 @@ VAR
 
     byte _ser_cog, _err_str[128]
 
-PUB Main | idle, state
+PUB Main | count, idle, state, x, y, t1, t2, t3, t4
 
     Setup
     eve.Brightness (BRIGHTNESS)
+    eve.ClearColor(0, 0, 0)
+    eve.Clear(1, 1, 1)
 
     UpdateButton(0)
     idle := TRUE
+    count := 0
 
     repeat
         state := eve.TagActive
@@ -64,26 +67,125 @@ PUB Main | idle, state
             if idle == TRUE
                 idle := FALSE
                 UpdateButton(1)
+                count++
+                if count == 3
+                    quit
+
         elseif state == 0
             if idle == FALSE
                 idle := TRUE
                 UpdateButton(0)
 
+    UpdateScrollbar(0)
+    repeat
+        state := eve.TagActive
+        if state == 1
+            x := eve.TouchXY >> 16
+            UpdateScrollbar(x)
+            if x > WIDTH-20
+                quit
+
+    t1 := t2 := t3 := t4 := 0
+    idle := TRUE
+    UpdateToggle(0, 0, 0, 0)
+    repeat
+        case state := eve.TagActive
+            1:
+                if idle == TRUE
+                    idle := FALSE
+                    t1 ^= $FFFF
+                    UpdateToggle(t1, t2, t3, t4)
+            2:
+                if idle == TRUE
+                    idle := FALSE
+                    t2 ^= $FFFF
+                    UpdateToggle(t1, t2, t3, t4)
+            3:
+                if idle == TRUE
+                    idle := FALSE
+                    t3 ^= $FFFF
+                    UpdateToggle(t1, t2, t3, t4)
+            4:
+                if idle == TRUE
+                    idle := FALSE
+                    t4 ^= $FFFF
+                    UpdateToggle(t1, t2, t3, t4)
+            OTHER:
+                if idle == FALSE
+                    idle := TRUE
+
+        if t1 == $FFFF and t2 == $FFFF and t3 == $FFFF and t4 == $FFFF
+            quit
+
+    eve.Brightness(0)
+    eve.PowerDown
+    FlashLED(LED, 100)
+
 PUB UpdateButton(state)
 
     eve.DisplayListStart
-        eve.ClearColor(0, 0, 0)
-        eve.Clear(1, 1, 1)
+    eve.ClearColor(0, 0, 0)
+    eve.Clear(1, 1, 1)
+    eve.WidgetBGColor($ff_ff_ff)
+    eve.WidgetFGColor($55_55_55)
     if state
-            eve.ColorRGB(255, 255, 255)
-            eve.TagAttach(1)
-            eve.Button(BUTTON_CX, BUTTON_CY, 100, 50, 30, 0, string("TEST"))
+        eve.ColorRGB(255, 255, 255)
+        eve.TagAttach(1)
+        eve.Button(BUTTON_CX, BUTTON_CY, 100, 50, 30, 0, string("TEST"))
     else
-            eve.ColorRGB(0, 0, 192)
-            eve.TagAttach(1)
-            eve.Button(BUTTON_CX, BUTTON_CY, 100, 50, 30, 0, string("TEST"))
-    
+        eve.ColorRGB(0, 0, 192)
+        eve.TagAttach(1)
+        eve.Button(BUTTON_CX, BUTTON_CY, 100, 50, 30, 0, string("TEST"))
     eve.DisplayListEnd
+
+PUB UpdateScrollbar(val) | w, h, x, y, sz
+
+    sz := 10
+    w := WIDTH-(sz << 1)-1
+    h := 20
+    x := 0+sz
+    y := HEIGHT-h-1
+
+    eve.WaitIdle
+    eve.DisplayListStart
+    eve.ClearColor(0, 0, 0)
+    eve.Clear(1, 1, 1)
+    eve.WidgetBGColor($55_55_55)
+    eve.WidgetFGColor($00_00_C0)
+    eve.TagAttach(1)
+    eve.Scrollbar(x, y, w, h, 0, x #> val <# w, sz, w)
+    eve.DisplayListEnd
+
+PUB UpdateToggle(t1, t2, t3, t4) | tag, tmp, x, y, ys, w, sw, sz
+
+    w := 60
+    sz := 24
+    x := CENTERX-(w/2)
+    ys := CENTERY-(sz*4)
+
+    eve.WaitIdle
+    eve.DisplayListStart
+    eve.ClearColor(0, 0, 0)
+    eve.Clear(1, 1, 1)
+    eve.WidgetBGColor($55_55_55)
+    eve.WidgetFGColor($00_00_C0)
+    eve.TagAttach(1)
+    eve.Toggle(x, ys + (1 * (sz*2)), w, sz, 0, t1, string("OFF", $FF, "ON"))
+    eve.TagAttach(2)
+    eve.Toggle(x, ys + (2 * (sz*2)), w, sz, 0, t2, string("OFF", $FF, "ON"))
+    eve.TagAttach(3)
+    eve.Toggle(x, ys + (3 * (sz*2)), w, sz, 0, t3, string("OFF", $FF, "ON"))
+    eve.TagAttach(4)
+    eve.Toggle(x, ys + (4 * (sz*2)), w, sz, 0, t4, string("OFF", $FF, "ON"))
+    eve.DisplayListEnd
+
+PRI ReportErr | tmp
+
+    ser.str(string("EVE says: "))
+    eve.ReadErr(@_err_str)
+    repeat tmp from 0 to 127
+        ser.char(_err_str[tmp])
+    ser.newline
 
 PUB Setup
 
