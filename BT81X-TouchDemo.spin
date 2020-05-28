@@ -118,7 +118,7 @@ PUB Main | count, idle, state, x, y, t1, t2, t3, t4
             quit
 
     eve.Brightness(0)
-    eve.PowerDown
+    eve.Powered(FALSE)
     FlashLED(LED, 100)
 
 PUB UpdateButton(state)

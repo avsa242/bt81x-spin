@@ -82,7 +82,7 @@ PUB Main
     eve.Clear (TRUE, TRUE, TRUE)
     eve.DisplayListEnd
     DemoFade (30)
-    eve.PowerDown
+    eve.Powered(FALSE)
     Flash (LED, 100)
 
 PUB DemoRotateScreen | r

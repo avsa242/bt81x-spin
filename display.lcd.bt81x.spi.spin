@@ -130,10 +130,6 @@ PUB Defaults800x480
     PixelClockDivisor (2)
     TouchI2CAddr ($5D)                                          ' Goodix touchscreen
 
-PUB Active
-' Wake up from Standby/Sleep/PowerDown modes
-    cmd (core#ACTIVE, $00)
-
 PUB Box(x1, y1, x2, y2) | tmp
 ' Draw a box from x1, y1 to x2, y2 in the current color
     PrimitiveBegin(RECTS)
@@ -258,12 +254,12 @@ PUB Clockfreq(MHz) | tmp
             MHz *= 1_000_000
 
         OTHER:
-            Active
+            Powered(TRUE)
             readReg(core#FREQUENCY, 4, @tmp)
             return tmp / 1_000_000
     Sleep
     cmd (core#CLKSEL1, tmp)
-    Active
+    Powered(TRUE)
     time.MSleep (core#TPOR)
     writeReg(core#FREQUENCY, 4, @MHz)
 
@@ -631,10 +627,15 @@ PUB PointSize(radius) | tmp
     CoProcCmd(tmp)
     return tmp
 
-PUB PowerDown
-' Power digital core circuits, clock, PLL and oscillator off
-' Use Active to wake up
-    cmd (core#PWRDOWN1, $00)
+PUB Powered(enabled)
+' Enable display power
+'   NOTE: Affects digital core circuits, clock, PLL and oscillator
+'   Valid values: TRUE (-1 or 1), FALSE (0)
+    case ||enabled
+        0:
+            cmd (core#PWRDOWN1, $00)
+        1:
+            cmd (core#ACTIVE, $00)
 
 PUB PrimitiveBegin(primitive) | tmp
 ' Begin drawing a graphics primitive
