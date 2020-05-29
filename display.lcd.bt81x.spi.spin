@@ -100,9 +100,12 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
         _MISO := MISO_PIN
         if okay := spi.Start (CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
             ExtClock
-            Clockfreq (60)
+            Clockfreq (72)
+            repeat until ID == $7C
             repeat until CPUReset (-2) == READY
             if lookdown(DeviceID: $00_08_15_01, $00_08_16_01)
+                if CoProcError
+                    ResetCoPro
                 Defaults800x480
                 return okay
 
@@ -110,11 +113,12 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
 
 PUB Stop
 
-    'power down?
+    Powered(FALSE)
     spi.Stop
 
 PUB Defaults800x480
 
+    ClockFreq(60)
     DisplayTimings (928, 88, 0, 48, 525, 32, 0, 3)
     Swizzle (SWIZZLE_RGBM)
     PixClockPolarity (PCLKPOL_FALLING)
@@ -123,7 +127,7 @@ PUB Defaults800x480
     DisplayHeight (480)
     DisplayListStart
     ClearColor (0, 0, 0)
-    Clear (TRUE, TRUE, TRUE)
+    Clear
     DisplayListEnd
     GPIODir ($FFFF)
     GPIO ($FFFF)
@@ -218,7 +222,12 @@ PUB Button(x, y, width, height, font, opts, str_ptr) | i, j
         CoProcCmd(byte[str_ptr][3] << 24 + byte[str_ptr][2] << 16 + byte[str_ptr][1] << 8 + byte[str_ptr][0])
         str_ptr += 4
 
-PUB Clear(color, stencil, tag) | tmp
+PUB Clear
+' Clear display
+'   NOTE: This clears color, stencil and tag buffers
+    ClearBuffers(TRUE, TRUE, TRUE)
+
+PUB ClearBuffers(color, stencil, tag) | tmp
 ' Clear buffers to preset values
 '   Valid values: FALSE (0), TRUE (-1 or 1) for color, stencil, tag
     tmp := core#CLEAR | ( (||color & %1) << core#FLD_COLOR) | ( (||stencil & %1) << core#FLD_STENCIL) | (||tag & %1)
@@ -239,7 +248,7 @@ PUB ClearColor(r, g, b) | tmp
 PUB ClearScreen(color)
 ' Clear screen using color
     ClearColor((color >> 16) & $FF, (color >> 8) & $FF, color & $FF)
-    Clear(TRUE, TRUE, TRUE)
+    Clear
 
 PUB Clockfreq(MHz) | tmp
 ' Set clock frequency, in MHz

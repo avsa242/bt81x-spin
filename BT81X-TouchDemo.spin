@@ -55,7 +55,7 @@ PUB Main | count, idle, state, x, y, t1, t2, t3, t4
     Setup
     eve.Brightness (BRIGHTNESS)
     eve.ClearColor(0, 0, 0)
-    eve.Clear(1, 1, 1)
+    eve.Clear
 
     UpdateButton(0)
     idle := TRUE
@@ -125,7 +125,7 @@ PUB UpdateButton(state)
 
     eve.DisplayListStart
     eve.ClearColor(0, 0, 0)
-    eve.Clear(1, 1, 1)
+    eve.Clear
     eve.WidgetBGColor($ff_ff_ff)
     eve.WidgetFGColor($55_55_55)
     if state
@@ -149,7 +149,7 @@ PUB UpdateScrollbar(val) | w, h, x, y, sz
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor(0, 0, 0)
-    eve.Clear(1, 1, 1)
+    eve.Clear
     eve.WidgetBGColor($55_55_55)
     eve.WidgetFGColor($00_00_C0)
     eve.TagAttach(1)
@@ -166,7 +166,7 @@ PUB UpdateToggle(t1, t2, t3, t4) | tag, tmp, x, y, ys, w, sw, sz
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor(0, 0, 0)
-    eve.Clear(1, 1, 1)
+    eve.Clear
     eve.WidgetBGColor($55_55_55)
     eve.WidgetFGColor($00_00_C0)
     eve.TagAttach(1)
