@@ -5,7 +5,7 @@
     Description: Demo of the BT81x driver touchscreen functionality
     Copyright (c) 2020
     Started Sep 30, 2019
-    Updated May 28, 2020
+    Updated May 30, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -16,23 +16,27 @@ CON
     _xinfreq    = cfg#_xinfreq
 
 ' -- User-modifiable constants
+    SER_RX      = 31
+    SER_TX      = 30
+    SER_BAUD    = 115_200
+
     LED         = cfg#LED1
     CS_PIN      = 3
     SCK_PIN     = 0
     MOSI_PIN    = 2
     MISO_PIN    = 1
 
-    SER_RX      = 31
-    SER_TX      = 30
-    SER_BAUD    = 115_200
+    BRIGHTNESS  = 100   'Initial brightness level (0..128)
 
-    BRIGHTNESS  = 100   'Initial brightness level
+' Uncomment one of the following, depending on your display size/resolution
+#include "core.bt815.lcdtimings.800x480.spinh"
+'#include "core.bt815.lcdtimings.480x272.spinh"
+'#include "core.bt815.lcdtimings.320x240.spinh"
+'#include "core.bt815.lcdtimings.320x102.spinh"
 ' --
 
-    WIDTH       = 800
-    HEIGHT      = 480
-    CENTERX     = WIDTH / 2
-    CENTERY     = HEIGHT / 2
+    CENTERX     = DISP_WIDTH / 2
+    CENTERY     = DISP_HEIGHT / 2
     BUTTON_W    = 100
     BUTTON_H    = 50
     BUTTON_CX   = CENTERX - (BUTTON_W / 2)
@@ -40,15 +44,11 @@ CON
 
 OBJ
 
-    cfg     : "core.con.boardcfg.flip"
-    io      : "io"
-    ser     : "com.serial.terminal.ansi"
-    time    : "time"
-    eve     : "display.lcd.bt81x.spi"
-
-VAR
-
-    byte _ser_cog, _err_str[128]
+    cfg         : "core.con.boardcfg.flip"
+    io          : "io"
+    ser         : "com.serial.terminal.ansi"
+    time        : "time"
+    eve         : "display.lcd.bt81x.spi"
 
 PUB Main | count, idle, state, x, y, t1, t2, t3, t4
 
@@ -82,7 +82,7 @@ PUB Main | count, idle, state, x, y, t1, t2, t3, t4
         if state == 1
             x := eve.TouchXY >> 16
             UpdateScrollbar(x)
-            if x > WIDTH-20
+            if x > DISP_WIDTH-20
                 quit
 
     t1 := t2 := t3 := t4 := 0
@@ -141,10 +141,10 @@ PUB UpdateButton(state)
 PUB UpdateScrollbar(val) | w, h, x, y, sz
 
     sz := 10
-    w := WIDTH-(sz << 1)-1
+    w := DISP_WIDTH-(sz << 1)-1
     h := 20
     x := 0+sz
-    y := HEIGHT-h-1
+    y := DISP_HEIGHT-h-1
 
     eve.WaitIdle
     eve.DisplayListStart
@@ -179,14 +179,6 @@ PUB UpdateToggle(t1, t2, t3, t4) | tag, tmp, x, y, ys, w, sw, sz
     eve.Toggle(x, ys + (4 * (sz*2)), w, sz, 0, t4, string("OFF", $FF, "ON"))
     eve.DisplayListEnd
 
-PRI ReportErr | tmp
-
-    ser.str(string("EVE says: "))
-    eve.ReadErr(@_err_str)
-    repeat tmp from 0 to 127
-        ser.char(_err_str[tmp])
-    ser.newline
-
 PUB Setup
 
     repeat until ser.StartRXTX (SER_RX, SER_TX, 0, SER_BAUD)
@@ -195,7 +187,6 @@ PUB Setup
     ser.Str(string("Serial terminal started", ser#CR, ser#LF))
     if eve.Start (CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
         ser.Str(string("BT81x driver started", ser#CR, ser#LF))
-        eve.Defaults800x480
     else
         ser.Str(string("BT81x driver failed to start - halting", ser#CR, ser#LF))
         eve.Stop

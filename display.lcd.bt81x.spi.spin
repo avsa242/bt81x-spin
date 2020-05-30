@@ -6,10 +6,17 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2020
     Started Sep 25, 2019
-    Updated May 26, 2020
+    Updated May 30, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
+#ifdef MO_50_70
+#elseifdef MO_43
+#elseifdef MO_35
+#elseifdef MO_29
+#else
+#warning "No supported display type defined!"
+#endif
 
 CON
 
@@ -78,10 +85,6 @@ CON
     SPIN_CLOCKHAND      = 2
     SPIN_ORBIT_DOTS     = 3
 
-VAR
-
-    byte _CS, _MOSI, _MISO, _SCK
-
 OBJ
 
     spi : "com.spi.fast"
@@ -94,19 +97,16 @@ PUB Null
 PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
 
     if lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and lookdown(MOSI_PIN: 0..31) and lookdown(MISO_PIN: 0..31)
-        _CS := CS_PIN
-        _SCK := SCK_PIN
-        _MOSI := MOSI_PIN
-        _MISO := MISO_PIN
         if okay := spi.Start (CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
+            SoftReset
             ExtClock
             Clockfreq (72)
             repeat until ID == $7C
             repeat until CPUReset (-2) == READY
-            if lookdown(DeviceID: $00_08_15_01, $00_08_16_01)
+            if lookdown(DeviceID: $00_0815_01, $00_0816_01)
                 if CoProcError
                     ResetCoPro
-                Defaults800x480
+                Defaults
                 return okay
 
     return FALSE                                                'If we got here, something went wrong
@@ -116,23 +116,24 @@ PUB Stop
     Powered(FALSE)
     spi.Stop
 
-PUB Defaults800x480
+PUB Defaults
+' Default settings, based on lcd chosen
+    DisplayTimings(HCYCLE_CLKS, HOFFSET_CYCLES, HSYNC0_CYCLES, HSYNC1_CYCLES, VCYCLE_CLKS, VOFFSET_LINES, VSYNC0_CYCLES, VSYNC1_CYCLES)
+    Swizzle(SWIZZLE_MODE)
+    PixClockPolarity(PCLK_POLARITY)
+    ClockSpread (CLKSPREAD)
+    Dither(DITHER_MODE)
+    DisplayWidth(DISP_WIDTH)
+    DisplayHeight(DISP_HEIGHT)
 
-    ClockFreq(60)
-    DisplayTimings (928, 88, 0, 48, 525, 32, 0, 3)
-    Swizzle (SWIZZLE_RGBM)
-    PixClockPolarity (PCLKPOL_FALLING)
-    ClockSpread (FALSE)
-    DisplayWidth (800)
-    DisplayHeight (480)
     DisplayListStart
-    ClearColor (0, 0, 0)
-    Clear
+        ClearColor (0, 0, 0)
+        Clear
     DisplayListEnd
     GPIODir ($FFFF)
     GPIO ($FFFF)
-    PixelClockDivisor (2)
-    TouchI2CAddr ($5D)                                          ' Goodix touchscreen
+    PixelClockDivisor (CLKDIV)                                  ' Wait until here to set divisor, per BT AN033
+    TouchI2CAddr (TS_I2CADDR)                                   ' Set touchscreen I2C address
 
 PUB Box(x1, y1, x2, y2) | tmp
 ' Draw a box from x1, y1 to x2, y2 in the current color
@@ -149,10 +150,10 @@ PUB BoxBeveled(x0, y0, width, height, bevel_size, bevel_mask) | corner
 '       Bit 2: Lower right
 '       Bit 3 (MSB): Lower left
 '   bevel_size: number of pixels
-    x0 := 0 #> x0 <# 799
-    y0 := 0 #> y0 <# 479
-    width := 0 #> width <# 799
-    height := 0 #> height <# 479
+    x0 := 0 #> x0 <# DISP_XMAX
+    y0 := 0 #> y0 <# DISP_YMAX
+    width := 0 #> width <# DISP_XMAX
+    height := 0 #> height <# DISP_YMAX
     Line (x0 + bevel_size, y0, x0 + width - bevel_size, y0)
     Line (x0 + width - bevel_size, y0 + height, x0 + bevel_size, y0 + height)
     Line (x0 + width, y0 + bevel_size, x0 + width, y0 + height - bevel_size)
@@ -204,15 +205,15 @@ PUB Brightness(level) | tmp
 PUB Button(x, y, width, height, font, opts, str_ptr) | i, j
 ' Draw a button
 '   Valid values:
-'       x, width: 0..799
-'       y, height: 0..479
+'       x, width: 0..display width-1
+'       y, height: 0..display height-1
 '       font: 0..31
 '       opts: 0 (3D), 256 (FLAT)
 '       str_ptr: Pointer to string to be displayed on button
-    x := 0 #> x <# 799
-    y := 0 #> y <# 479
-    width := 0 #> width <# 799
-    height := 0 #> height <# 479
+    x := 0 #> x <# DISP_XMAX
+    y := 0 #> y <# DISP_YMAX
+    width := 0 #> width <# DISP_XMAX
+    height := 0 #> height <# DISP_YMAX
     CoProcCmd(core#CMD_BUTTON)
     CoProcCmd((y << 16) + x)
     CoProcCmd((height << 16) + width)
@@ -347,9 +348,9 @@ PUB DeviceID
 
 PUB Dial(x, y, radius, opts, val)
 ' Draw a dial
-    x := 0 #> x <# 799
-    y := 0 #> y <# 479
-    radius := 0 #> radius <# 799
+    x := 0 #> x <# DISP_XMAX
+    y := 0 #> y <# DISP_YMAX
+    radius := 0 #> radius <# DISP_XMAX
 
     CoProcCmd(core#CMD_DIAL)
     CoProcCmd((y << 16) | x)
@@ -426,9 +427,9 @@ PUB ExtClock
 
 PUB Gauge(x, y, radius, opts, major, minor, val, range) | tmp
 ' Draw a gauge
-    x := 0 #> x <# 799
-    y := 0 #> y <# 479
-    radius := 0 #> radius <# 799
+    x := 0 #> x <# DISP_XMAX
+    y := 0 #> y <# DISP_YMAX
+    radius := 0 #> radius <# DISP_XMAX
 
     CoProcCmd(core#CMD_GAUGE)
     CoProcCmd((y << 16) | x)
@@ -460,11 +461,11 @@ PUB GPIODir(mask) | tmp
 
 PUB Gradient(x0, y0, rgb0, x1, y1, rgb1)
 ' Draw a smooth color gradient
-    x0 := 0 #> x0 <# 799
-    y0 := 0 #> y0 <# 479
+    x0 := 0 #> x0 <# DISP_XMAX
+    y0 := 0 #> y0 <# DISP_YMAX
     rgb0 := $000000 #> rgb0 <# $FFFFFF
-    x1 := 0 #> x1 <# 799
-    y1 := 0 #> y1 <# 479
+    x1 := 0 #> x1 <# DISP_XMAX
+    y1 := 0 #> y1 <# DISP_YMAX
     rgb1 := $000000 #> rgb1 <# $FFFFFF
 
     CoProcCmd(core#CMD_GRADIENT)
@@ -475,10 +476,10 @@ PUB Gradient(x0, y0, rgb0, x1, y1, rgb1)
 
 PUB GradientTransparency(x0, y0, argb0, x1, y1, argb1)
 ' Draw a smooth color gradient, with transparency
-    x0 := 0 #> x0 <# 799
-    y0 := 0 #> y0 <# 479
-    x1 := 0 #> x1 <# 799
-    y1 := 0 #> y1 <# 479
+    x0 := 0 #> x0 <# DISP_XMAX
+    y0 := 0 #> y0 <# DISP_YMAX
+    x1 := 0 #> x1 <# DISP_XMAX
+    y1 := 0 #> y1 <# DISP_YMAX
 
     CoProcCmd(core#CMD_GRADIENTA)
     CoProcCmd((y0 << 16) | x0)
@@ -554,8 +555,8 @@ PUB IntClock
 
 PUB Keys(x, y, width, height, font, opts, str_ptr) | i, j
 ' Draw an array of keys
-    x := 0 #> x <# 799
-    y := 0 #> y <# 479
+    x := 0 #> x <# DISP_XMAX
+    y := 0 #> y <# DISP_YMAX
     CoProcCmd(core#CMD_KEYS)
     CoProcCmd((y << 16) | x)
     CoProcCmd((height << 16) | width)
@@ -586,8 +587,8 @@ PUB Num(x, y, font, opts, val)
 '   Valid options:
 '       OPT_CENTERX, OPT_CENTERY, OPT_CENTER, OPT_SIGNED
 ' NOTE: If no preceeding SetBase is used, decimal will be used
-    x := 0 #> x <# 799
-    y := 0 #> y <# 479
+    x := 0 #> x <# DISP_XMAX
+    y := 0 #> y <# DISP_YMAX
     CoProcCmd(core#CMD_NUMBER)
     CoProcCmd((y << 16) | x)
     CoProcCmd((opts << 16) | font)
@@ -622,8 +623,8 @@ PUB PixClockPolarity(edge) | tmp
 
 PUB Plot(x, y) | tmp
 ' Plot pixel at x, y in current color
-    X := 0 #> x <# 799
-    y := 0 #> y <# 479
+    X := 0 #> x <# DISP_XMAX
+    y := 0 #> y <# DISP_YMAX
 
     PrimitiveBegin(POINTS)
     Vertex2F(x, y)
@@ -670,10 +671,10 @@ PUB PrimitiveEnd | tmp
 
 PUB ProgressBar(x, y, width, height, opts, val, range)
 ' Draw a progress bar
-    x := 0 #> x <# 799
-    y := 0 #> y <# 479
-    width := 0 #> width <# 799
-    height := 0 #> height <# 479
+    x := 0 #> x <# DISP_XMAX
+    y := 0 #> y <# DISP_YMAX
+    width := 0 #> width <# DISP_XMAX
+    height := 0 #> height <# DISP_YMAX
     CoProcCmd(core#CMD_PROGRESS)
     CoProcCmd((y << 16) | x)
     CoProcCmd((height << 16) | width)
@@ -735,10 +736,10 @@ PUB Scrollbar(x, y, width, height, opts, val, size, range)
 ' Draw a scrollbar
 '   NOTE: If width is greater than height, the scroll bar will be drawn horizontally,
 '       else it will be drawn vertically
-    x := 0 #> x <# 799
-    y := 0 #> y <# 479
-    width := 0 #> width <# 799
-    height := 0 #> height <# 479
+    x := 0 #> x <# DISP_XMAX
+    y := 0 #> y <# DISP_YMAX
+    width := 0 #> width <# DISP_XMAX
+    height := 0 #> height <# DISP_YMAX
     CoProcCmd(core#CMD_SCROLLBAR)
     CoProcCmd((y << 16) | x)
     CoProcCmd((height << 16) | width)
@@ -763,10 +764,10 @@ PUB Sleep
 
 PUB Slider(x, y, width, height, opts, val, range)
 ' Draw a slider
-    x := 0 #> x <# 799
-    y := 0 #> y <# 479
-    width := 0 #> width <# 799
-    height := 0 #> height <# 479
+    x := 0 #> x <# DISP_XMAX
+    y := 0 #> y <# DISP_YMAX
+    width := 0 #> width <# DISP_XMAX
+    height := 0 #> height <# DISP_YMAX
     CoProcCmd(core#CMD_SLIDER)
     CoProcCmd((y << 16) | x)
     CoProcCmd((height << 16) | width)
@@ -779,8 +780,8 @@ PUB SoftReset
 
 PUB Spinner(x, y, style, scale) | tmp
 ' Draw a spinner/busy indicator
-    x := 0 #> x <# 799
-    y := 0 #> y <# 479
+    x := 0 #> x <# DISP_XMAX
+    y := 0 #> y <# DISP_YMAX
     style := 0 #> style <# 3
     scale := 0 #> scale <# 2
     CoProcCmd(core#CMD_SPINNER)
@@ -799,13 +800,13 @@ PUB StopOperation
 PUB Str(x, y, font, opts, str_ptr) | i, j
 ' Draw a text string
 '   Valid values:
-'       x: 0..799
-'       y: 0..479
+'       x: 0..display width-1
+'       y: 0..display_height-1
 '       font: 0..31 XXX expand/clarify
 '       opts: Options for the drawn text XXX expand/clarify
 '       str_ptr: Pointer to string
-    x := 0 #> x <# 799
-    y := 0 #> y <# 479
+    x := 0 #> x <# DISP_XMAX
+    y := 0 #> y <# DISP_YMAX
     CoProcCmd(core#CMD_TEXT)
     CoProcCmd((y << 16) + x)
     CoProcCmd((opts << 16) + font)
@@ -841,7 +842,7 @@ PUB Swizzle(mode) | tmp
 
 PUB TagActive
 ' Tag that is currently active
-'   Returns: u8
+'   Returns: Tag number (u8)
 '       If tag is active:       1..255
 '       If no tag is active:    0
     readReg(core#TOUCH_TAG, 4, @result)
@@ -875,16 +876,16 @@ PUB TaggingEnabled(enabled) | tmp
 PUB TextWrap(pixels)
 ' Set pixel width for text wrapping
 '   NOTE: This setting applies to the Str and Button (when using the OPT_FILL option) methods
-    pixels := 0 #> pixels <# 799
+    pixels := 0 #> pixels <# DISP_XMAX
     CoProcCmd(core#CMD_FILLWIDTH)
     CoProcCmd(pixels)
 
 PUB Toggle(x, y, width, font, opts, state, str_ptr) | i, j
 ' Draw a toggle switch
 '   NOTE: String labels are UTF-8 formatted. A value of 255 separates label strings.
-    x := 0 #> x <# 799
-    y := 0 #> y <# 479
-    width := 0 #> width <# 799
+    x := 0 #> x <# DISP_XMAX
+    y := 0 #> y <# DISP_YMAX
+    width := 0 #> width <# DISP_XMAX
     CoProcCmd(core#CMD_TOGGLE)
     CoProcCmd((y << 16) | x)
     CoProcCmd((font << 16) | width)
@@ -970,7 +971,7 @@ PUB TouchScreenSupport
 PUB TouchXY
 ' Coordinates of touch event
 '   Returns:
-'       If touched: u16 X coordinate (MSW), u16 Y coordinate (LSW)
+'       If touched: X coordinate (MSW, u16), Y coordinate (LSW, u16)
 '       If not touched: $8000_8000
     readReg(core#TOUCH_SCREEN_XY, 4, @result)
 
@@ -987,8 +988,8 @@ PUB VCycle(disp_lines) | tmp
 
 PUB Vertex2F(x, y) | tmp
 ' Specify coordinates for following graphics primitive
-    x := 0 #> x <# 799
-    y := 0 #> y <# 479
+    x := 0 #> x <# DISP_XMAX
+    y := 0 #> y <# DISP_YMAX
     x <<= 4
     y <<= 4
     tmp := core#VERTEX2F | (x << core#FLD_2F_X) | y

@@ -3,9 +3,9 @@
     Filename: BT81X-Demo.spin
     Author: Jesse Burt
     Description: Demo of the BT81x driver
-    Copyright (c) 2019
+    Copyright (c) 2020
     Started Sep 30, 2019
-    Updated Oct 6, 2019
+    Updated May 30, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -15,28 +15,38 @@ CON
     _clkmode    = cfg#_clkmode
     _xinfreq    = cfg#_xinfreq
 
+' -- User-modifiable constants
+    SER_RX      = 31
+    SER_TX      = 30
+    SER_BAUD    = 115_200
+
     LED         = cfg#LED1
     CS_PIN      = 3
     SCK_PIN     = 0
     MOSI_PIN    = 2
     MISO_PIN    = 1
 
-    CENTERX     = 400
-    CENTERY     = 240
+    BRIGHTNESS  = 100   'Initial brightness level (0..128)
 
-    BRIGHTNESS  = 128   'Initial brightness level
+' Uncomment one of the following, depending on your display size/resolution
+#include "core.bt815.lcdtimings.800x480.spinh"
+'#include "core.bt815.lcdtimings.480x272.spinh"
+'#include "core.bt815.lcdtimings.320x240.spinh"
+'#include "core.bt815.lcdtimings.320x102.spinh"
+' --
+
+    CENTERX     = DISP_WIDTH / 2
+    CENTERY     = DISP_HEIGHT / 2
+
     INTER_DELAY = 2     'Delay between demo methods, in seconds
 
 OBJ
 
     cfg     : "core.con.boardcfg.flip"
+    io      : "io"
     ser     : "com.serial.terminal.ansi"
     time    : "time"
     eve     : "display.lcd.bt81x.spi"
-
-VAR
-
-    byte _ser_cog
 
 PUB Main
 
@@ -79,11 +89,11 @@ PUB Main
 
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.DisplayListEnd
     DemoFade (30)
     eve.Powered(FALSE)
-    Flash (LED, 100)
+    FlashLED (LED, 100)
 
 PUB DemoRotateScreen | r
 
@@ -91,7 +101,7 @@ PUB DemoRotateScreen | r
         eve.WaitIdle
         eve.DisplayListStart
         eve.ClearColor (0, 0, 0)
-        eve.Clear (TRUE, TRUE, TRUE)
+        eve.Clear
         eve.RotateScreen (r)
         eve.Str (CENTERX, CENTERY, 31, eve#OPT_CENTER, string("Screen rotation"))
         eve.DisplayListEnd
@@ -103,7 +113,7 @@ PUB DemoNumbers
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Num (20, 60, 31, 0, 42)
     eve.DisplayListEnd
     time.Sleep (2)
@@ -111,7 +121,7 @@ PUB DemoNumbers
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Num (80, 60, 31, eve#OPT_CENTER, 42)
     eve.DisplayListEnd
     time.Sleep (2)
@@ -119,7 +129,7 @@ PUB DemoNumbers
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Num (20, 20, 31, eve#OPT_SIGNED, 42)
     eve.Num (20, 60, 31, eve#OPT_SIGNED, -42)
     eve.DisplayListEnd
@@ -128,7 +138,7 @@ PUB DemoNumbers
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Num (150, 20, 31, eve#OPT_RIGHTX | 3, 42)
     eve.Num (150, 60, 31, eve#OPT_SIGNED | eve#OPT_RIGHTX | 3, -1)
     eve.DisplayListEnd
@@ -137,7 +147,7 @@ PUB DemoNumbers
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Num (80, 30, 28, eve#OPT_CENTER, 123456)
     eve.SetBase (16)
     eve.Num (80, 60, 28, eve#OPT_CENTER, 123456)
@@ -152,7 +162,7 @@ PUB DemoTextWrap
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.TextWrap (160)
     eve.Str (0, 0, 30, eve#OPT_FILL, string("This text doesn't fit on one line"))
     eve.DisplayListEnd
@@ -163,7 +173,7 @@ PUB DemoToggle
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Toggle (60, 20, 33, 27, 0, 0, string("no", $FF, "yes"))
     eve.Toggle (60, 60, 33, 27, 0, 65535, string("no", $FF, "yes"))
     eve.DisplayListEnd
@@ -172,7 +182,7 @@ PUB DemoToggle
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Toggle (60, 20, 33, 27, eve#OPT_FLAT, 0, string("no", $FF, "yes"))
     eve.Toggle (60, 60, 33, 27, eve#OPT_FLAT, 65535, string("no", $FF, "yes"))
     eve.DisplayListEnd
@@ -181,7 +191,7 @@ PUB DemoToggle
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.WidgetBGColor ($402000)
     eve.WidgetFGColor ($703800)
     eve.Toggle (60, 20, 33, 27, 0, 0, string("no", $FF, "yes"))
@@ -194,7 +204,7 @@ PUB DemoDial
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Dial (80, 60, 55, 0, $8000)
     eve.DisplayListEnd
     time.Sleep (2)
@@ -202,7 +212,7 @@ PUB DemoDial
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Dial (80, 60, 55, eve#OPT_FLAT, $8000)
     eve.DisplayListEnd
     time.Sleep (2)
@@ -210,7 +220,7 @@ PUB DemoDial
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Dial (28, 60, 24, 0, $0000)
     eve.Str (28, 100, 26, eve#OPT_CENTER, string("0%"))
     eve.Dial (80, 60, 24, 0, $5555)
@@ -225,7 +235,7 @@ PUB DemoSlider
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Slider (20, 50, 120, 8, 0, 50, 100)
     eve.DisplayListEnd
     time.Sleep (2)
@@ -233,7 +243,7 @@ PUB DemoSlider
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Slider (20, 50, 120, 8, eve#OPT_FLAT, 50, 100)
     eve.DisplayListEnd
     time.Sleep (2)
@@ -241,7 +251,7 @@ PUB DemoSlider
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.WidgetBGColor ($402000)
     eve.WidgetFGColor ($703800)
     eve.Slider (76, 10, 8, 100, 0, 20000, 65535)
@@ -253,7 +263,7 @@ PUB DemoScrollbar
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Scrollbar (20, 50, 120, 8, 0, 10, 40, 100)
     eve.DisplayListEnd
     time.Sleep (2)
@@ -261,7 +271,7 @@ PUB DemoScrollbar
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Scrollbar (20, 50, 120, 8, eve#OPT_FLAT, 10, 40, 100)
     eve.DisplayListEnd
     time.Sleep (2)
@@ -269,7 +279,7 @@ PUB DemoScrollbar
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.WidgetBGColor ($402000)
     eve.WidgetFGColor ($703800)
     eve.Scrollbar (140, 10, 8, 100, 0, 10, 40, 100)
@@ -281,7 +291,7 @@ PUB DemoProgressBar
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.ProgressBar (20, 50, 120, 12, 0, 50, 100)
     eve.DisplayListEnd
     time.Sleep (2)
@@ -289,7 +299,7 @@ PUB DemoProgressBar
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.ProgressBar (20, 50, 120, 12, eve#OPT_FLAT, 50, 100)
     eve.DisplayListEnd
     time.Sleep (2)
@@ -297,7 +307,7 @@ PUB DemoProgressBar
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.WidgetBGColor ($402000)
     eve.ProgressBar (20, 50, 120, 4, 0, 9000, 65535)
     eve.DisplayListEnd
@@ -308,7 +318,7 @@ PUB DemoKeys | k
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Keys (10, 10, 140, 30, 26, 0, string("12345"))
     eve.DisplayListEnd
     time.Sleep (2)
@@ -316,7 +326,7 @@ PUB DemoKeys | k
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Keys (10, 10, 140, 30, 26, eve#OPT_FLAT, string("12345"))
     eve.DisplayListEnd
     time.Sleep (2)
@@ -324,7 +334,7 @@ PUB DemoKeys | k
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Keys (10, 10, 140, 30, 26, 0, string("12345"))
     eve.Keys (10, 60, 140, 30, 26, eve#OPT_CENTER, string("12345"))
     eve.DisplayListEnd
@@ -333,7 +343,7 @@ PUB DemoKeys | k
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Keys (10, 10, 140, 30, 26, $32, string("12345"))
     eve.DisplayListEnd
     time.Sleep (2)
@@ -341,7 +351,7 @@ PUB DemoKeys | k
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Keys (22, 1, 116, 28, 29, 0, string("789"))
     eve.Keys (22, 31, 116, 28, 29, 0, string("456"))
     eve.Keys (22, 61, 116, 28, 29, 0, string("123"))
@@ -352,7 +362,7 @@ PUB DemoKeys | k
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Keys (2, 2, 156, 21, 20, eve#OPT_CENTER, string("qwertyuiop"))
     eve.Keys (2, 26, 156, 21, 20, eve#OPT_CENTER, string("asdfghjkl"))
     eve.Keys (2, 50, 156, 21, 20, eve#OPT_CENTER, string("zxcvbnm"))
@@ -364,7 +374,7 @@ PUB DemoKeys | k
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Keys (2, 2, 156, 21, 20, k | eve#OPT_CENTER, string("qwertyuiop"))
     eve.Keys (2, 26, 156, 21, 20, k | eve#OPT_CENTER, string("asdfghjkl"))
     eve.Keys (2, 50, 156, 21, 20, k | eve#OPT_CENTER, string("zxcvbnm"))
@@ -377,7 +387,7 @@ PUB DemoGradientTransparency
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Str (80, 60, 30, eve#OPT_CENTER, string("background"))
     eve.GradientTransparency (0, 0, $FF00FF00, 160, 0, $0000FF00)
     eve.DisplayListEnd
@@ -386,7 +396,7 @@ PUB DemoGradientTransparency
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Str (80, 30, 30, eve#OPT_CENTER, string("background"))
     eve.Str (80, 60, 30, eve#OPT_CENTER, string("background"))
     eve.Str (80, 90, 30, eve#OPT_CENTER, string("background"))
@@ -399,24 +409,24 @@ PUB DemoGradient
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
-    eve.Gradient (0, 0, $0000FF, 799, 0, $FF0000)
+    eve.Clear
+    eve.Gradient (0, 0, $0000FF, DISP_XMAX, 0, $FF0000)
     eve.DisplayListEnd
     time.Sleep (2)
 
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
-    eve.Gradient (0, 0, $808080, 799, 0, $80FF40)
+    eve.Clear
+    eve.Gradient (0, 0, $808080, DISP_XMAX, 0, $80FF40)
     eve.DisplayListEnd
     time.Sleep (2)
 
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
-    eve.Gradient (0, 0, $808080, 799, 479, $80FF40)
+    eve.Clear
+    eve.Gradient (0, 0, $808080, DISP_XMAX, DISP_YMAX, $80FF40)
     eve.DisplayListEnd
     time.Sleep (INTER_DELAY)
 
@@ -425,7 +435,7 @@ PUB DemoGauge | i
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 48)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Gauge (CENTERX, CENTERY, 100, eve#OPT_FLAT, 10, 5, i, 100)
     eve.DisplayListEnd
     time.Sleep (2)
@@ -433,7 +443,7 @@ PUB DemoGauge | i
     repeat i from 0 to 100
         eve.WaitIdle
         eve.DisplayListStart
-        eve.Clear (TRUE, TRUE, TRUE)
+        eve.Clear
         eve.Gauge (CENTERX, CENTERY, 50, eve#OPT_3D, 10, 5, i, 100)
         eve.DisplayListEnd
         time.MSleep (10)
@@ -441,7 +451,7 @@ PUB DemoGauge | i
     repeat i from 100 to 0
         eve.WaitIdle
         eve.DisplayListStart
-        eve.Clear (TRUE, TRUE, TRUE)
+        eve.Clear
         eve.Gauge (CENTERX, CENTERY, 50, eve#OPT_3D, 10, 5, i, 100)
         eve.DisplayListEnd
         time.MSleep (10)
@@ -455,7 +465,7 @@ PUB DemoButton | i, btn_w, btn_h
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 48)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.WidgetFGColor ($40_40_40)
     eve.Button (400-btn_w, 240-btn_h, btn_w, btn_h, 16, eve#OPT_3D, string("Press me!"))
     eve.DisplayListEnd
@@ -466,7 +476,7 @@ PUB DemoSpinner | i
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 48)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Str (CENTERX, CENTERY-30, 27, eve#OPT_CENTER, string("Please wait..."))
     eve.Spinner (CENTERX, CENTERY, eve#SPIN_CIRCLE_DOTS, 0)
     eve.DisplayListEnd
@@ -475,7 +485,7 @@ PUB DemoSpinner | i
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 48)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Str (CENTERX, CENTERY-30, 27, eve#OPT_CENTER, string("Please wait..."))
     eve.Spinner (CENTERX, CENTERY, eve#SPIN_LINE_DOTS, 0)
     eve.DisplayListEnd
@@ -484,7 +494,7 @@ PUB DemoSpinner | i
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 48)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Str (CENTERX, CENTERY-40, 27, eve#OPT_CENTER, string("Please wait..."))
     eve.Spinner (CENTERX, CENTERY, eve#SPIN_CLOCKHAND, 0)
     eve.DisplayListEnd
@@ -493,7 +503,7 @@ PUB DemoSpinner | i
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 48)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Str (CENTERX, CENTERY-30, 27, eve#OPT_CENTER, string("Please wait..."))
     eve.Spinner (CENTERX, CENTERY, eve#SPIN_ORBIT_DOTS, 0)
     eve.DisplayListEnd
@@ -502,7 +512,7 @@ PUB DemoSpinner | i
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 48)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Spinner (CENTERX, CENTERY, eve#SPIN_CIRCLE_DOTS, 1)
     eve.DisplayListEnd
     time.Sleep (2)
@@ -510,7 +520,7 @@ PUB DemoSpinner | i
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 48)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.Spinner (CENTERX, CENTERY, eve#SPIN_CIRCLE_DOTS, 2)
     eve.DisplayListEnd
     time.Sleep (INTER_DELAY)
@@ -520,11 +530,11 @@ PUB DemoBoxes | i
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
+    eve.Clear
     eve.LineWidth (1)
-    repeat i from 10 to 240  step 20
+    repeat i from 10 to CENTERY  step 20
         eve.ColorRGB (0, i/4, 128)
-        eve.Box (i, 240-i, 799-i, 240+i)
+        eve.Box (i, CENTERY-i, DISP_XMAX-i, CENTERY+i)
     eve.DisplayListEnd
     time.Sleep (INTER_DELAY)
     
@@ -533,13 +543,13 @@ PUB DemoLines | i
     eve.WaitIdle
     eve.DisplayListStart
     eve.ClearColor (0, 0, 0)
-    eve.Clear (TRUE, TRUE, TRUE)
-    repeat i from 10 to 799-10 step 10
+    eve.Clear
+    repeat i from 10 to DISP_XMAX-10 step 10
         eve.ColorRGB (0, i/4, 128)
-        eve.Line (i, 10, 799-10-i, 479-10)
-    repeat i from 10 to 479-10 step 10
+        eve.Line (i, 10, DISP_XMAX-10-i, DISP_YMAX-10)
+    repeat i from 10 to DISP_YMAX-10 step 10
         eve.ColorRGB (0, 128, i/4)
-        eve.Line (799-10, i, 10, 479-10-i)
+        eve.Line (DISP_XMAX-10, i, 10, DISP_YMAX-10-i)
     eve.DisplayListEnd
     time.Sleep (INTER_DELAY)
 
@@ -551,9 +561,9 @@ PUB DemoFade(delay_ms) | i
 
 PUB Setup
 
-    repeat until _ser_cog := ser.Start (115_200)
-    time.MSleep(30)
-    ser.Clear
+    repeat until ser.StartRXTX (SER_RX, SER_TX, 0, SER_BAUD)
+    time.msleep(30)
+    ser.clear
     ser.Str(string("Serial terminal started", ser#CR, ser#LF))
     if eve.Start (CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
         ser.Str(string("BT81x driver started", ser#CR, ser#LF))
@@ -562,14 +572,9 @@ PUB Setup
         eve.Stop
         time.MSleep (500)
         ser.Stop
-        Flash (LED, 500)
+        FlashLED (LED, 500)
 
-PUB Flash(led_pin, delay_ms)
-
-    dira[led_pin] := 1
-    repeat
-        !outa[led_pin]
-        time.MSleep (100)
+#include "lib.utility.spin"
 
 DAT
 {

@@ -3,33 +3,45 @@
 
 This is a P8X32A/Propeller driver object for the Bridgetek BT81x series Advanced Embedded Video Engine (EVE)
 
+**IMPORTANT**: This software is meant to be used with the [spin-standard-library](https://github.com/avsa242/spin-standard-library) (P8X32A) or [p2-spin-standard-library](https://github.com/avsa242/p2-spin-standard-library) (P2X8C4M64P). Please install the applicable library first before attempting to use this code, otherwise you will be missing several files required to build the project.
+
 ## Salient Features
 
 * SPI connection at 20MHz (P1)
-* Supports graphics primitives: Lines, Points, Text Strings (w/optional wrapping), Numbers (base 2..36), Boxes
-* Supports widgets: Buttons, Dials, Gauges, Gradients (w/or w/o alpha-blending), Keyboard keys, Progress bars, Scroll bars, Sliders, Spinners, Toggle switches
-* Supports setting panel brightness
-* Supports setting scissor clip region
-* Supports setting color of primitives, widgets, clear-screen color
-* Supports screen rotation
-* Supports touchscreen: define tags for display regions, read touch coordinates, read tagged area currently touched
+* Graphics primitives: Lines, Points, Text Strings (w/optional wrapping), Numbers (base 2..36), Boxes
+* Widgets: Buttons, Dials, Gauges, Gradients (w/or w/o alpha-blending), Keyboard keys, Progress bars, Scroll bars, Sliders, Spinners, Toggle switches
+* Set color of primitives, widgets, clear-screen color
+* Set panel brightness
+* Set scissor clip region
+* Screen rotation
+* Touchscreen: define tags for display regions, read touch coordinates, read tagged area currently touched
+* Set display-specific timings simply by #including the correct file for your display
 
 ## Requirements
 
+* BT815/816-based board (tested only with BT815 - capacitive touch version)
+
+P1/SPIN1:
+* spin-standard-library
 * 1 extra core/cog for the PASM SPI driver
-* BT815/816-based board (untested with earlier FT8xx models)
+
+P2/SPIN2:
+* p2-spin-standard-library
 
 ## Compiler Compatibility
 
-* OpenSpin (tested with 1.00.81)
+* P1/SPIN1: OpenSpin (tested with 1.00.81)
+* P2/SPIN2: FastSpin (tested with 4.1.10-beta)
+* ~~BST~~ (incompatible - no preprocessor)
+* ~~Propeller Tool~~ (incompatible - no preprocessor)
+* ~~PNut~~ (incompatible - no preprocessor)
 
 ## Limitations
 
 * Very early in development - may malfunction, or outright fail to build
 * API not considered stable - not advisable to design a product around this
-* Initialization is currently hardcoded for 5.0" 800x480 Matrix Orbital model LCD
 * Single-channel SPI only (doesn't support DSPI, QSPI)
-* Doesn't support resetting/powering down using the "P_DN" pin
+* Doesn't support resetting/powering down using the "P_DN" pin (planned)
 * Doesn't support interrupts
 
 ## TODO
@@ -40,6 +52,6 @@ This is a P8X32A/Propeller driver object for the Bridgetek BT81x series Advanced
 - [ ] Implement MIDI support
 - [ ] Implement flash support
 - [ ] Implement all display list commands
-- [ ] Support different display sizes/resolutions
-- [x] Re-implement using the 20MHz W/10MHz R SPI driver
+- [x] Support different display sizes/resolutions
+- [x] Re-implement using the 20MHz W/10MHz R SPI driver (P1/P8X32A)
 
