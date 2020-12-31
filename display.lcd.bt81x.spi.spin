@@ -21,6 +21,15 @@
 
 CON
 
+' Recognized IDs
+    BT815               = $00_0815_01
+    BT816               = $00_0816_01
+
+' Clock freq presets
+    DEF                 = 60
+    HIGH                = 72
+    LOW                 = 24
+
 ' CPU Reset status
     READY               = %000
     RST_AUDIO           = %100
@@ -50,7 +59,8 @@ CON
     DLSWAP_FRAME        = 2
 
 ' Graphics primitives
-    #1, BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L, EDGE_STRIP_A, EDGE_STRIP_B, RECTS
+    #1, BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L,{
+}   EDGE_STRIP_A, EDGE_STRIP_B, RECTS
 
 ' Various rendering options
     OPT_3D              = 0
@@ -78,7 +88,8 @@ CON
     OPT_SOUND           = 32
 
 ' Transform and screen rotation
-    #0, ROT_LAND, ROT_INV_LAND, ROT_PORT, ROT_INV_PORT, ROT_MIR_LAND, ROT_MIR_INV_LAND, ROT_MIR_PORT, ROT_MIR_INV_PORT
+    #0, ROT_LAND, ROT_INV_LAND, ROT_PORT, ROT_INV_PORT, ROT_MIR_LAND,{
+}   ROT_MIR_INV_LAND, ROT_MIR_PORT, ROT_MIR_INV_PORT
 
 ' Spinner styles
     SPIN_CIRCLE_DOTS    = 0
@@ -86,155 +97,172 @@ CON
     SPIN_CLOCKHAND      = 2
     SPIN_ORBIT_DOTS     = 3
 
+' Box bevel corners
+    UL                  = %0001
+    UR                  = %0010
+    LR                  = %0100
+    LL                  = %1000
+
 OBJ
 
     spi : "com.spi.fast"
     core: "core.con.bt81x"
     time: "time"
 
-PUB Null
-''This is not a top-level object
+PUB Null{}
+' This is not a top-level object
 
 PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
 
     if lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and lookdown(MOSI_PIN: 0..31) and lookdown(MISO_PIN: 0..31)
-        if okay := spi.Start (CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
-            SoftReset
-            ExtClock
-            Clockfreq (72)
-            repeat until ID == $7C
-            repeat until CPUReset (-2) == READY
-            if lookdown(DeviceID: $00_0815_01, $00_0816_01)
-                if CoProcError
-                    ResetCoPro
-                Defaults
+        if okay := spi.start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
+            softreset{}
+            extclock{}
+            clockfreq(DEF)                      ' set clock to default (60MHz)
+            repeat until id{} == $7C
+            repeat until cpureset(-2) == READY
+            if lookdown(deviceid{}: BT815, BT816)
+                if coprocerror{}                ' reset coprocessor if it's
+                    resetcopro{}                ' in an error state
+                defaults{}
                 return okay
 
-    return FALSE                                                'If we got here, something went wrong
+    return FALSE                                ' something above failed
 
-PUB Stop
+PUB Stop{}
 
-    Powered(FALSE)
-    spi.Stop
+    powered(FALSE)
+    spi.stop{}
 
-PUB Defaults
+PUB Defaults{}
 ' Default settings, based on lcd chosen
-    DisplayTimings(HCYCLE_CLKS, HOFFSET_CYCLES, HSYNC0_CYCLES, HSYNC1_CYCLES, VCYCLE_CLKS, VOFFSET_LINES, VSYNC0_CYCLES, VSYNC1_CYCLES)
-    Swizzle(SWIZZLE_MODE)
-    PixClockPolarity(PCLK_POLARITY)
-    ClockSpread (CLKSPREAD)
-    Dither(DITHER_MODE)
-    DisplayWidth(DISP_WIDTH)
-    DisplayHeight(DISP_HEIGHT)
+    ' parameters for these are pulled from display definition #included in
+    '   top-level application
+    displaytimings(HCYCLE_CLKS, HOFFSET_CYCLES, HSYNC0_CYCLES, HSYNC1_CYCLES, VCYCLE_CLKS, VOFFSET_LINES, VSYNC0_CYCLES, VSYNC1_CYCLES)
+    swizzle(SWIZZLE_MODE)
+    pixclockpolarity(PCLK_POLARITY)
+    clockspread(CLKSPREAD)
+    dither(DITHER_MODE)
+    displaywidth(DISP_WIDTH)
+    displayheight(DISP_HEIGHT)
 
-    DisplayListStart
-        ClearColor (0, 0, 0)
-        Clear
-    DisplayListEnd
-    GPIODir ($FFFF)
-    GPIO ($FFFF)
-    PixelClockDivisor (CLKDIV)                                  ' Wait until here to set divisor, per BT AN033
-    TouchI2CAddr (TS_I2CADDR)                                   ' Set touchscreen I2C address
+    displayliststart{}
+        clearcolor(0, 0, 0)
+        clear{}
+    displaylistend{}
+    gpiodir($FFFF)
+    gpio($FFFF)
+
+    ' parameters for these are pulled from display definition #included in
+    '   top-level application
+    pixelclockdivisor(CLKDIV)                   ' set _here_, per BT AN033
+    touchi2caddr(TS_I2CADDR)                    ' set touchscreen I2C address
+
+PUB Preset_HighPerf{}
+' Like Defaults(), but sets clock to highest performance (72MHz)
+    defaults{}
+    clockfreq(HIGH)
 
 PUB Box(x1, y1, x2, y2) | tmp
 ' Draw a box from x1, y1 to x2, y2 in the current color
-    PrimitiveBegin(RECTS)
-    Vertex2F(x1, y1)
-    Vertex2F(x2, y2)
-    PrimitiveEnd
+    primitivebegin(RECTS)
+    vertex2f(x1, y1)
+    vertex2f(x2, y2)
+    primitiveend{}
 
-PUB BoxBeveled(x0, y0, width, height, bevel_size, bevel_mask) | corner
-' Draw a box with zero or more beveled corners, specified by bevel_mask
-'   bevel_mask:
-'       Bit 0 (LSB): Upper left
-'       Bit 1: Upper right
-'       Bit 2: Lower right
-'       Bit 3 (MSB): Lower left
-'   bevel_size: number of pixels
+PUB BoxBeveled(x0, y0, width, height, b_size, b_mask) | corner'XXX optimize: reduce number of repeated calcs below
+' Draw a box with zero or more beveled corners, specified by b_mask
+'   b_mask:
+'       Bit 0: Upper left (symbol UL)
+'       Bit 1: Upper right (symbol UR)
+'       Bit 2: Lower right (symbol LR)
+'       Bit 3: Lower left (symbol LL)
+'   b_size: number of pixels
     x0 := 0 #> x0 <# DISP_XMAX
     y0 := 0 #> y0 <# DISP_YMAX
     width := 0 #> width <# DISP_XMAX
     height := 0 #> height <# DISP_YMAX
-    Line (x0 + bevel_size, y0, x0 + width - bevel_size, y0)
-    Line (x0 + width - bevel_size, y0 + height, x0 + bevel_size, y0 + height)
-    Line (x0 + width, y0 + bevel_size, x0 + width, y0 + height - bevel_size)
-    Line (x0, y0 + height - bevel_size, x0, y0 + bevel_size)
+    line(x0 + b_size, y0, x0 + width - b_size, y0)
+    line(x0 + width - b_size, y0 + height, x0 + b_size, y0 + height)
+    line(x0 + width, y0 + b_size, x0 + width, y0 + height - b_size)
+    line(x0, y0 + height - b_size, x0, y0 + b_size)
 
-    corner := %0001
+    corner := UL
     repeat
         case corner
-            %0001: 'UL
-                if bevel_mask & corner
-                    Line (x0, y0 + bevel_size, x0 + bevel_size, y0)
+            UL:
+                if b_mask & corner
+                    line(x0, y0 + b_size, x0 + b_size, y0)
                 else
-                    Line (x0, y0, x0 + bevel_size, y0)
-                    Line (x0, y0, x0, y0 + bevel_size)
-            %0010: 'UR
-                if bevel_mask & corner
-                    Line (x0 + width - bevel_size, y0, x0 + width, y0 + bevel_size)
+                    line(x0, y0, x0 + b_size, y0)
+                    line(x0, y0, x0, y0 + b_size)
+            UR:
+                if b_mask & corner
+                    line(x0 + width - b_size, y0, x0 + width, y0 + b_size)
                 else
-                    Line (x0 + width, y0, x0 + width - bevel_size, y0)
-                    Line (x0 + width, y0, x0 + width, y0 + bevel_size)
-            %0100: 'LR
-                if bevel_mask & corner
-                    Line (x0 + width, y0 + height - bevel_size, x0 + width - bevel_size, y0 + height)
+                    line(x0 + width, y0, x0 + width - b_size, y0)
+                    line(x0 + width, y0, x0 + width, y0 + b_size)
+            LR:
+                if b_mask & corner
+                    line(x0 + width, y0 + height - b_size, x0 + width - b_size, y0 + height)
                 else
-                    Line (x0 + width, y0 + height, x0 + width - bevel_size, y0 + height)
-                    Line (x0 + width, y0 + height, x0 + width, y0 + height - bevel_size)
-            %1000: 'LL
-                if bevel_mask & corner
-                    Line (x0, y0 + height - bevel_size, x0 + bevel_size, y0 + height)
+                    line(x0 + width, y0 + height, x0 + width - b_size, y0 + height)
+                    line(x0 + width, y0 + height, x0 + width, y0 + height - b_size)
+            LL:
+                if b_mask & corner
+                    line(x0, y0 + height - b_size, x0 + b_size, y0 + height)
                 else
-                    Line (x0, y0 + height, x0 + bevel_size, y0 + height)
-                    Line (x0, y0 + height, x0, y0 + height - bevel_size)
-            OTHER:
+                    line(x0, y0 + height, x0 + b_size, y0 + height)
+                    line(x0, y0 + height, x0, y0 + height - b_size)
+            other:
         corner <<= 1
-    until corner > 8
+    until corner > LL
 
 PUB Brightness(level) | tmp
 ' Set display brightness
 '   Valid values: 0..128*
 '   Any other value polls the chip and returns the current setting
-    tmp := $00
-    readReg(core#PWM_DUTY, 1, @tmp)
+    tmp := 0
+    readreg(core#PWM_DUTY, 1, @tmp)
     case level
         0..128:
-        OTHER:
+        other:
             return tmp
-    writeReg(core#PWM_DUTY, 1, @level)
+    writereg(core#PWM_DUTY, 1, @level)
 
-PUB Button(x, y, width, height, font, opts, str_ptr) | i, j
+PUB Button(x, y, width, height, font, opts, ptr_str) | i, j
 ' Draw a button
 '   Valid values:
 '       x, width: 0..display width-1
 '       y, height: 0..display height-1
 '       font: 0..31
 '       opts: 0 (3D), 256 (FLAT)
-'       str_ptr: Pointer to string to be displayed on button
+'       ptr_str: Pointer to string to be displayed on button
     x := 0 #> x <# DISP_XMAX
     y := 0 #> y <# DISP_YMAX
     width := 0 #> width <# DISP_XMAX
     height := 0 #> height <# DISP_YMAX
-    CoProcCmd(core#CMD_BUTTON)
-    CoProcCmd((y << 16) + x)
-    CoProcCmd((height << 16) + width)
-    CoProcCmd((opts << 16) + font)
-    j := (strsize(str_ptr) + 4) / 4
+    coproccmd(core#CMD_BUTTON)
+    coproccmd((y << 16) + x)
+    coproccmd((height << 16) + width)
+    coproccmd((opts << 16) + font)
+    j := (strsize(ptr_str) + 4) / 4
     repeat i from 1 to j
-        CoProcCmd(byte[str_ptr][3] << 24 + byte[str_ptr][2] << 16 + byte[str_ptr][1] << 8 + byte[str_ptr][0])
-        str_ptr += 4
+        coproccmd(byte[ptr_str][3] << 24 + byte[ptr_str][2] << 16 + {
+}       byte[ptr_str][1] << 8 + byte[ptr_str][0])
+        ptr_str += 4
 
-PUB Clear
+PUB Clear{}
 ' Clear display
 '   NOTE: This clears color, stencil and tag buffers
-    ClearBuffers(TRUE, TRUE, TRUE)
+    clearbuffers(TRUE, TRUE, TRUE)
 
 PUB ClearBuffers(color, stencil, tag) | tmp
 ' Clear buffers to preset values
 '   Valid values: FALSE (0), TRUE (-1 or 1) for color, stencil, tag
-    tmp := core#CLR | ( (||color & %1) << core#COLOR) | ( (||stencil & %1) << core#STENCIL) | (||tag & %1)
-    CoProcCmd(tmp)
-    return tmp
+    tmp := core#CLR | ((||(color) & 1) << core#COLOR) |{
+}   ((||stencil & 1) << core#STENCIL) | (||tag & 1)
+    coproccmd(tmp)
 
 PUB ClearColor(r, g, b) | tmp
 ' Set color value used by a following Clear
@@ -244,73 +272,72 @@ PUB ClearColor(r, g, b) | tmp
     g := 0 #> g <# 255
     b := 0 #> b <# 255
     tmp := core#CLR_COLOR_RGB | (r << 16) | (g << 8) | b
-    CoProcCmd(tmp)
-    return tmp
+    coproccmd(tmp)
 
 PUB ClearScreen(color)
 ' Clear screen using color
-    ClearColor((color >> 16) & $FF, (color >> 8) & $FF, color & $FF)
-    Clear
+    clearcolor((color >> 16) & $FF, (color >> 8) & $FF, color & $FF)
+    clear{}
 
-PUB Clockfreq(MHz) | tmp
+PUB ClockFreq(freq) | tmp
 ' Set clock frequency, in MHz
 '   Valid values: 24, 36, 48, *60, 72
 '   Any other value polls the chip and returns the current setting
 '   NOTE: Changing this value incurs a 300ms delay
-    tmp := $00_00_00_00
-    case MHz
+    tmp := 0
+    case freq
         24, 36, 48, 60, 72:
-            tmp := lookdown(MHz: 24, 36, 48, 60, 72)
+            tmp := lookdown(freq: 24, 36, 48, 60, 72)
             tmp := ((lookup(tmp: 0, 0, 1, 1, 1) << 6) | tmp) + 1
-            MHz *= 1_000_000
+            freq *= 1_000_000
 
-        OTHER:
-            Powered(TRUE)
-            readReg(core#FREQ, 4, @tmp)
+        other:
+            powered(TRUE)
+            readreg(core#FREQ, 4, @tmp)
             return tmp / 1_000_000
-    Sleep
-    cmd (core#CLKSEL1, tmp)
-    Powered(TRUE)
-    time.MSleep (core#TPOR)
-    writeReg(core#FREQ, 4, @MHz)
+    sleep{}
+    cmd(core#CLKSEL1, tmp)
+    powered(TRUE)
+    time.msleep(core#TPOR)
+    writereg(core#FREQ, 4, @freq)
 
-PUB ClockSpread(enabled) | tmp
+PUB ClockSpread(state) | tmp
 ' Enable output clock spreading, to reduce switching noise
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    tmp := $00
-    readReg(core#CSPREAD, 1, @tmp)
-    case ||enabled
+    tmp := 0
+    readreg(core#CSPREAD, 1, @tmp)
+    case ||(state)
         0, 1:
-            enabled := ||enabled
-        OTHER:
-            return (tmp & %1) * TRUE
+            state := ||(state)
+        other:
+            return (tmp & 1) * TRUE
 
-    enabled &= %1
-    writeReg(core#CSPREAD, 1, @enabled)
+    state &= 1
+    writereg(core#CSPREAD, 1, @state)
 
 PUB ColorRGB(r, g, b) | tmp
 ' Specify color for following graphics primitive
-    tmp := $00_00_00_00
+    tmp := 0
     r := 0 #> r <# 255
     g := 0 #> g <# 255
     b := 0 #> b <# 255
     tmp := core#COLOR_RGB | (r << core#RED) | (g << core#GREEN) | b
-    CoProcCmd(tmp)
-    return tmp
+    coproccmd(tmp)
+    return tmp  'XXX why?
 
 PUB CoProcCmd(command)
 ' Queue a coprocessor command
 '   NOTE: This method will always write 4 bytes to the FIFO, per Bridgetek AN033
-    writeReg(core#CMDB_WRITE, 4, @command)
+    writereg(core#CMDB_WRITE, 4, @command)
 
-PUB CoProcError | tmp
+PUB CoProcError{} | tmp
 ' Coprocessor error status
 '   Returns: TRUE if the coprocessor has returned a fault
-    readReg(core#CMD_READ, 2, @tmp)
+    readreg(core#CMD_READ, 2, @tmp)
     return (tmp == $FFF)
 
-PUB CPUReset(reset_mask) | tmp
+PUB CPUReset(mask) | tmp    'XXX split return code into CPUState() or similar
 ' Reset any combination of audio, touch, and coprocessor engines
 '   Valid values:
 '       Bit: 210
@@ -325,23 +352,23 @@ PUB CPUReset(reset_mask) | tmp
 '   Any other value polls the chip and returns the current reset status
 '       1 indicates that engine is in reset status
 '       0 indicates that engine is in working status (ready)
-    tmp := $0000
-    readReg(core#CPURESET, 2, @tmp)
-    case reset_mask
-        %000..%111:
-        OTHER:
+    tmp := 0
+    readreg(core#CPURESET, 2, @tmp)
+    case mask
+        %000..%111:     'XXX disallow 000? useless?
+        other:
             return tmp
-    reset_mask &= core#CPURESET_MASK
-    writeReg ( core#CPURESET, 2, @reset_mask)
+    mask &= core#CPURESET_MASK
+    writereg(core#CPURESET, 2, @mask)
 
-PUB DeviceID
+PUB DeviceID{}
 ' Read Chip ID/model
 '   Returns: Chip ID
 '       $00081501: BT815
 '       $00081601: BT816
 '   NOTE: This value is only guaranteed immediately after POR, as
 '       it is a RAM location, thus can be overwritten
-    readReg(core#CHIPID, 4, @result)
+    readreg(core#CHIPID, 4, @result)
     result.byte[3] := result.byte[2]
     result.byte[2] := result.byte[0]
     result.byte[0] := result.byte[3]
@@ -353,23 +380,23 @@ PUB Dial(x, y, radius, opts, val)
     y := 0 #> y <# DISP_YMAX
     radius := 0 #> radius <# DISP_XMAX
 
-    CoProcCmd(core#CMD_DIAL)
-    CoProcCmd((y << 16) | x)
-    CoProcCmd((opts << 16) | radius)
-    CoProcCmd(val)
+    coproccmd(core#CMD_DIAL)
+    coproccmd((y << 16) | x)
+    coproccmd((opts << 16) | radius)
+    coproccmd(val)
 
 PUB DisplayHeight(pixels)
 
-    VSize (pixels)
+    vsize(pixels)
 
-PUB DisplayListStart
+PUB DisplayListStart{}
 
-    CoProcCmd(core#CMD_DLSTART)
+    coproccmd(core#CMD_DLSTART)
 
-PUB DisplayListEnd
+PUB DisplayListEnd{}
 
-    CoProcCmd(core#DISPLAY)
-    CoProcCmd(core#CMD_SWAP)
+    coproccmd(core#DISPLAY)
+    coproccmd(core#CMD_SWAP)
 
 PUB DisplayListSwap(mode) | tmp
 ' Set when the graphics engine will render the screen
@@ -380,51 +407,51 @@ PUB DisplayListSwap(mode) | tmp
 '   Returns:
 '       0 - buffer ready
 '       1 - buffer not ready
-    tmp := $00_00_00_00
-    readReg(core#DLSWAP, 1, @tmp)
+    tmp := 0
+    readreg(core#DLSWAP, 1, @tmp)
     case mode
         DLSWAP_LINE, DLSWAP_FRAME:
-        OTHER:
+        other:
             return tmp & %11
-    writeReg(core#DLSWAP, 1, @mode)
+    writereg(core#DLSWAP, 1, @mode)
 
 PUB DisplayTimings(hc, ho, hs0, hs1, vc, vo, vs0, vs1)
 
-    HCycle (hc)
-    HOffset (ho)
-    HSync0 (hs0)
-    HSync1 (hs1)
-    VCycle (vc)
-    VOffset (vo)
-    VSync0 (vs0)
-    VSync1 (vs1)
+    hcycle(hc)
+    hoffset(ho)
+    hsync0(hs0)
+    hsync1(hs1)
+    vcycle(vc)
+    voffset(vo)
+    vsync0(vs0)
+    vsync1(vs1)
 
 PUB DisplayWidth(pixels)
 
-    HSize (pixels)
+    hsize(pixels)
 
-PUB DisplayListPtr
+PUB DisplayListPtr{}
 ' Returns: Current address pointer offset within display list RAM
-    readReg(core#CMD_DL, 2, @result)
+    readreg(core#CMD_DL, 2, @result)
 
-PUB Dither(enabled) | tmp
+PUB Dither(state) | tmp
 ' Enable dithering on RGB output
 '   Valid values: *TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    tmp := $00
-    readReg(core#DITHER, 1, @tmp)
-    case ||enabled
+    tmp := 0
+    readreg(core#DITHER, 1, @tmp)
+    case ||(state)
         0, 1:
-            enabled := ||enabled & %1
-        OTHER:
-            return (tmp & %1) * TRUE
-    writeReg(core#DITHER, 1, @enabled)
+            state := ||(state) & 1
+        other:
+            return (tmp & 1) * TRUE
+    writereg(core#DITHER, 1, @state)
 
-PUB ExtClock
+PUB ExtClock{}
 ' Select PLL input from external crystal oscillator or clock
 '   NOTE: This will have no effect if external clock is already selected.
 '       Otherwise, the chip will be reset
-    cmd (core#CLKEXT, $00)
+    cmd(core#CLKEXT, 0)
 
 PUB Gauge(x, y, radius, opts, major, minor, val, range) | tmp
 ' Draw a gauge
@@ -432,48 +459,48 @@ PUB Gauge(x, y, radius, opts, major, minor, val, range) | tmp
     y := 0 #> y <# DISP_YMAX
     radius := 0 #> radius <# DISP_XMAX
 
-    CoProcCmd(core#CMD_GAUGE)
-    CoProcCmd((y << 16) | x)
-    CoProcCmd((opts << 16) | radius)
-    CoProcCmd((minor << 16) | major)
-    CoProcCmd((range << 16) | val)
+    coproccmd(core#CMD_GAUGE)
+    coproccmd((y << 16) | x)
+    coproccmd((opts << 16) | radius)
+    coproccmd((minor << 16) | major)
+    coproccmd((range << 16) | val)
 
 PUB GPIO(state) | tmp
 
-    tmp := $0000
-    readReg(core#GPIOX, 2, @tmp)
+    tmp := 0
+    readreg(core#GPIOX, 2, @tmp)
     case state
         $0000..$FFFF:
-        OTHER:
+        other:
             return tmp
 
-    writeReg(core#GPIOX, 2, @state)
+    writereg(core#GPIOX, 2, @state)
 
 PUB GPIODir(mask) | tmp
 
-    tmp := $0000
-    readReg(core#GPIOX_DIR, 2, @tmp)
+    tmp := 0
+    readreg(core#GPIOX_DIR, 2, @tmp)
     case mask
         $0000..$FFFF:
-        OTHER:
+        other:
             return tmp
 
-    writeReg(core#GPIOX_DIR, 2, @mask)
+    writereg(core#GPIOX_DIR, 2, @mask)
 
 PUB Gradient(x0, y0, rgb0, x1, y1, rgb1)
 ' Draw a smooth color gradient
     x0 := 0 #> x0 <# DISP_XMAX
     y0 := 0 #> y0 <# DISP_YMAX
-    rgb0 := $000000 #> rgb0 <# $FFFFFF
+    rgb0 := $00_00_00 #> rgb0 <# $FF_FF_FF
     x1 := 0 #> x1 <# DISP_XMAX
     y1 := 0 #> y1 <# DISP_YMAX
-    rgb1 := $000000 #> rgb1 <# $FFFFFF
+    rgb1 := $00_00_00 #> rgb1 <# $FF_FF_FF
 
-    CoProcCmd(core#CMD_GRADIENT)
-    CoProcCmd((y0 << 16) | x0)
-    CoProcCmd(rgb0)
-    CoProcCmd((y1 << 16) | x1)
-    CoProcCmd(rgb1)
+    coproccmd(core#CMD_GRADIENT)
+    coproccmd((y0 << 16) | x0)
+    coproccmd(rgb0)
+    coproccmd((y1 << 16) | x1)
+    coproccmd(rgb1)
 
 PUB GradientTransparency(x0, y0, argb0, x1, y1, argb1)
 ' Draw a smooth color gradient, with transparency
@@ -482,97 +509,98 @@ PUB GradientTransparency(x0, y0, argb0, x1, y1, argb1)
     x1 := 0 #> x1 <# DISP_XMAX
     y1 := 0 #> y1 <# DISP_YMAX
 
-    CoProcCmd(core#CMD_GRADIENTA)
-    CoProcCmd((y0 << 16) | x0)
-    CoProcCmd(argb0)
-    CoProcCmd((y1 << 16) | x1)
-    CoProcCmd(argb1)
+    coproccmd(core#CMD_GRADIENTA)
+    coproccmd((y0 << 16) | x0)
+    coproccmd(argb0)
+    coproccmd((y1 << 16) | x1)
+    coproccmd(argb1)
 
 PUB HCycle(pclks) | tmp
 ' Set horizontal total cycle count, in pixel clocks
 '   Valid values: 0..4095
 '   Any other value polls the chip and returns the current setting
-    readReg(core#HCYCLE, 2, @tmp)
+    readreg(core#HCYCLE, 2, @tmp)
     case pclks
         0..4095:
-        OTHER:
+        other:
             return tmp
-    writeReg(core#HCYCLE, 2, @pclks)
+    writereg(core#HCYCLE, 2, @pclks)
 
 PUB HOffset(pclk_cycles) | tmp
 ' Set horizontal display start offset, in pixel clock cycles
 '   Valid values: 0..4095
 '   Any other value polls the chip and returns the current setting
-    readReg(core#HOFFSET, 2, @tmp)
+    readreg(core#HOFFSET, 2, @tmp)
     case pclk_cycles
         0..4095:
-        OTHER:
+        other:
             return tmp
-    writeReg(core#HOFFSET, 2, @pclk_cycles)
+    writereg(core#HOFFSET, 2, @pclk_cycles)
 
 PUB HSize(pclks) | tmp
 ' Set horizontal display pixel count
 '   Valid values: 0..4095
 '   Any other value polls the chip and returns the current setting
-    readReg(core#HSIZE, 2, @tmp)
+    readreg(core#HSIZE, 2, @tmp)
     case pclks
         0..4095:
-        OTHER:
+        other:
             return tmp
-    writeReg(core#HSIZE, 2, @pclks)
+    writereg(core#HSIZE, 2, @pclks)
 
 PUB HSync0(pclk_cycles) | tmp
 ' Set horizontal sync fall offset, in pixel clock cycles
 '   Valid values: 0..4095
 '   Any other value polls the chip and returns the current setting
-    readReg(core#HSYNC0, 2, @tmp)
+    readreg(core#HSYNC0, 2, @tmp)
     case pclk_cycles
         0..4095:
-        OTHER:
+        other:
             return tmp
-    writeReg(core#HSYNC0, 2, @pclk_cycles)
+    writereg(core#HSYNC0, 2, @pclk_cycles)
 
 PUB HSync1(pclk_cycles) | tmp
 ' Set horizontal sync rise offset, in pixel clock cycles
 '   Valid values: 0..4095
 '   Any other value polls the chip and returns the current setting
-    readReg(core#HSYNC1, 2, @tmp)
+    readreg(core#HSYNC1, 2, @tmp)
     case pclk_cycles
         0..4095:
-        OTHER:
+        other:
             return tmp
-    writeReg(core#HSYNC1, 2, @pclk_cycles)
+    writereg(core#HSYNC1, 2, @pclk_cycles)
 
-PUB ID
+PUB ID{}
 ' Read ID
 '   Returns: $7C
-    readReg(core#ID, 1, @result)
+    readreg(core#ID, 1, @result)
 
-PUB IntClock
+PUB IntClock{}
 ' Select PLL input from internal relaxation oscillator (default)
 '   NOTE: This will have no effect if internal clock is already selected.
 '       Otherwise, the chip will be reset
-    cmd (core#CLKINT, $00)
+    cmd(core#CLKINT, 0)
 
-PUB Keys(x, y, width, height, font, opts, str_ptr) | i, j
-' Draw an array of keys
+PUB Keys(x, y, width, height, font, opts, ptr_str) | i, j
+' Draw an array of keys 'XXX document
     x := 0 #> x <# DISP_XMAX
     y := 0 #> y <# DISP_YMAX
-    CoProcCmd(core#CMD_KEYS)
-    CoProcCmd((y << 16) | x)
-    CoProcCmd((height << 16) | width)
-    CoProcCmd((opts << 16) | font)
-    j := (strsize(str_ptr) + 4) / 4
+    coproccmd(core#CMD_KEYS)
+    coproccmd((y << 16) | x)
+    coproccmd((height << 16) | width)
+    coproccmd((opts << 16) | font)
+    j := (strsize(ptr_str) + 4) / 4
     repeat i from 1 to j
-        CoProcCmd(byte[str_ptr][3] << 24 + byte[str_ptr][2] << 16 + byte[str_ptr][1] << 8 + byte[str_ptr][0])
-        str_ptr += 4
+        coproccmd(byte[ptr_str][3] << 24 + byte[ptr_str][2] << 16 + {
+}       byte[ptr_str][1] << 8 + byte[ptr_str][0])
+        ptr_str += 4
 
 PUB Line(x1, y1, x2, y2)
 ' Draw a line from x1, y1 to x2, y2 in the current color
-    PrimitiveBegin(core#LINES)
-    Vertex2F (x1, y1)
-    Vertex2F (x2, y2)
-    PrimitiveEnd
+    primitivebegin(core#LINES)
+    vertex2f(x1, y1)
+    vertex2f(x2, y2)
+    primitiveend{}
 
 PUB LineWidth(pixels) | tmp
 ' Set width of line, in pixels
@@ -580,33 +608,33 @@ PUB LineWidth(pixels) | tmp
     pixels := 1 #> pixels <# 255
     pixels <<= 4
     tmp := core#LINE_WIDTH | pixels
-    CoProcCmd(tmp)
-    return tmp
+    coproccmd(tmp)
+    return tmp  'XXX why?
 
 PUB Num(x, y, font, opts, val)
 ' Draw a number, with base specified by SetBase
 '   Valid options:
 '       OPT_CENTERX, OPT_CENTERY, OPT_CENTER, OPT_SIGNED
-' NOTE: If no preceeding SetBase is used, decimal will be used
+' NOTE: If no preceeding SetBase() is used, decimal will be used
     x := 0 #> x <# DISP_XMAX
     y := 0 #> y <# DISP_YMAX
-    CoProcCmd(core#CMD_NUMBER)
-    CoProcCmd((y << 16) | x)
-    CoProcCmd((opts << 16) | font)
-    CoProcCmd(val)
+    coproccmd(core#CMD_NUMBER)
+    coproccmd((y << 16) | x)
+    coproccmd((opts << 16) | font)
+    coproccmd(val)
 
 PUB PixelClockDivisor(divisor) | tmp
 ' Set pixel clock divisor
 '   Valid values: 0..1023
 '   Any other value polls the chip and returns the current setting
 '   NOTE: A setting of 0 disables the pixel clock output
-    tmp := $0000
-    readReg(core#PCLK, 2, @tmp)
+    tmp := 0
+    readreg(core#PCLK, 2, @tmp)
     case divisor
         0..1023:
-        OTHER:
+        other:
             return tmp
-    writeReg(core#PCLK, 2, @divisor)
+    writereg(core#PCLK, 2, @divisor)
 
 PUB PixClockPolarity(edge) | tmp
 ' Set pixel clock polarity
@@ -614,61 +642,61 @@ PUB PixClockPolarity(edge) | tmp
 '       PCLKCPOL_RISING (0): Output on pixel clock rising edge
 '       PCLKCPOL_FALLING (1): Output on pixel clock falling edge
 '   Any other value polls the chip and returns the current setting
-    tmp := $00
-    readReg(core#PCLK_POL, 1, @tmp)
+    tmp := 0
+    readreg(core#PCLK_POL, 1, @tmp)
     case edge
         PCLKPOL_RISING, PCLKPOL_FALLING:
-        OTHER:
+        other:
             return tmp
-    writeReg(core#PCLK_POL, 1, @edge)
+    writereg(core#PCLK_POL, 1, @edge)
 
 PUB Plot(x, y) | tmp
 ' Plot pixel at x, y in current color
     X := 0 #> x <# DISP_XMAX
     y := 0 #> y <# DISP_YMAX
 
-    PrimitiveBegin(POINTS)
-    Vertex2F(x, y)
-    PrimitiveEnd
+    primitivebegin(POINTS)
+    vertex2f(x, y)
+    primitiveend{}
 
 PUB PointSize(radius) | tmp
 ' Set point size/radius of following Plot, in 1/16th pixels
     radius := 0 #> radius <# 8191
     tmp := core#POINT_SIZE | radius
-    CoProcCmd(tmp)
-    return tmp
+    coproccmd(tmp)
+    return tmp  'XXX why?
 
-PUB Powered(enabled)
+PUB Powered(state)
 ' Enable display power
 '   NOTE: Affects digital core circuits, clock, PLL and oscillator
 '   Valid values: TRUE (-1 or 1), FALSE (0)
-    case ||enabled
+    case ||(state)
         0:
-            cmd (core#PWRDOWN1, $00)
+            cmd(core#PWRDOWN1, 0)
         1:
-            cmd (core#ACTIVE, $00)
+            cmd(core#ACTIVE, 0)
 
-PUB PrimitiveBegin(primitive) | tmp
+PUB PrimitiveBegin(prim) | tmp
 ' Begin drawing a graphics primitive
 '   Valid values:
 '       BITMAPS (1), POINTS (2), LINES (3), LINE_STRIP (4), EDGE_STRIP_R (5), EDGE_STRIP_L (6),
 '       EDGE_STRIP_A (7), EDGE_STRIP_B (8), RECTS (9)
 '   Any other value is ignored
 '       (nothing added to display list and address pointer is NOT incremented)
-    tmp := $00
-    case primitive
+    tmp := 0
+    case prim
         BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L, EDGE_STRIP_A, EDGE_STRIP_B, RECTS:
-            primitive := core#BEGIN | primitive
-        OTHER:
+            prim := core#BEGIN | prim
+        other:
             return FALSE
-    CoProcCmd(primitive)
-    return primitive
+    coproccmd(prim)
+    return prim 'XXX why?
 
-PUB PrimitiveEnd | tmp
+PUB PrimitiveEnd{} | tmp
 ' End drawing a graphics primitive
     tmp := core#END
-    CoProcCmd(tmp)
-    return tmp
+    coproccmd(tmp)
+    return tmp  'XXX why?
 
 PUB ProgressBar(x, y, width, height, opts, val, range)
 ' Draw a progress bar
@@ -676,28 +704,28 @@ PUB ProgressBar(x, y, width, height, opts, val, range)
     y := 0 #> y <# DISP_YMAX
     width := 0 #> width <# DISP_XMAX
     height := 0 #> height <# DISP_YMAX
-    CoProcCmd(core#CMD_PROGRESS)
-    CoProcCmd((y << 16) | x)
-    CoProcCmd((height << 16) | width)
-    CoProcCmd((val << 16) | opts)
-    CoProcCmd(range)
+    coproccmd(core#CMD_PROGRESS)
+    coproccmd((y << 16) | x)
+    coproccmd((height << 16) | width)
+    coproccmd((val << 16) | opts)
+    coproccmd(range)
 
-PUB ReadErr(buff_addr)
+PUB ReadErr(ptr_buff)
 ' Read errors/faults reported by the coprocessor, in plaintext
-'   NOTE: buff_addr must be at least 128 bytes long
-    readReg(core#EVE_ERR, 128, buff_addr)
+'   NOTE: ptr_buff must be at least 128 bytes long
+    readreg(core#EVE_ERR, 128, ptr_buff)
 
-PUB ResetCoPro | ptr_tmp, tmp
+PUB ResetCoPro{} | ptr_tmp, tmp
 ' Reset the Coprocessor
 '   NOTE: To be used after the coprocessor generates a fault
-    readReg(core#COPRO_PATCH_PTR, 2, @ptr_tmp)
-    CPUReset(%001)
-    tmp := $0000
-    writeReg(core#CMD_READ, 2, @tmp)
-    writeReg(core#CMD_WRITE, 2, @tmp)
-    writeReg(core#CMD_DL, 2, @tmp)
-    CPUReset(%000)
-    writeReg(core#COPRO_PATCH_PTR, 2, @ptr_tmp)
+    readreg(core#COPRO_PATCH_PTR, 2, @ptr_tmp)  'XXX document - storing curr ptr?
+    cpureset(%001)  'XXX use symbols instead
+    tmp := 0
+    writereg(core#CMD_READ, 2, @tmp)
+    writereg(core#CMD_WRITE, 2, @tmp)
+    writereg(core#CMD_DL, 2, @tmp)
+    cpureset(%000)  'XXX ditto
+    writereg(core#COPRO_PATCH_PTR, 2, @ptr_tmp)
 
 PUB RotateScreen(orientation)
 ' Rotate the screen
@@ -709,29 +737,29 @@ PUB RotateScreen(orientation)
 '   Any other value is ignored
     case orientation
         ROT_LAND, ROT_INV_LAND, ROT_PORT, ROT_INV_PORT, ROT_MIR_LAND, ROT_MIR_INV_LAND, ROT_MIR_PORT, ROT_MIR_INV_PORT:
-            CoProcCmd(core#CMD_SETROTATE)
-            CoProcCmd(orientation)
-        OTHER:
+            coproccmd(core#CMD_SETROTATE)
+            coproccmd(orientation)
+        other:
             return
 
 PUB Scissor(x, y, width, height)
 ' Specify scissor clip rectangle
-    ScissorXY(x, y)
-    ScissorSize(width, height)
+    scissorxy(x, y)
+    scissorsize(width, height)
 
 PUB ScissorXY(x, y) | tmp
 ' Specify top left corner of scissor clip rectangle
     x := 0 #> x <# 2047
     y := 0 #> y <# 2047
     tmp := core#SCISSOR_XY | (x << core#SCISSOR_X) | y
-    CoProcCmd(tmp)
+    coproccmd(tmp)
 
 PUB ScissorSize(width, height) | tmp
 ' Specify size of scissor clip rectangle
     width := 0 #> width <# 2048
     height := 0 #> height <# 2048
     tmp := core#SCISSOR_SIZE | (width << core#WIDTH) | height
-    CoProcCmd(tmp)
+    coproccmd(tmp)
 
 PUB Scrollbar(x, y, width, height, opts, val, size, range)
 ' Draw a scrollbar
@@ -741,27 +769,27 @@ PUB Scrollbar(x, y, width, height, opts, val, size, range)
     y := 0 #> y <# DISP_YMAX
     width := 0 #> width <# DISP_XMAX
     height := 0 #> height <# DISP_YMAX
-    CoProcCmd(core#CMD_SCROLLBAR)
-    CoProcCmd((y << 16) | x)
-    CoProcCmd((height << 16) | width)
-    CoProcCmd((val << 16) | opts)
-    CoProcCmd((range << 16) | size)
+    coproccmd(core#CMD_SCROLLBAR)
+    coproccmd((y << 16) | x)
+    coproccmd((height << 16) | width)
+    coproccmd((val << 16) | opts)
+    coproccmd((range << 16) | size)
 
-PUB SetBase(radix)
-' Set base/radix for numbers drawn with the Num method
+PUB SetBase(radix)  'XXX rename to SetNumBase()?
+' Set base/radix for numbers drawn with the Num() method
 '   Valid values: 2..36
 '   Any other value is ignored
     case radix
         2..36:
-            CoProcCmd(core#CMD_SETBASE)
-            CoProcCmd(radix)
-        OTHER:
+            coproccmd(core#CMD_SETBASE)
+            coproccmd(radix)
+        other:
             return FALSE
 
-PUB Sleep
+PUB Sleep{}
 ' Power clock gate, PLL and oscillator off
-' Use Active to wake up
-    cmd (core#SLEEP, $00)
+'   NOTE: Call Active() to wake up
+    cmd(core#SLEEP, 0)
 
 PUB Slider(x, y, width, height, opts, val, range)
 ' Draw a slider
@@ -769,15 +797,15 @@ PUB Slider(x, y, width, height, opts, val, range)
     y := 0 #> y <# DISP_YMAX
     width := 0 #> width <# DISP_XMAX
     height := 0 #> height <# DISP_YMAX
-    CoProcCmd(core#CMD_SLIDER)
-    CoProcCmd((y << 16) | x)
-    CoProcCmd((height << 16) | width)
-    CoProcCmd((val << 16) | opts)
-    CoProcCmd(range)
+    coproccmd(core#CMD_SLIDER)
+    coproccmd((y << 16) | x)
+    coproccmd((height << 16) | width)
+    coproccmd((val << 16) | opts)
+    coproccmd(range)
 
-PUB SoftReset
+PUB SoftReset{}
 ' Perform a soft-reset of the BT81x
-    cmd (core#RST_PULSE, $00)
+    cmd(core#RST_PULSE, 0)
 
 PUB Spinner(x, y, style, scale) | tmp
 ' Draw a spinner/busy indicator
@@ -785,36 +813,37 @@ PUB Spinner(x, y, style, scale) | tmp
     y := 0 #> y <# DISP_YMAX
     style := 0 #> style <# 3
     scale := 0 #> scale <# 2
-    CoProcCmd(core#CMD_SPINNER)
-    CoProcCmd(y << 16 + x)
-    CoProcCmd(scale << 16 + style)
+    coproccmd(core#CMD_SPINNER)
+    coproccmd(y << 16 + x)
+    coproccmd(scale << 16 + style)
 
-PUB Standby
+PUB Standby{}
 ' Power clock gate off (PLL and oscillator remain on)
 ' Use Active to wake up
-    cmd (core#STANDBY, $00)
+    cmd(core#STANDBY, 0)
 
-PUB StopOperation
+PUB StopOperation{}
 ' Stop a running Sketch, Spinner, or Screensaver operation
-    CoProcCmd(core#CMD_STOP)
+    coproccmd(core#CMD_STOP)
 
-PUB Str(x, y, font, opts, str_ptr) | i, j
-' Draw a text string
-'   Valid values:
+PUB Str(x, y, font, opts, ptr_str) | i, j   'XXX rename to StrXY() or similar and
+' Draw a text string                        ' make a Str() without params other than
+'   Valid values:                           ' the string pointer?
 '       x: 0..display width-1
 '       y: 0..display_height-1
 '       font: 0..31 XXX expand/clarify
 '       opts: Options for the drawn text XXX expand/clarify
-'       str_ptr: Pointer to string
+'       ptr_str: Pointer to string
     x := 0 #> x <# DISP_XMAX
     y := 0 #> y <# DISP_YMAX
-    CoProcCmd(core#CMD_TEXT)
-    CoProcCmd((y << 16) + x)
-    CoProcCmd((opts << 16) + font)
-    j := (strsize(str_ptr) + 4) / 4
+    coproccmd(core#CMD_TEXT)
+    coproccmd((y << 16) + x)
+    coproccmd((opts << 16) + font)
+    j := (strsize(ptr_str) + 4) / 4
     repeat i from 1 to j
-        CoProcCmd(byte[str_ptr][3] << 24 + byte[str_ptr][2] << 16 + byte[str_ptr][1] << 8 + byte[str_ptr][0])
-        str_ptr += 4
+        coproccmd(byte[ptr_str][3] << 24 + byte[ptr_str][2] << 16 + {
+}       byte[ptr_str][1] << 8 + byte[ptr_str][0])
+        ptr_str += 4
 
 PUB Swizzle(mode) | tmp
 ' Control arrangement of output color pins
@@ -833,20 +862,20 @@ PUB Swizzle(mode) | tmp
 '       SWIZZLE_RBGM(14)    RBG, MSB-first
 '       SWIZZLE_RBGL(15)    RBG, LSB-first
 '   Any other value polls the chip and returns the current setting
-    tmp := $00
-    readReg(core#SWIZZLE, 1, @tmp)
+    tmp := 0
+    readreg(core#SWIZZLE, 1, @tmp)
     case mode
         %0000..%0011, %1000..%1111:
-        OTHER:
+        other:
             return tmp
-    writeReg(core#SWIZZLE, 1, @mode)
+    writereg(core#SWIZZLE, 1, @mode)
 
-PUB TagActive
+PUB TagActive{}
 ' Tag that is currently active
 '   Returns: Tag number (u8)
 '       If tag is active:       1..255
 '       If no tag is active:    0
-    readReg(core#TOUCH_TAG, 4, @result)
+    readreg(core#TOUCH_TAG, 4, @result)
 
 PUB TagArea(tag_nr, sx, sy, w, h) | tmp
 ' Define screen area to be associated with tag
@@ -854,63 +883,63 @@ PUB TagArea(tag_nr, sx, sy, w, h) | tmp
 '       tag_nr: 1..255 (must be the number of a tag previously defined with TagAttach())
 '       sx, sy: Starting coordinates of region (within your display's maximum)
 '       w, h: Width, height from sx, sy
-    CoProcCmd(core#CMD_TRACK)
-    CoProcCmd(sx << 16 + sx)
-    CoProcCmd(h << 16 + w)
-    CoProcCmd(tag_nr)
+    coproccmd(core#CMD_TRACK)
+    coproccmd(sx << 16 + sx)
+    coproccmd(h << 16 + w)
+    coproccmd(tag_nr)
 
 PUB TagAttach(val)
 ' Attach tag value for the following objects drawn on the screen
     val := 1 #> val <# 255
-    CoProcCmd(core#ATTACH_TAG | val)
+    coproccmd(core#ATTACH_TAG | val)
 
-PUB TaggingEnabled(enabled) | tmp
+PUB TaggingEnabled(state) | tmp
 ' Enable numbered tags to be assigned to display regions
 '   Valid values: TRUE (-1 or 1), FALSE (0)
-    case ||enabled
+    case ||(state)
         0, 1:
-            enabled := ||enabled
-        OTHER:
+            state := ||(state)
+        other:
 
-    CoProcCmd(core#TAG_MASK | enabled)
+    coproccmd(core#TAG_MASK | state)
 
 PUB TextWrap(pixels)
 ' Set pixel width for text wrapping
 '   NOTE: This setting applies to the Str and Button (when using the OPT_FILL option) methods
     pixels := 0 #> pixels <# DISP_XMAX
-    CoProcCmd(core#CMD_FILLWIDTH)
-    CoProcCmd(pixels)
+    coproccmd(core#CMD_FILLWIDTH)
+    coproccmd(pixels)
 
-PUB Toggle(x, y, width, font, opts, state, str_ptr) | i, j
+PUB Toggle(x, y, width, font, opts, state, ptr_str) | i, j
 ' Draw a toggle switch
 '   NOTE: String labels are UTF-8 formatted. A value of 255 separates label strings.
     x := 0 #> x <# DISP_XMAX
     y := 0 #> y <# DISP_YMAX
     width := 0 #> width <# DISP_XMAX
-    CoProcCmd(core#CMD_TOGGLE)
-    CoProcCmd((y << 16) | x)
-    CoProcCmd((font << 16) | width)
-    CoProcCmd((state << 16) | opts)
-    j := (strsize(str_ptr) + 4) / 4
+    coproccmd(core#CMD_TOGGLE)
+    coproccmd((y << 16) | x)
+    coproccmd((font << 16) | width)
+    coproccmd((state << 16) | opts)
+    j := (strsize(ptr_str) + 4) / 4
     repeat i from 1 to j
-        CoProcCmd(byte[str_ptr][3] << 24 + byte[str_ptr][2] << 16 + byte[str_ptr][1] << 8 + byte[str_ptr][0])
-        str_ptr += 4
+        coproccmd(byte[ptr_str][3] << 24 + byte[ptr_str][2] << 16 + byte[ptr_str][1] << 8 + byte[ptr_str][0])
+        ptr_str += 4
 
-PUB TouchHostMode(enabled) | tmp
+PUB TouchHostMode(state) | tmp
 ' Enable host mode (touchscreen data handled by the MCU, fed to the EVE)
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    tmp := $0000
-    readReg(core#TOUCH_CFG, 2, @tmp)
-    case ||enabled
+    tmp := 0
+    readreg(core#TOUCH_CFG, 2, @tmp)
+    case ||(state)
         0, 1:
-            enabled := ||enabled << core#HOSTMODE
-        OTHER:
-            result := ((tmp >> core#HOSTMODE) & %1) * TRUE
+            state := ||(state) << core#HOSTMODE
+        other:
+            result := ((tmp >> core#HOSTMODE) & 1) * TRUE
             return
     tmp &= core#HOSTMODE
-    tmp := (tmp | enabled) & core#TOUCH_CFG_MASK
-    writeReg(core#TOUCH_CFG, 2, @tmp)
+    tmp := (tmp | state) & core#TOUCH_CFG_MASK
+    writereg(core#TOUCH_CFG, 2, @tmp)
 
 PUB TouchI2CAddr(addr) | tmp
 ' Set I2C slave address of attached touchscreen
@@ -918,74 +947,74 @@ PUB TouchI2CAddr(addr) | tmp
 '       Focaltec: $3B (default)
 '       Goodix: $5D
 '   NOTE: Slave address must be 7-bit format
-    tmp := $0000
-    readReg(core#TOUCH_CFG, 2, @tmp)
+    tmp := 0
+    readreg(core#TOUCH_CFG, 2, @tmp)
     case addr
         $01..$7F:
             addr <<= core#TOUCH_ADDR
-        OTHER:
+        other:
             result := ((tmp >> core#TOUCH_ADDR) & core#TOUCH_ADDR)
             return
     tmp &= core#TOUCH_ADDR
     tmp := (tmp | addr) & core#TOUCH_CFG_MASK
-    writeReg(core#TOUCH_CFG, 2, @tmp)
+    writereg(core#TOUCH_CFG, 2, @tmp)
 
-PUB TouchLowPowerMode(enabled) | tmp
+PUB TouchLowPowerMode(state) | tmp
 ' Enable touchscreen low-power mode
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    tmp := $0000
-    readReg(core#TOUCH_CFG, 2, @tmp)
-    case ||enabled
+    tmp := 0
+    readreg(core#TOUCH_CFG, 2, @tmp)
+    case ||(state)
         0, 1:
-            enabled := ||enabled << core#LOWPWR
-        OTHER:
-            result := ((tmp >> core#LOWPWR) & %1) * TRUE
+            state := ||(state) << core#LOWPWR
+        other:
+            result := ((tmp >> core#LOWPWR) & 1) * TRUE
             return
     tmp &= core#LOWPWR
-    tmp := (tmp | enabled) & core#TOUCH_CFG_MASK
-    writeReg(core#TOUCH_CFG, 2, @tmp)
+    tmp := (tmp | state) & core#TOUCH_CFG_MASK
+    writereg(core#TOUCH_CFG, 2, @tmp)
 
 PUB TouchSampleClocks(clocks) | tmp
 ' Set number of touchscreen sampler clocks
 '   Valid values: 0..7
 '   Any other value polls the chip and returns the current setting
-    tmp := $0000
-    readReg(core#TOUCH_CFG, 2, @tmp)
+    tmp := 0
+    readreg(core#TOUCH_CFG, 2, @tmp)
     case clocks
         0..7:
-        OTHER:
+        other:
             return tmp & core#SAMPLER_CLKS_BITS
     tmp &= core#SAMPLER_CLKS_MASK
     tmp := (tmp | clocks) & core#TOUCH_CFG_MASK
-    writeReg(core#TOUCH_CFG, 2, @tmp)
+    writereg(core#TOUCH_CFG, 2, @tmp)
 
-PUB TouchScreenSupport
+PUB TouchScreenSupport{}
 ' Touchscreen type supported by connected EVE chip
 '   Returns:
 '       0 - Capactive (BT815)
 '       1 - Resistive (BT816)
-    readReg(core#TOUCH_CFG, 2, @result)
-    result := (result >> core#WORKMODE) & %1
+    readreg(core#TOUCH_CFG, 2, @result)
+    result := (result >> core#WORKMODE) & 1
     return
 
-PUB TouchXY
+PUB TouchXY{}
 ' Coordinates of touch event
 '   Returns:
 '       If touched: X coordinate (MSW, u16), Y coordinate (LSW, u16)
 '       If not touched: $8000_8000
-    readReg(core#TOUCH_SCREEN_XY, 4, @result)
+    readreg(core#TOUCH_SCREEN_XY, 4, @result)
 
 PUB VCycle(disp_lines) | tmp
 ' Set vertical total cycle count, in lines
 '   Valid values: 0..4095
 '   Any other value polls the chip and returns the current setting
-    readReg(core#VCYCLE, 2, @tmp)
+    readreg(core#VCYCLE, 2, @tmp)
     case disp_lines
         0..4095:
-        OTHER:
+        other:
             return tmp
-    writeReg(core#VCYCLE, 2, @disp_lines)
+    writereg(core#VCYCLE, 2, @disp_lines)
 
 PUB Vertex2F(x, y) | tmp
 ' Specify coordinates for following graphics primitive
@@ -994,7 +1023,7 @@ PUB Vertex2F(x, y) | tmp
     x <<= 4
     y <<= 4
     tmp := core#VERTEX2F | (x << core#V2F_X) | y
-    CoProcCmd(tmp)
+    coproccmd(tmp)
 
 PUB Vertex2II(x, y, handle, cell) | tmp
 ' Start the operation of graphics primitive at the specified coordinates in pixel precision
@@ -1002,116 +1031,115 @@ PUB Vertex2II(x, y, handle, cell) | tmp
     y := 0 #> y <# 511
     case handle
         0..31:
-        OTHER:
+        other:
             return
     case cell
         0..127:
-        OTHER:
+        other:
             return
     tmp := core#VERTEX2II | (x << core#X) | (y << core#Y) | (handle << core#HANDLE) | cell
-    CoProcCmd(tmp)
+    coproccmd(tmp)
     return tmp
 
 PUB VOffset(disp_lines) | tmp
 ' Set vertical display start offset, in lines
 '   Valid values: 0..4095
 '   Any other value polls the chip and returns the current setting
-    readReg(core#VOFFSET, 2, @tmp)
+    readreg(core#VOFFSET, 2, @tmp)
     case disp_lines
         0..4095:
-        OTHER:
+        other:
             return tmp
-    writeReg(core#VOFFSET, 2, @disp_lines)
+    writereg(core#VOFFSET, 2, @disp_lines)
 
 PUB VSize(disp_lines) | tmp
 ' Set vertical display line count
 '   Valid values: 0..4095
 '   Any other value polls the chip and returns the current setting
-    readReg(core#VSIZE, 2, @tmp)
+    readreg(core#VSIZE, 2, @tmp)
     case disp_lines
         0..4095:
-        OTHER:
+        other:
             return tmp
-    writeReg(core#VSIZE, 2, @disp_lines)
+    writereg(core#VSIZE, 2, @disp_lines)
 
 PUB VSync0(offset_lines) | tmp
 ' Set vertical sync fall offset, in lines
 '   Valid values: 0..1023
 '   Any other value polls the chip and returns the current setting
-    readReg(core#VSYNC0, 2, @tmp)
+    readreg(core#VSYNC0, 2, @tmp)
     case offset_lines
         0..1023:
-        OTHER:
+        other:
             return tmp
-    writeReg(core#VSYNC0, 2, @offset_lines)
+    writereg(core#VSYNC0, 2, @offset_lines)
 
 PUB VSync1(offset_lines) | tmp
 ' Set vertical sync rise offset, in lines
 '   Valid values: 0..1023
 '   Any other value polls the chip and returns the current setting
-    readReg(core#VSYNC1, 2, @tmp)
+    readreg(core#VSYNC1, 2, @tmp)
     case offset_lines
         0..1023:
-        OTHER:
+        other:
             return tmp
-    writeReg(core#VSYNC1, 2, @offset_lines)
+    writereg(core#VSYNC1, 2, @offset_lines)
 
-PUB WaitIdle
+PUB WaitIdle{}
 ' Waits until the coprocessor is idle
     repeat
-        time.MSleep(10)
-    until Idle
+        time.msleep(10)
+    until idle{}
 
 PUB WidgetBGColor(rgb)
 ' Set background color for widgets (gauges, sliders, etc), as a 24-bit RGB number
 '   Valid values: $00_00_00..$FF_FF_FF
 '   Any other value will be clamped to min/max limits
     rgb := $00_00_00 #> rgb <# $FF_FF_FF
-    CoProcCmd(core#CMD_BGCOLOR)
-    CoProcCmd(rgb)
+    coproccmd(core#CMD_BGCOLOR)
+    coproccmd(rgb)
 
 PUB WidgetFGColor(rgb)
 ' Set foreground color for widgets (gauges, sliders, etc), as a 24-bit RGB number
 '   Valid values: $00_00_00..$FF_FF_FF
 '   Any other value will be clamped to min/max limits
     rgb := $00_00_00 #> rgb <# $FF_FF_FF
-    CoProcCmd(core#CMD_FGCOLOR)
-    CoProcCmd(rgb)
+    coproccmd(core#CMD_FGCOLOR)
+    coproccmd(rgb)
 
-PUB Idle | cmd_rd, cmd_wr
+PUB Idle{} | cmd_rd, cmd_wr
 ' Return idle status
 '   Returns: TRUE (-1) if coprocessor is idle, FALSE (0) if busy
-    readReg(core#CMD_READ, 4, @cmd_rd)
-    readReg(core#CMD_WRITE, 4, @cmd_wr)
+    readreg(core#CMD_READ, 4, @cmd_rd)
+    readreg(core#CMD_WRITE, 4, @cmd_wr)
     return (cmd_rd == cmd_wr)
 
-PUB cmd(cmd_word, param) | cmd_packet, tmp
+PRI cmd(cmd_word, param) | cmd_pkt, tmp
 
-    cmd_packet.byte[0] := cmd_word
-    cmd_packet.byte[1] := param
-    cmd_packet.byte[2] := $00
+    cmd_pkt.byte[0] := cmd_word
+    cmd_pkt.byte[1] := param
+    cmd_pkt.byte[2] := 0
 
-    spi.Write(TRUE, @cmd_packet, 3, TRUE)
+    spi.write(TRUE, @cmd_pkt, 3, TRUE)
 
-PUB readReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
-' Read nr_bytes from register 'reg' to address 'buf_addr'
+PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
+' Read nr_bytes from device into ptr_buff
+    cmd_pkt.byte[0] := reg_nr.byte[2] | core#READ' %00 + reg_nr ..
+    cmd_pkt.byte[1] := reg_nr.byte[1]           ' .. address
+    cmd_pkt.byte[2] := reg_nr.byte[0]           ' ..
+    cmd_pkt.byte[3] := 0                        ' Dummy byte
 
-    cmd_packet.byte[0] := reg.byte[2] | core#READ       ' %00 + reg ..
-    cmd_packet.byte[1] := reg.byte[1]                   ' .. address
-    cmd_packet.byte[2] := reg.byte[0]                   ' ..
-    cmd_packet.byte[3] := $00                           ' Dummy byte
+    spi.write(TRUE, @cmd_pkt, 4, FALSE)
+    spi.read(ptr_buff, nr_bytes)
 
-    spi.Write(TRUE, @cmd_packet, 4, FALSE)
-    spi.Read(buff_addr, nr_bytes)
+PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
+' Write nr_bytes from ptr_buff to device
+    cmd_pkt.byte[0] := reg_nr.byte[2] | core#WRITE' %01 + reg_nr ..
+    cmd_pkt.byte[1] := reg_nr.byte[1]           ' .. address
+    cmd_pkt.byte[2] := reg_nr.byte[0]           ' ..
 
-PUB writeReg(reg, nr_bytes, buff_addr) | cmd_packet, tmp
-' Write nr_bytes to register 'reg' stored at buf_addr
-    cmd_packet.byte[0] := reg.byte[2] | core#WRITE       ' %01 + reg ..
-    cmd_packet.byte[1] := reg.byte[1]                   ' .. address
-    cmd_packet.byte[2] := reg.byte[0]                   ' ..
-
-    spi.Write(TRUE, @cmd_packet, 3, FALSE)
-    spi.Write(TRUE, buff_addr, nr_bytes, TRUE)
+    spi.write(TRUE, @cmd_pkt, 3, FALSE)
+    spi.write(TRUE, ptr_buff, nr_bytes, TRUE)
 
 DAT
 {
