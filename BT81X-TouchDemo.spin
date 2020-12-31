@@ -5,7 +5,7 @@
     Description: Demo of the BT81x driver touchscreen functionality
     Copyright (c) 2020
     Started Sep 30, 2019
-    Updated May 30, 2020
+    Updated Dec 31, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -16,17 +16,15 @@ CON
     _xinfreq    = cfg#_xinfreq
 
 ' -- User-modifiable constants
-    SER_RX      = 31
-    SER_TX      = 30
+    LED         = cfg#LED1
     SER_BAUD    = 115_200
 
-    LED         = cfg#LED1
     CS_PIN      = 3
     SCK_PIN     = 0
     MOSI_PIN    = 2
     MISO_PIN    = 1
 
-    BRIGHTNESS  = 100   'Initial brightness level (0..128)
+    BRIGHTNESS  = 100                           ' Initial brightness (0..128)
 
 ' Uncomment one of the following, depending on your display size/resolution
 #include "core.bt815.lcdtimings.800x480.spinh"
@@ -45,156 +43,155 @@ CON
 OBJ
 
     cfg         : "core.con.boardcfg.flip"
-    io          : "io"
     ser         : "com.serial.terminal.ansi"
     time        : "time"
     eve         : "display.lcd.bt81x.spi"
 
-PUB Main | count, idle, state, x, y, t1, t2, t3, t4
+PUB Main{} | count, idle, state, x, y, t1, t2, t3, t4
 
-    Setup
-    eve.Brightness (BRIGHTNESS)
-    eve.ClearColor(0, 0, 0)
-    eve.Clear
+    setup{}
+    eve.brightness(BRIGHTNESS)
+    eve.clearcolor(0, 0, 0)                     ' clear screen black
+    eve.clear{}
 
-    UpdateButton(0)
+    updatebutton(0)                             ' set initial button state
     idle := TRUE
     count := 0
 
     repeat
-        state := eve.TagActive
-        if state == 1
-            if idle == TRUE
-                idle := FALSE
-                UpdateButton(1)
+        state := eve.tagactive{}                ' get state of button
+        if state == 1                           ' pushed
+            if idle == TRUE                     ' mark not idle so only one
+                idle := FALSE                   '   push is registered if held
+                updatebutton(1)                 '   down
                 count++
-                if count == 3
-                    quit
+                if count == 3                   ' if pressed 3 times, exit the
+                    quit                        '   loop
 
-        elseif state == 0
-            if idle == FALSE
+        elseif state == 0                       ' not pushed
+            if idle == FALSE                    ' mark idle
                 idle := TRUE
-                UpdateButton(0)
+                updatebutton(0)                 ' redraw button up
 
-    UpdateScrollbar(0)
+    updatescrollbar(0)                          ' set initial scrollbar state
     repeat
-        state := eve.TagActive
-        if state == 1
-            x := eve.TouchXY >> 16
-            UpdateScrollbar(x)
-            if x > DISP_WIDTH-20
-                quit
+        state := eve.tagactive{}
+        if state == 1                           ' only update the scrollbar pos
+            x := eve.touchxy{} >> 16            '   if it's being touched
+            updatescrollbar(x)
+            if x > DISP_WIDTH-20                ' if pulled near the right edge
+                quit                            '   of the screen, exit loop
 
     t1 := t2 := t3 := t4 := 0
     idle := TRUE
-    UpdateToggle(0, 0, 0, 0)
+    updatetoggle(0, 0, 0, 0)                    ' set toggles' initial state
     repeat
-        case state := eve.TagActive
-            1:
+        case state := eve.tagactive{}           ' which toggle was touched?
+            1:                                  ' toggle #1
                 if idle == TRUE
                     idle := FALSE
-                    t1 ^= $FFFF
-                    UpdateToggle(t1, t2, t3, t4)
-            2:
+                    t1 ^= $FFFF                 ' flip all bits to change state
+                    updatetoggle(t1, t2, t3, t4)
+            2:                                  ' toggle #2
                 if idle == TRUE
                     idle := FALSE
                     t2 ^= $FFFF
-                    UpdateToggle(t1, t2, t3, t4)
-            3:
+                    updatetoggle(t1, t2, t3, t4)
+            3:                                  ' toggle #3
                 if idle == TRUE
                     idle := FALSE
                     t3 ^= $FFFF
-                    UpdateToggle(t1, t2, t3, t4)
-            4:
+                    updatetoggle(t1, t2, t3, t4)
+            4:                                  ' toggle #4
                 if idle == TRUE
                     idle := FALSE
                     t4 ^= $FFFF
-                    UpdateToggle(t1, t2, t3, t4)
-            OTHER:
+                    updatetoggle(t1, t2, t3, t4)
+            other:
                 if idle == FALSE
                     idle := TRUE
 
         if t1 == $FFFF and t2 == $FFFF and t3 == $FFFF and t4 == $FFFF
-            quit
+            quit                                ' if all toggles are switched
+                                                '   on, end the demo
 
-    eve.Brightness(0)
-    eve.Powered(FALSE)
-    FlashLED(LED, 100)
+    eve.brightness(0)
+    eve.powered(FALSE)
+    repeat
 
 PUB UpdateButton(state)
 
-    eve.DisplayListStart
-    eve.ClearColor(0, 0, 0)
-    eve.Clear
-    eve.WidgetBGColor($ff_ff_ff)
-    eve.WidgetFGColor($55_55_55)
-    if state
-        eve.ColorRGB(255, 255, 255)
-        eve.TagAttach(1)
-        eve.Button(BUTTON_CX, BUTTON_CY, 100, 50, 30, 0, string("TEST"))
+    eve.waitidle{}                              ' wait for EVE to be ready
+    eve.displayliststart{}                      ' begin list of graphics cmds
+    eve.clearcolor(0, 0, 0)
+    eve.clear{}
+    eve.widgetbgcolor($ff_ff_ff)                ' button colors (r_g_b)
+    eve.widgetfgcolor($55_55_55)                '
+    if state                                    ' button pressed
+        eve.colorrgb(255, 255, 255)             ' button text color (pressed)
+        eve.tagattach(1)                        ' tag or id# for this button
+        eve.button(BUTTON_CX, BUTTON_CY, 100, 50, 30, 0, string("TEST"))
     else
-        eve.ColorRGB(0, 0, 192)
-        eve.TagAttach(1)
-        eve.Button(BUTTON_CX, BUTTON_CY, 100, 50, 30, 0, string("TEST"))
-    eve.DisplayListEnd
+        eve.colorrgb(0, 0, 192)                 ' button text color (up)
+        eve.tagattach(1)
+        eve.button(BUTTON_CX, BUTTON_CY, 100, 50, 30, 0, string("TEST"))
+    eve.displaylistend{}                        ' end list; display everything
 
 PUB UpdateScrollbar(val) | w, h, x, y, sz
 
-    sz := 10
-    w := DISP_WIDTH-(sz << 1)-1
-    h := 20
+    sz := 10                                    ' scrollbar size
+    w := DISP_WIDTH-(sz << 1)-1                 '   width
+    h := 20                                     '   height
     x := 0+sz
     y := DISP_HEIGHT-h-1
 
-    eve.WaitIdle
-    eve.DisplayListStart
-    eve.ClearColor(0, 0, 0)
-    eve.Clear
-    eve.WidgetBGColor($55_55_55)
-    eve.WidgetFGColor($00_00_C0)
-    eve.TagAttach(1)
-    eve.Scrollbar(x, y, w, h, 0, x #> val <# w, sz, w)
-    eve.DisplayListEnd
+    eve.waitidle{}
+    eve.displayliststart{}
+    eve.clearcolor(0, 0, 0)
+    eve.clear{}
+    eve.widgetbgcolor($55_55_55)
+    eve.widgetfgcolor($00_00_C0)
+    eve.tagattach(1)
+    eve.scrollbar(x, y, w, h, 0, x #> val <# w, sz, w)
+    eve.displaylistend{}
 
-PUB UpdateToggle(t1, t2, t3, t4) | tag, tmp, x, y, ys, w, sw, sz
+PUB UpdateToggle(t1, t2, t3, t4) | tag, tmp, x, y, w, sw, h
 
-    w := 60
-    sz := 24
-    x := CENTERX-(w/2)
-    ys := CENTERY-(sz*4)
+    w := 60                                     ' toggle switch width
+    h := 24                                     '   and height
+    x := CENTERX-(w/2)                          ' x and y
+    y := CENTERY-(h*4)                          '   coords
 
-    eve.WaitIdle
-    eve.DisplayListStart
-    eve.ClearColor(0, 0, 0)
-    eve.Clear
-    eve.WidgetBGColor($55_55_55)
-    eve.WidgetFGColor($00_00_C0)
-    eve.TagAttach(1)
-    eve.Toggle(x, ys + (1 * (sz*2)), w, sz, 0, t1, string("OFF", $FF, "ON"))
-    eve.TagAttach(2)
-    eve.Toggle(x, ys + (2 * (sz*2)), w, sz, 0, t2, string("OFF", $FF, "ON"))
-    eve.TagAttach(3)
-    eve.Toggle(x, ys + (3 * (sz*2)), w, sz, 0, t3, string("OFF", $FF, "ON"))
-    eve.TagAttach(4)
-    eve.Toggle(x, ys + (4 * (sz*2)), w, sz, 0, t4, string("OFF", $FF, "ON"))
-    eve.DisplayListEnd
+    eve.waitidle{}
+    eve.displayliststart{}
+    eve.clearcolor(0, 0, 0)
+    eve.clear{}
+    eve.widgetbgcolor($55_55_55)
+    eve.widgetfgcolor($00_00_C0)
+    eve.tagattach(1)                            ' different
+    eve.toggle(x, y + (1 * (h*2)), w, h, 0, t1, string("OFF", $FF, "ON"))
+    eve.tagattach(2)                            ' tag
+    eve.toggle(x, y + (2 * (h*2)), w, h, 0, t2, string("OFF", $FF, "ON"))
+    eve.tagattach(3)                            ' for each
+    eve.toggle(x, y + (3 * (h*2)), w, h, 0, t3, string("OFF", $FF, "ON"))
+    eve.tagattach(4)                            ' button
+    eve.toggle(x, y + (4 * (h*2)), w, h, 0, t4, string("OFF", $FF, "ON"))
+    eve.displaylistend{}
 
-PUB Setup
+PUB Setup{}
 
-    repeat until ser.StartRXTX (SER_RX, SER_TX, 0, SER_BAUD)
+    ser.start(SER_BAUD)
     time.msleep(30)
-    ser.clear
-    ser.Str(string("Serial terminal started", ser#CR, ser#LF))
-    if eve.Start (CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
-        ser.Str(string("BT81x driver started", ser#CR, ser#LF))
+    ser.clear{}
+    ser.strln(string("Serial terminal started"))
+    if eve.start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
+        ser.strln(string("BT81x driver started"))
     else
-        ser.Str(string("BT81x driver failed to start - halting", ser#CR, ser#LF))
-        eve.Stop
-        time.MSleep (500)
-        ser.Stop
-        FlashLED (LED, 500)
-
-#include "lib.utility.spin"
+        ser.str(string("BT81x driver failed to start - halting"))
+        eve.stop{}
+        time.msleep(500)
+        ser.stop{}
+        repeat
 
 DAT
 {
