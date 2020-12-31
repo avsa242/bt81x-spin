@@ -5,7 +5,7 @@
     Description: Low-level constants
     Copyright (c) 2020
     Started Sep 25, 2019
-    Updated May 28, 2020
+    Updated Dec 31, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -28,14 +28,14 @@ CON
     RAM_G_END                   = $0F_FFFF
     CHIPID                      = $0C_0000
 
-    ROM_FONT_START              = $1E_0000
-    ROM_FONT_END                = $2F_FFFB
-    ROM_FONTROOT_START          = $2F_FFFC
-    ROM_FONTROOT_END            = $2F_FFFF
+    ROM_FNT_START               = $1E_0000
+    ROM_FNT_END                 = $2F_FFFB
+    ROM_FNTROOT_START           = $2F_FFFC
+    ROM_FNTROOT_END             = $2F_FFFF
     ROM_START                   = $20_0000
     ROM_END                     = $2F_FFFF
-    RAM_DISP_LIST_START         = $30_0000
-    RAM_DISP_LIST_END           = $30_1FFF
+    RAM_DISPLIST_START          = $30_0000
+    RAM_DISPLIST_END            = $30_1FFF
     RAM_REG                     = $30_2000
     RAM_REG_END                 = RAM_REG + $FFF
     RAM_CMD_START               = $30_8000
@@ -44,12 +44,12 @@ CON
     FLASH_END                   = $107F_FFFF
 
     ID                          = RAM_REG + $000
-        ID_BT815                = $08150100
-        ID_BT816                = $08160100
+        BT815                   = $08150100
+        BT816                   = $08160100
 
     FRAMES                      = RAM_REG + $004
-    CLOCK                       = RAM_REG + $008
-    FREQUENCY                   = RAM_REG + $00C
+    CLK                         = RAM_REG + $008
+    FREQ                        = RAM_REG + $00C
     RENDERMODE                  = RAM_REG + $010
     SNAPY                       = RAM_REG + $014
     SNAPSHOT                    = RAM_REG + $018
@@ -57,12 +57,12 @@ CON
 
     CPURESET                    = RAM_REG + $020
     CPURESET_MASK               = $07
-        FLD_AUDIO_ENG           = 2
-        FLD_TOUCH_ENG           = 1
-        FLD_COPRO_ENG           = 0
-        MASK_AUDIO_ENG          = CPURESET_MASK ^ (1 << FLD_AUDIO_ENG)
-        MASK_TOUCH_ENG          = CPURESET_MASK ^ (1 << FLD_TOUCH_ENG)
-        MASK_COPROP_ENG         = CPURESET_MASK ^ (1 << FLD_COPRO_ENG)
+        AUDIO_ENG               = 2
+        TOUCH_ENG               = 1
+        COPRO_ENG               = 0
+        AUDIO_ENG_MASK          = (1 << AUDIO_ENG) ^ CPURESET_MASK
+        TOUCH_ENG_MASK          = (1 << TOUCH_ENG) ^ CPURESET_MASK
+        COPROP_ENG_MASK         = 1 ^ CPURESET_MASK
 
     TAP_CRC                     = RAM_REG + $024
     TAP_MASK                    = RAM_REG + $028
@@ -120,7 +120,7 @@ CON
     TOUCH_CHARGE                = RAM_REG + $10C
     EHOST_TOUCH_X               = RAM_REG + $10C
     TOUCH_SETTLE                = RAM_REG + $110
-    TOUCH_OVERSAMPLE            = RAM_REG + $114
+    TOUCH_OVERSMP               = RAM_REG + $114
     EHOST_TOUCH_ID              = RAM_REG + $114
     TOUCH_RZTHRESH              = RAM_REG + $118
     EHOST_TOUCH_Y               = RAM_REG + $118
@@ -147,26 +147,26 @@ CON
     TOUCH_TRANSFORM_E           = RAM_REG + $160
     TOUCH_TRANSFORM_F           = RAM_REG + $164
 
-    TOUCH_CONFIG                = RAM_REG + $168
-    TOUCH_CONFIG_MASK           = $0000DFFF
-        FLD_WORKINGMODE         = 15
-        FLD_HOSTMODE            = 14
-        FLD_IGNORE_SHORT        = 12
-        FLD_LOWPOWER            = 11
-        FLD_TOUCH_I2C_ADDR      = 4
-        FLD_CAPTOUCH_VENDOR     = 3
-        FLD_SUPPRESS_300MS      = 2
-        FLD_SAMPLER_CLOCKS      = 0
-        BITS_TOUCH_I2C_ADDR     = %1111111
-        BITS_SAMPLER_CLOCKS     = %11
-        MASK_WORKINGMODE        = TOUCH_CONFIG_MASK ^ (1 << FLD_WORKINGMODE)
-        MASK_HOSTMODE           = TOUCH_CONFIG_MASK ^ (1 << FLD_HOSTMODE)
-        MASK_IGNORE_SHORT       = TOUCH_CONFIG_MASK ^ (1 << FLD_IGNORE_SHORT)
-        MASK_LOWPOWER           = TOUCH_CONFIG_MASK ^ (1 << FLD_LOWPOWER)
-        MASK_TOUCH_I2C_ADDR     = TOUCH_CONFIG_MASK ^ (BITS_TOUCH_I2C_ADDR << FLD_TOUCH_I2C_ADDR)
-        MASK_CAPTOUCH_VENDOR    = TOUCH_CONFIG_MASK ^ (1 << FLD_CAPTOUCH_VENDOR)
-        MASK_SUPPRESS_300MS     = TOUCH_CONFIG_MASK ^ (BITS_TOUCH_I2C_ADDR << FLD_TOUCH_I2C_ADDR)
-        MASK_SAMPLER_CLOCKS     = TOUCH_CONFIG_MASK ^ (BITS_SAMPLER_CLOCKS << FLD_SAMPLER_CLOCKS)
+    TOUCH_CFG                   = RAM_REG + $168
+    TOUCH_CFG_MASK              = $0000DFFF
+        WORKMODE                = 15
+        HOSTMODE                = 14
+        IGN_SHORT               = 12
+        LOWPWR                  = 11
+        TOUCH_ADDR              = 4
+        CAPTOUCH_VEND           = 3
+        SUPPRESS_300MS          = 2
+        SAMPLER_CLKS            = 0
+        TOUCH_ADDR_BITS         = %1111111
+        SAMPLER_CLKS_BITS       = %11
+        WORKMODE_MASK           = (1 << WORKMODE) ^ TOUCH_CFG_MASK
+        HOSTMODE_MASK           = (1 << HOSTMODE) ^ TOUCH_CFG_MASK
+        IGN_SHORT_MASK          = (1 << IGN_SHORT) ^ TOUCH_CFG_MASK
+        LOWPWR_MASK             = (1 << LOWPWR) ^ TOUCH_CFG_MASK
+        TOUCH_ADDR_MASK         = (TOUCH_ADDR_BITS << TOUCH_ADDR) ^ TOUCH_CFG_MASK
+        CAPTOUCH_VEND_MASK      = (1 << CAPTOUCH_VEND) ^ TOUCH_CFG_MASK
+        SUPPRESS_300MS_MASK     = (TOUCH_ADDR_BITS << TOUCH_ADDR) ^ TOUCH_CFG_MASK
+        SAMPLER_CLKS_MASK       = SAMPLER_CLKS_BITS ^ TOUCH_CFG_MASK
 
     CTOUCH_TOUCH4_X             = RAM_REG + $16C
     EHOST_TOUCH_ACK             = RAM_REG + $170
@@ -183,7 +183,7 @@ CON
     DATESTAMP                   = RAM_REG + $564
     CMDB_SPACE                  = RAM_REG + $574
     CMDB_WRITE                  = RAM_REG + $578
-    ADAPTIVE_FRAMERATE          = RAM_REG + $57C
+    ADAPTIVE_FRAMERT            = RAM_REG + $57C
     PLAYBACK_PAUSE              = RAM_REG + $5EC
     FLASH_STATUS                = RAM_REG + $5F0
     COPRO_PATCH_PTR             = $30_9162
@@ -200,8 +200,8 @@ CON
 
     CLKSEL1                     = $61   'Set clock freq, PLL range
     CLKSEL2                     = $62
-        FLD_PLL                 = 6
-        FLD_CLKFREQ             = 0
+        PLL                     = 6
+        EVECLKFREQ              = 0
 
     RST_PULSE                   = $68
     PINDRIVE                    = $70
@@ -221,7 +221,7 @@ CON
     CMD_SCROLLBAR               = $FFFFFF11
     CMD_TOGGLE                  = $FFFFFF12
     CMD_GAUGE                   = $FFFFFF13
-    CMD_CLOCK                   = $FFFFFF14
+    CMD_CLK                     = $FFFFFF14
     CMD_CALIBRATE               = $FFFFFF15
     CMD_SPINNER                 = $FFFFFF16
     CMD_STOP                    = $FFFFFF17
@@ -237,55 +237,55 @@ CON
     CMD_NUMBER                  = $FFFFFF2E
     CMD_SETROTATE               = $FFFFFF36
     CMD_SETBASE                 = $FFFFFF38
-    CMD_ROMFONT                 = $FFFFFF3F
-    CMD_PLAYVIDEO               = $FFFFFF3A
+    CMD_ROMFNT                  = $FFFFFF3F
+    CMD_PLAYVID                 = $FFFFFF3A
     CMD_MEDIAFIFO               = $FFFFFF39
     CMD_GRADIENTA               = $FFFFFF57
     CMD_FILLWIDTH               = $FFFFFF58
 
 ' Display List Commands
     DISPLAY                     = $00_00_00_00
-    CLEAR_COLOR_RGB             = $02_00_00_00
+    CLR_COLOR_RGB               = $02_00_00_00
     ATTACH_TAG                  = $03_00_00_00
 
     COLOR_RGB                   = $04_00_00_00
-        FLD_RED                 = 16
-        FLD_GREEN               = 8
-        FLD_BLUE                = 0
+        RED                     = 16
+        GREEN                   = 8
+        BLUE                    = 0
 
     POINT_SIZE                  = $0D_00_00_00
     LINE_WIDTH                  = $0E_00_00_00
 
     TAG_MASK                    = $14_00_00_00
-        FLD_MASK                = 0
+        MASK                    = 0
 
     SCISSOR_XY                  = $1B_00_00_00
-        FLD_SCISSOR_X           = 11
-        FLD_SCISSOR_Y           = 0
+        SCISSOR_X               = 11
+        SCISSOR_Y               = 0
 
     SCISSOR_SIZE                = $1C_00_00_00
-        FLD_WIDTH               = 12
-        FLD_HEIGHT              = 0
+        WIDTH                   = 12
+        HEIGHT                  = 0
 
     BEGIN                       = $1F_00_00_00
         LINES                   = $03
 
     VERTEX2F                    = $40_00_00_00
-        FLD_2F_X                = 15
-        FLD_2F_Y                = 0
+        V2F_X                   = 15
+        V2F_Y                   = 0
 
     VERTEX2II                   = $80_00_00_00
-        FLD_X                   = 21
-        FLD_Y                   = 12
-        FLD_HANDLE              = 7
-        FLD_CELL                = 0
+        X                       = 21
+        Y                       = 12
+        HANDLE                  = 7
+        CELL                    = 0
 
     END                         = $21_00_00_00
 
-    CLEAR                       = $26_00_00_00
-        FLD_COLOR               = 2
-        FLD_STENCIL             = 1
-        FLD_TAG                 = 0
+    CLR                         = $26_00_00_00
+        COLOR                   = 2
+        STENCIL                 = 1
+        TAGBUFF                 = 0
 
 PUB Null
 ' This is not a top-level object

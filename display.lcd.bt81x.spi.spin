@@ -10,6 +10,7 @@
     See end of file for terms of use.
     --------------------------------------------
 }
+
 #ifdef MO_50_70
 #elseifdef MO_43
 #elseifdef MO_35
@@ -231,7 +232,7 @@ PUB Clear
 PUB ClearBuffers(color, stencil, tag) | tmp
 ' Clear buffers to preset values
 '   Valid values: FALSE (0), TRUE (-1 or 1) for color, stencil, tag
-    tmp := core#CLEAR | ( (||color & %1) << core#FLD_COLOR) | ( (||stencil & %1) << core#FLD_STENCIL) | (||tag & %1)
+    tmp := core#CLR | ( (||color & %1) << core#COLOR) | ( (||stencil & %1) << core#STENCIL) | (||tag & %1)
     CoProcCmd(tmp)
     return tmp
 
@@ -242,7 +243,7 @@ PUB ClearColor(r, g, b) | tmp
     r := 0 #> r <# 255
     g := 0 #> g <# 255
     b := 0 #> b <# 255
-    tmp := core#CLEAR_COLOR_RGB | (r << 16) | (g << 8) | b
+    tmp := core#CLR_COLOR_RGB | (r << 16) | (g << 8) | b
     CoProcCmd(tmp)
     return tmp
 
@@ -265,13 +266,13 @@ PUB Clockfreq(MHz) | tmp
 
         OTHER:
             Powered(TRUE)
-            readReg(core#FREQUENCY, 4, @tmp)
+            readReg(core#FREQ, 4, @tmp)
             return tmp / 1_000_000
     Sleep
     cmd (core#CLKSEL1, tmp)
     Powered(TRUE)
     time.MSleep (core#TPOR)
-    writeReg(core#FREQUENCY, 4, @MHz)
+    writeReg(core#FREQ, 4, @MHz)
 
 PUB ClockSpread(enabled) | tmp
 ' Enable output clock spreading, to reduce switching noise
@@ -294,7 +295,7 @@ PUB ColorRGB(r, g, b) | tmp
     r := 0 #> r <# 255
     g := 0 #> g <# 255
     b := 0 #> b <# 255
-    tmp := core#COLOR_RGB | (r << core#FLD_RED) | (g << core#FLD_GREEN) | b
+    tmp := core#COLOR_RGB | (r << core#RED) | (g << core#GREEN) | b
     CoProcCmd(tmp)
     return tmp
 
@@ -722,14 +723,14 @@ PUB ScissorXY(x, y) | tmp
 ' Specify top left corner of scissor clip rectangle
     x := 0 #> x <# 2047
     y := 0 #> y <# 2047
-    tmp := core#SCISSOR_XY | (x << core#FLD_SCISSOR_X) | y
+    tmp := core#SCISSOR_XY | (x << core#SCISSOR_X) | y
     CoProcCmd(tmp)
 
 PUB ScissorSize(width, height) | tmp
 ' Specify size of scissor clip rectangle
     width := 0 #> width <# 2048
     height := 0 #> height <# 2048
-    tmp := core#SCISSOR_SIZE | (width << core#FLD_WIDTH) | height
+    tmp := core#SCISSOR_SIZE | (width << core#WIDTH) | height
     CoProcCmd(tmp)
 
 PUB Scrollbar(x, y, width, height, opts, val, size, range)
@@ -900,16 +901,16 @@ PUB TouchHostMode(enabled) | tmp
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
     tmp := $0000
-    readReg(core#TOUCH_CONFIG, 2, @tmp)
+    readReg(core#TOUCH_CFG, 2, @tmp)
     case ||enabled
         0, 1:
-            enabled := ||enabled << core#FLD_HOSTMODE
+            enabled := ||enabled << core#HOSTMODE
         OTHER:
-            result := ((tmp >> core#FLD_HOSTMODE) & %1) * TRUE
+            result := ((tmp >> core#HOSTMODE) & %1) * TRUE
             return
-    tmp &= core#MASK_HOSTMODE
-    tmp := (tmp | enabled) & core#TOUCH_CONFIG_MASK
-    writeReg(core#TOUCH_CONFIG, 2, @tmp)
+    tmp &= core#HOSTMODE
+    tmp := (tmp | enabled) & core#TOUCH_CFG_MASK
+    writeReg(core#TOUCH_CFG, 2, @tmp)
 
 PUB TouchI2CAddr(addr) | tmp
 ' Set I2C slave address of attached touchscreen
@@ -918,54 +919,54 @@ PUB TouchI2CAddr(addr) | tmp
 '       Goodix: $5D
 '   NOTE: Slave address must be 7-bit format
     tmp := $0000
-    readReg(core#TOUCH_CONFIG, 2, @tmp)
+    readReg(core#TOUCH_CFG, 2, @tmp)
     case addr
         $01..$7F:
-            addr <<= core#FLD_TOUCH_I2C_ADDR
+            addr <<= core#TOUCH_ADDR
         OTHER:
-            result := ((tmp >> core#FLD_TOUCH_I2C_ADDR) & core#BITS_TOUCH_I2C_ADDR)
+            result := ((tmp >> core#TOUCH_ADDR) & core#TOUCH_ADDR)
             return
-    tmp &= core#MASK_TOUCH_I2C_ADDR
-    tmp := (tmp | addr) & core#TOUCH_CONFIG_MASK
-    writeReg(core#TOUCH_CONFIG, 2, @tmp)
+    tmp &= core#TOUCH_ADDR
+    tmp := (tmp | addr) & core#TOUCH_CFG_MASK
+    writeReg(core#TOUCH_CFG, 2, @tmp)
 
 PUB TouchLowPowerMode(enabled) | tmp
 ' Enable touchscreen low-power mode
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
     tmp := $0000
-    readReg(core#TOUCH_CONFIG, 2, @tmp)
+    readReg(core#TOUCH_CFG, 2, @tmp)
     case ||enabled
         0, 1:
-            enabled := ||enabled << core#FLD_LOWPOWER
+            enabled := ||enabled << core#LOWPWR
         OTHER:
-            result := ((tmp >> core#FLD_LOWPOWER) & %1) * TRUE
+            result := ((tmp >> core#LOWPWR) & %1) * TRUE
             return
-    tmp &= core#MASK_LOWPOWER
-    tmp := (tmp | enabled) & core#TOUCH_CONFIG_MASK
-    writeReg(core#TOUCH_CONFIG, 2, @tmp)
+    tmp &= core#LOWPWR
+    tmp := (tmp | enabled) & core#TOUCH_CFG_MASK
+    writeReg(core#TOUCH_CFG, 2, @tmp)
 
 PUB TouchSampleClocks(clocks) | tmp
 ' Set number of touchscreen sampler clocks
 '   Valid values: 0..7
 '   Any other value polls the chip and returns the current setting
     tmp := $0000
-    readReg(core#TOUCH_CONFIG, 2, @tmp)
+    readReg(core#TOUCH_CFG, 2, @tmp)
     case clocks
         0..7:
         OTHER:
-            return tmp & core#BITS_SAMPLER_CLOCKS
-    tmp &= core#MASK_SAMPLER_CLOCKS
-    tmp := (tmp | clocks) & core#TOUCH_CONFIG_MASK
-    writeReg(core#TOUCH_CONFIG, 2, @tmp)
+            return tmp & core#SAMPLER_CLKS_BITS
+    tmp &= core#SAMPLER_CLKS_MASK
+    tmp := (tmp | clocks) & core#TOUCH_CFG_MASK
+    writeReg(core#TOUCH_CFG, 2, @tmp)
 
 PUB TouchScreenSupport
 ' Touchscreen type supported by connected EVE chip
 '   Returns:
 '       0 - Capactive (BT815)
 '       1 - Resistive (BT816)
-    readReg(core#TOUCH_CONFIG, 2, @result)
-    result := (result >> core#FLD_WORKINGMODE) & %1
+    readReg(core#TOUCH_CFG, 2, @result)
+    result := (result >> core#WORKMODE) & %1
     return
 
 PUB TouchXY
@@ -992,7 +993,7 @@ PUB Vertex2F(x, y) | tmp
     y := 0 #> y <# DISP_YMAX
     x <<= 4
     y <<= 4
-    tmp := core#VERTEX2F | (x << core#FLD_2F_X) | y
+    tmp := core#VERTEX2F | (x << core#V2F_X) | y
     CoProcCmd(tmp)
 
 PUB Vertex2II(x, y, handle, cell) | tmp
@@ -1007,7 +1008,7 @@ PUB Vertex2II(x, y, handle, cell) | tmp
         0..127:
         OTHER:
             return
-    tmp := core#VERTEX2II | (x << core#FLD_X) | (y << core#FLD_Y) | (handle << core#FLD_HANDLE) | cell
+    tmp := core#VERTEX2II | (x << core#X) | (y << core#Y) | (handle << core#HANDLE) | cell
     CoProcCmd(tmp)
     return tmp
 
