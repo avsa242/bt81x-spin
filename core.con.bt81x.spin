@@ -27,6 +27,7 @@ CON
     RAM_G_START                 = $00_0000
     RAM_G_END                   = $0F_FFFF
     CHIPID                      = $0C_0000
+        CHIPID_VALID            = $7C
 
     ROM_FNT_START               = $1E_0000
     ROM_FNT_END                 = $2F_FFFB
