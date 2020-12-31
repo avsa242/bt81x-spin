@@ -7,7 +7,7 @@ This is a P8X32A/Propeller driver object for the Bridgetek BT81x series Advanced
 
 ## Salient Features
 
-* SPI connection at 20MHz (P1)
+* SPI connection at 20MHz W/10MHz R (P1), 30MHz (P2)
 * Graphics primitives: Lines, Points, Text Strings (w/optional wrapping), Numbers (base 2..36), Boxes
 * Widgets: Buttons, Dials, Gauges, Gradients (w/or w/o alpha-blending), Keyboard keys, Progress bars, Scroll bars, Sliders, Spinners, Toggle switches
 * Set color of primitives, widgets, clear-screen color
@@ -31,7 +31,7 @@ P2/SPIN2:
 ## Compiler Compatibility
 
 * P1/SPIN1: OpenSpin (tested with 1.00.81)
-* P2/SPIN2: FastSpin (tested with 4.1.10-beta)
+* P2/SPIN2: FlexSpin (tested with 5.0.0)
 * ~~BST~~ (incompatible - no preprocessor)
 * ~~Propeller Tool~~ (incompatible - no preprocessor)
 * ~~PNut~~ (incompatible - no preprocessor)
@@ -48,7 +48,7 @@ P2/SPIN2:
 
 - [x] Implement enough support to run the 'Getting started' example in the Bridgetek AN033
 - [x] Implement touchscreen support
-- [ ] Port to SPIN2/P2
+- [x] Port to SPIN2/P2
 - [ ] Implement MIDI support
 - [ ] Implement flash support
 - [ ] Implement all display list commands
