@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2020
     Started Sep 25, 2019
-    Updated May 30, 2020
+    Updated Dec 31, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
