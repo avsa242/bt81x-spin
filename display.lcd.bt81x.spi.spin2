@@ -5,9 +5,9 @@
     Description: Driver for the Bridgetek
         Advanced Embedded Video Engine (EVE) Graphic controller
         (P2 version)
-    Copyright (c) 2020
+    Copyright (c) 2021
     Started Dec 31, 2020
-    Updated Dec 31, 2020
+    Updated May 15, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -113,11 +113,12 @@ VAR
 PUB Null()
 ' This is not a top-level object
 
-PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, SCK_FREQ=10_000_000): okay
+PUB Startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, SCK_FREQ=10_000_000): status
 
     if lookdown(CS_PIN: 0..63) and lookdown(SCK_PIN: 0..63) and{
 }   lookdown(MOSI_PIN: 0..63) and lookdown(MISO_PIN: 0..63)
-        if okay := spi.start(SCK_PIN, MOSI_PIN, MISO_PIN, SCK_FREQ)
+        if (status := spi.init(SCK_PIN, MOSI_PIN, MISO_PIN, SCK_FREQ, {
+}       core.SPI_MODE))
             _CS := CS_PIN
             softreset()
             extclock()
@@ -127,12 +128,16 @@ PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, SCK_FREQ=10_000_000): okay
             if coprocerror()                    ' reset coprocessor if it's
                 resetcopro()                    '   in an error state
             defaults()
-            return okay
-    return FALSE                                ' something above failed
+            return
+    ' if this point is reached, something above failed
+    ' Double check I/O pin assignments, connections, power
+    ' Lastly - make sure you have at least one free core/cog
+    return FALSE
 
 PUB Stop()
 
     powered(FALSE)
+    spi.deinit()
 
 PUB Defaults()
 ' Default settings, based on lcd chosen
@@ -1106,7 +1111,7 @@ PRI cmd(cmd_word, param) | cmd_pkt, tmp
     cmd_pkt.byte[2] := 0
 
     pinl(_CS)
-    spi.writebytes(3, @cmd_pkt)
+    spi.wrblock_lsbf(@cmd_pkt, 3)
     pinh(_CS)
 
 PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
@@ -1117,9 +1122,8 @@ PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
     cmd_pkt.byte[3] := 0                        ' Dummy byte
 
     pinl(_CS)
-    spi.writebytes(4, @cmd_pkt)
-    repeat tmp from 0 to nr_bytes-1
-        byte[ptr_buff][tmp] := spi.read()
+    spi.wrblock_lsbf(@cmd_pkt, 4)
+    spi.rdblock_lsbf(ptr_buff, nr_bytes)
     pinh(_CS)
 
 PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
@@ -1129,8 +1133,8 @@ PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
     cmd_pkt.byte[2] := reg_nr.byte[0]           ' ..
 
     pinl(_CS)
-    spi.writebytes(3, @cmd_pkt)
-    spi.writebytes(nr_bytes, ptr_buff)
+    spi.wrblock_lsbf(@cmd_pkt, 3)
+    spi.wrblock_lsbf(ptr_buff, nr_bytes)
     pinh(_CS)
 
 DAT

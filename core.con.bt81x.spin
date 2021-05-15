@@ -3,9 +3,9 @@
     Filename: core.con.bt81x.spin
     Author: Jesse Burt
     Description: Low-level constants
-    Copyright (c) 2020
+    Copyright (c) 2021
     Started Sep 25, 2019
-    Updated Dec 31, 2020
+    Updated May 15, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -13,9 +13,8 @@
 CON
 
 ' SPI Configuration
-    CPOL                        = 0
-    CLKDELAY                    = 1
     SCK_MAX_FREQ                = 30_000_000
+    SPI_MODE                    = 0
 
     TPOR                        = 300           'ms
 

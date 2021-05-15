@@ -3,26 +3,26 @@
     Filename: BT81X-Demo.spin2
     Author: Jesse Burt
     Description: Demo of the BT81x driver (P2 version)
-    Copyright (c) 2020
+    Copyright (c) 2021
     Started Dec 31, 2020
-    Updated Dec 31, 2020
+    Updated May 15, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
 
 CON
 
-    _clkfreq    = cfg._clkfreq_def
+    _clkfreq    = 250_000_000
     _xtlfreq    = cfg._xtlfreq
 
 ' -- User-modifiable constants
     LED         = cfg.LED1
     SER_BAUD    = 2_000_000
 
-    CS_PIN      = 24
-    SCK_PIN     = 25
-    MOSI_PIN    = 26
-    MISO_PIN    = 27
+    CS_PIN      = 0
+    SCK_PIN     = 1
+    MOSI_PIN    = 2
+    MISO_PIN    = 3
     SCK_FREQ    = 20_000_000                    ' max is 30_000_000
 
     BRIGHTNESS  = 100                           ' Initial brightness (0..128)
@@ -566,7 +566,7 @@ PUB Setup()
     waitms(30)
     ser.clear()
     ser.strln(string("Serial terminal started"))
-    if eve.start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, SCK_FREQ)
+    if eve.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, SCK_FREQ)
         ser.strln(string("BT81x driver started"))
     else
         ser.strln(string("BT81x driver failed to start - halting"))

@@ -4,9 +4,9 @@
     Author: Jesse Burt
     Description: Driver for the Bridgetek
         Advanced Embedded Video Engine (EVE) Graphic controller
-    Copyright (c) 2020
+    Copyright (c) 2021
     Started Sep 25, 2019
-    Updated Dec 31, 2020
+    Updated May 15, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -112,25 +112,30 @@ OBJ
 PUB Null{}
 ' This is not a top-level object
 
-PUB Start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): okay
+PUB Startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN): status
 
-    if lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and lookdown(MOSI_PIN: 0..31) and lookdown(MISO_PIN: 0..31)
-        if okay := spi.start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
+    if lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and {
+}   lookdown(MOSI_PIN: 0..31) and lookdown(MISO_PIN: 0..31)
+        if (status := spi.init(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, {
+}       core#SPI_MODE))
             softreset{}
             extclock{}
-            clockfreq(DEF)                      ' set clock to default (60MHz)
+            clockfreq(DEF)                      ' set clock to default (59MHz)
             repeat until deviceid{} == core#CHIPID_VALID
             repeat until cpureset(-2) == READY
             if coprocerror{}                    ' reset coprocessor if it's
                 resetcopro{}                    '   in an error state
             defaults{}
-            return okay
-    return FALSE                                ' something above failed
+            return
+    ' if this point is reached, something above failed
+    ' Double check I/O pin assignments, connections, power
+    ' Lastly - make sure you have at least one free core/cog
+    return FALSE
 
 PUB Stop{}
 
     powered(FALSE)
-    spi.stop{}
+    spi.deinit{}
 
 PUB Defaults{}
 ' Default settings, based on lcd chosen
@@ -1103,26 +1108,31 @@ PRI cmd(cmd_word, param) | cmd_pkt, tmp
     cmd_pkt.byte[1] := param
     cmd_pkt.byte[2] := 0
 
-    spi.write(TRUE, @cmd_pkt, 3, TRUE)
+    spi.deselectafter(true)
+    spi.wrblock_lsbf(@cmd_pkt, 3)
 
-PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
+PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Read nr_bytes from device into ptr_buff
     cmd_pkt.byte[0] := reg_nr.byte[2] | core#READ' %00 + reg_nr ..
     cmd_pkt.byte[1] := reg_nr.byte[1]           ' .. address
     cmd_pkt.byte[2] := reg_nr.byte[0]           ' ..
     cmd_pkt.byte[3] := 0                        ' Dummy byte
 
-    spi.write(TRUE, @cmd_pkt, 4, FALSE)
-    spi.read(ptr_buff, nr_bytes)
+    spi.deselectafter(false)
+    spi.wrblock_lsbf(@cmd_pkt, 4)
+    spi.deselectafter(true)
+    spi.rdblock_lsbf(ptr_buff, nr_bytes)
 
-PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt, tmp
+PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Write nr_bytes from ptr_buff to device
     cmd_pkt.byte[0] := reg_nr.byte[2] | core#WRITE' %01 + reg_nr ..
     cmd_pkt.byte[1] := reg_nr.byte[1]           ' .. address
     cmd_pkt.byte[2] := reg_nr.byte[0]           ' ..
 
-    spi.write(TRUE, @cmd_pkt, 3, FALSE)
-    spi.write(TRUE, ptr_buff, nr_bytes, TRUE)
+    spi.deselectafter(false)
+    spi.wrblock_lsbf(@cmd_pkt, 3)
+    spi.deselectafter(true)
+    spi.wrblock_lsbf(ptr_buff, nr_bytes)
 
 DAT
 {

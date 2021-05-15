@@ -3,9 +3,9 @@
     Filename: BT81X-Demo.spin
     Author: Jesse Burt
     Description: Demo of the BT81x driver
-    Copyright (c) 2020
+    Copyright (c) 2021
     Started Sep 30, 2019
-    Updated Dec 31, 2020
+    Updated May 15, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -19,10 +19,10 @@ CON
     LED         = cfg#LED1
     SER_BAUD    = 115_200
 
-    CS_PIN      = 3
-    SCK_PIN     = 0
+    CS_PIN      = 0
+    SCK_PIN     = 1
     MOSI_PIN    = 2
-    MISO_PIN    = 1
+    MISO_PIN    = 3
 
     BRIGHTNESS  = 100                           ' Initial brightness (0..128)
 
@@ -564,7 +564,7 @@ PUB Setup{}
     time.msleep(30)
     ser.clear{}
     ser.strln(string("Serial terminal started"))
-    if eve.start(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
+    if eve.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN)
         ser.strln(string("BT81x driver started"))
     else
         ser.strln(string("BT81x driver failed to start - halting"))
