@@ -1,12 +1,12 @@
 {
     --------------------------------------------
-    Filename: display.lcd.bt81x.spi.spin
+    Filename: display.lcd.bt81x.spin
     Author: Jesse Burt
     Description: Driver for the Bridgetek
         Advanced Embedded Video Engine (EVE) Graphic controller
-    Copyright (c) 2021
+    Copyright (c) 2022
     Started Sep 25, 2019
-    Updated May 15, 2021
+    Updated Jan 30, 2022
     See end of file for terms of use.
     --------------------------------------------
 }

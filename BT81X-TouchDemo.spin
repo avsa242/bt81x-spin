@@ -3,9 +3,9 @@
     Filename: BT81X-TouchDemo.spin
     Author: Jesse Burt
     Description: Demo of the BT81x driver touchscreen functionality
-    Copyright (c) 2021
+    Copyright (c) 2022
     Started Sep 30, 2019
-    Updated Oct 18, 2021
+    Updated Jan 30, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -45,7 +45,7 @@ OBJ
     cfg         : "core.con.boardcfg.flip"
     ser         : "com.serial.terminal.ansi"
     time        : "time"
-    eve         : "display.lcd.bt81x.spi"
+    eve         : "display.lcd.bt81x"
 
 PUB Main{} | count, idle, state, x, y, t1, t2, t3, t4
 

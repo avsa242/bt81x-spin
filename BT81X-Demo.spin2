@@ -3,9 +3,9 @@
     Filename: BT81X-Demo.spin2
     Author: Jesse Burt
     Description: Demo of the BT81x driver (P2 version)
-    Copyright (c) 2021
+    Copyright (c) 2022
     Started Dec 31, 2020
-    Updated May 15, 2021
+    Updated Jan 30, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -39,13 +39,12 @@ CON
     CENTERY     = DISP_HEIGHT / 2
 
     INTER_DELAY = 2                             ' wait seconds between demos
-
 OBJ
 
     cfg     : "core.con.boardcfg.p2eval"
     ser     : "com.serial.terminal.ansi"
     time    : "time"
-    eve     : "display.lcd.bt81x.spi"
+    eve     : "display.lcd.bt81x"
 
 PUB Main()
 

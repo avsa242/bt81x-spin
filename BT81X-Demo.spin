@@ -43,7 +43,7 @@ OBJ
     cfg     : "core.con.boardcfg.flip"
     ser     : "com.serial.terminal.ansi"
     time    : "time"
-    eve     : "display.lcd.bt81x.spi"
+    eve     : "display.lcd.bt81x"
 
 PUB Main{}
 
