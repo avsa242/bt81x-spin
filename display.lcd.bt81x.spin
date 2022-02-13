@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2022
     Started Sep 25, 2019
-    Updated Feb 10, 2022
+    Updated Feb 13, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -158,10 +158,11 @@ PUB Defaults{}
     displaywidth(_disp_width)
     displayheight(_disp_height)
 
-    displayliststart{}
+    waitidle{}
+    dlstart{}
         clearcolor(0, 0, 0)
         clear{}
-    displaylistend{}
+    dlend{}
     gpiodir($FFFF)
     gpio($FFFF)
 
@@ -387,11 +388,11 @@ PUB DisplayHeight(pixels)
 ' Set display height, in pixels
     vsize(pixels)
 
-PUB DisplayListStart{}
+PUB DLStart{}
 ' Begin a display list block
     coproccmd(core#CMD_DLSTART)
 
-PUB DisplayListEnd{}
+PUB DLEnd{}
 ' End a display list block
     coproccmd(core#DISPLAY)
     coproccmd(core#CMD_SWAP)
@@ -1107,6 +1108,7 @@ PUB WidgetFGColor(rgb)
 PUB Idle{}: status | cmd_rd, cmd_wr
 ' Return idle status
 '   Returns: TRUE (-1) if coprocessor is idle, FALSE (0) if busy
+    longfill(@cmd_rd, 0, 2)
     readreg(core#CMD_READ, 4, @cmd_rd)
     readreg(core#CMD_WRITE, 4, @cmd_wr)
     return (cmd_rd == cmd_wr)
