@@ -96,6 +96,13 @@ CON
     LR                  = %0100
     LL                  = %1000
 
+' Built-in fonts
+
+    VGA8X8_ROM          = 16                    ' VGA ROM-like 8x8 font ($20..$7E)
+    VGA8X8_ROM_HI       = 17                    ' same, but $80..$FF mapped to $00..$7F
+    VGA8X12_ROM         = 18                    ' 8x12 variant of the above
+    VGA8X12_ROM_HI      = 19
+
 VAR
 
     long _disp_width, _disp_height, _disp_xmax, _disp_ymax, _cent_x, _cent_y
