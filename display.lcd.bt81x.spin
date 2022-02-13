@@ -326,10 +326,17 @@ PUB ClockSpread(state): curr_state
 
 PUB ColorRGB(r, g, b)
 ' Specify color for following graphics primitive
+'   Valid values: 0..$ff (RGB 8, 8, 8)
     r := 0 #> r <# 255
     g := 0 #> g <# 255
     b := 0 #> b <# 255
     coproccmd(core#COLOR_RGB | (r << core#RED) | (g << core#GREEN) | b)
+
+PUB ColorRGB24(rgb24)
+' Specify color for following graphics primitive
+'   Valid values: 0..$ff_ff_ff (RGB24)
+    rgb24 := 0 #> rgb24 <# $ff_ff_ff
+    coproccmd(core.COLOR_RGB | rgb24)
 
 PUB CoProcCmd(command)
 ' Queue a coprocessor command
