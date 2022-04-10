@@ -5,7 +5,7 @@
     Description: Demo of the BT81x driver
     Copyright (c) 2022
     Started Sep 30, 2019
-    Updated Feb 13, 2022
+    Updated Apr 10, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -89,7 +89,7 @@ PUB DemoBoxes{} | i
         eve.colorrgb(0, i/4, 128)
         eve.box(i, CENTERY-i, XMAX-i, CENTERY+i)
     eve.dlend{}
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoButton{} | i, btn_w, btn_h
 
@@ -103,7 +103,7 @@ PUB DemoButton{} | i, btn_w, btn_h
     eve.widgetfgcolor($40_40_40)
     eve.button(400-btn_w, 240-btn_h, btn_w, btn_h, 16, eve#OPT_3D, string("A button!"))
     eve.dlend{}
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoDial{}
 
@@ -135,7 +135,7 @@ PUB DemoDial{}
     eve.dial(132, 60, 24, 0, $AAAA)
     eve.str(132, 100, 26, eve#OPT_CENTER, string("66%"))
     eve.dlend{}
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoGauge{} | i
 
@@ -164,7 +164,7 @@ PUB DemoGauge{} | i
         eve.dlend{}
         time.msleep(10)
 
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoGradient{}
 
@@ -191,7 +191,7 @@ PUB DemoGradient{}
     eve.clear{}
     eve.gradient(0, 0, $808080, XMAX, YMAX, $80FF40)
     eve.dlend{}
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoGradientTransparency{}
 
@@ -214,7 +214,7 @@ PUB DemoGradientTransparency{}
     eve.str(80, 90, 30, eve#OPT_CENTER, string("background"))
     eve.gradienttransparency(0, 20, $40FF0000, 0, 100, $FF0000FF)
     eve.dlend{}
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoKeys{} | k
 
@@ -284,7 +284,7 @@ PUB DemoKeys{} | k
     eve.keys(2, 50, 156, 21, 20, k | eve#OPT_CENTER, string("zxcvbnm"))
     eve.button(2, 74, 156, 21, 20, 0, string(" "))
     eve.dlend{}
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoLines{} | i
 
@@ -300,7 +300,7 @@ PUB DemoLines{} | i
         eve.colorrgb(0, 128, i/4)
         eve.line(XMAX-10, i, 10, YMAX-10-i)
     eve.dlend{}
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoNumbers{}
 
@@ -350,7 +350,7 @@ PUB DemoNumbers{}
     eve.num(80, 90, 26, eve#OPT_CENTER, 123456)
 
     eve.dlend{}
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoProgressBar{}
 
@@ -378,7 +378,7 @@ PUB DemoProgressBar{}
     eve.widgetbgcolor($402000)
     eve.progressbar(20, 50, 120, 4, 0, 9000, 65535)
     eve.dlend{}
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoRotateScreen{} | r
 
@@ -392,7 +392,7 @@ PUB DemoRotateScreen{} | r
         eve.str(CENTERX, CENTERY, 31, eve#OPT_CENTER, string("Screen rotation"))
         eve.dlend{}
         time.msleep(INTER_DELAY)
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoScrollbar{}
 
@@ -421,7 +421,7 @@ PUB DemoScrollbar{}
     eve.widgetfgcolor($703800)
     eve.scrollbar(140, 10, 8, 100, 0, 10, 40, 100)
     eve.dlend{}
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoSlider{}
 
@@ -450,7 +450,7 @@ PUB DemoSlider{}
     eve.widgetfgcolor($703800)
     eve.slider(76, 10, 8, 100, 0, 20000, 65535)
     eve.dlend{}
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoSpinner{} | i
 
@@ -505,7 +505,7 @@ PUB DemoSpinner{} | i
     eve.clear{}
     eve.spinner(CENTERX, CENTERY, eve#SPIN_CIRCLE_DOTS, 2)
     eve.dlend{}
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoTextWrap{}
 
@@ -517,7 +517,7 @@ PUB DemoTextWrap{}
     eve.textwrap(160)
     eve.str(0, 0, 30, eve#OPT_FILL, string("This text doesn't fit on one line"))
     eve.dlend{}
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB DemoToggle{}
 
@@ -549,7 +549,7 @@ PUB DemoToggle{}
     eve.toggle(60, 20, 33, 27, 0, 0, string("no", $FF, "yes"))
     eve.toggle(60, 60, 33, 27, 0, 65535, string("no", $FF, "yes"))
     eve.dlend{}
-    time.sleep(INTER_DELAY)
+    time.msleep(INTER_DELAY)
 
 PUB FadeOut(delay_ms) | i
 
