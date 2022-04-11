@@ -5,7 +5,7 @@
     Description: Demo of the BT81x driver
     Copyright (c) 2022
     Started Sep 30, 2019
-    Updated Apr 10, 2022
+    Updated Apr 11, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -80,7 +80,7 @@ PUB Main{}
 PUB DemoBoxes{} | i
 
     ser.strln(string("Box()"))
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -96,7 +96,7 @@ PUB DemoButton{} | i, btn_w, btn_h
     ser.strln(string("Button()"))
     btn_w := 78
     btn_h := 32
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 48)
     eve.clear{}
@@ -108,7 +108,7 @@ PUB DemoButton{} | i, btn_w, btn_h
 PUB DemoDial{}
 
     ser.strln(string("Dial()"))
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -116,7 +116,7 @@ PUB DemoDial{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -124,7 +124,7 @@ PUB DemoDial{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -140,7 +140,7 @@ PUB DemoDial{}
 PUB DemoGauge{} | i
 
     ser.strln(string("Gauge()"))
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 48)
     eve.clear{}
@@ -149,7 +149,7 @@ PUB DemoGauge{} | i
     time.msleep(INTER_DELAY)
 
     repeat i from 0 to 100
-        eve.waitidle{}
+        eve.waitready{}
         eve.dlstart{}
         eve.clear{}
         eve.gauge(CENTERX, CENTERY, 50, eve#OPT_3D, 10, 5, i, 100)
@@ -157,7 +157,7 @@ PUB DemoGauge{} | i
         time.msleep(10)
     time.msleep(INTER_DELAY)
     repeat i from 100 to 0
-        eve.waitidle{}
+        eve.waitready{}
         eve.dlstart{}
         eve.clear{}
         eve.gauge(CENTERX, CENTERY, 50, eve#OPT_3D, 10, 5, i, 100)
@@ -169,7 +169,7 @@ PUB DemoGauge{} | i
 PUB DemoGradient{}
 
     ser.strln(string("Gradient()"))
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -177,7 +177,7 @@ PUB DemoGradient{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -185,7 +185,7 @@ PUB DemoGradient{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -196,7 +196,7 @@ PUB DemoGradient{}
 PUB DemoGradientTransparency{}
 
     ser.strln(string("GradientTransparency()"))
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -205,7 +205,7 @@ PUB DemoGradientTransparency{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -219,7 +219,7 @@ PUB DemoGradientTransparency{}
 PUB DemoKeys{} | k
 
     ser.strln(string("Keys()"))
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -227,7 +227,7 @@ PUB DemoKeys{} | k
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -235,7 +235,7 @@ PUB DemoKeys{} | k
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -244,7 +244,7 @@ PUB DemoKeys{} | k
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -252,7 +252,7 @@ PUB DemoKeys{} | k
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -263,7 +263,7 @@ PUB DemoKeys{} | k
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -275,7 +275,7 @@ PUB DemoKeys{} | k
     time.msleep(INTER_DELAY)
 
     k := $66
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -289,7 +289,7 @@ PUB DemoKeys{} | k
 PUB DemoLines{} | i
 
     ser.strln(string("Line()"))
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -305,7 +305,7 @@ PUB DemoLines{} | i
 PUB DemoNumbers{}
 
     ser.strln(string("Num()"))
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -313,7 +313,7 @@ PUB DemoNumbers{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -321,7 +321,7 @@ PUB DemoNumbers{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -330,7 +330,7 @@ PUB DemoNumbers{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -339,7 +339,7 @@ PUB DemoNumbers{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -355,7 +355,7 @@ PUB DemoNumbers{}
 PUB DemoProgressBar{}
 
     ser.strln(string("ProgressBar()"))
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -363,7 +363,7 @@ PUB DemoProgressBar{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -371,7 +371,7 @@ PUB DemoProgressBar{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -384,7 +384,7 @@ PUB DemoRotateScreen{} | r
 
     ser.strln(string("RotateScreen()"))
     repeat r from 0 to 7
-        eve.waitidle{}
+        eve.waitready{}
         eve.dlstart{}
         eve.clearcolor(0, 0, 0)
         eve.clear{}
@@ -397,7 +397,7 @@ PUB DemoRotateScreen{} | r
 PUB DemoScrollbar{}
 
     ser.strln(string("Scrollbar()"))
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -405,7 +405,7 @@ PUB DemoScrollbar{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -413,7 +413,7 @@ PUB DemoScrollbar{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -426,7 +426,7 @@ PUB DemoScrollbar{}
 PUB DemoSlider{}
 
     ser.strln(string("Slider()"))
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -434,7 +434,7 @@ PUB DemoSlider{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -442,7 +442,7 @@ PUB DemoSlider{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -455,7 +455,7 @@ PUB DemoSlider{}
 PUB DemoSpinner{} | i
 
     ser.strln(string("Spinner()"))
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 48)
     eve.clear{}
@@ -464,7 +464,7 @@ PUB DemoSpinner{} | i
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 48)
     eve.clear{}
@@ -473,7 +473,7 @@ PUB DemoSpinner{} | i
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 48)
     eve.clear{}
@@ -482,7 +482,7 @@ PUB DemoSpinner{} | i
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 48)
     eve.clear{}
@@ -491,7 +491,7 @@ PUB DemoSpinner{} | i
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 48)
     eve.clear{}
@@ -499,7 +499,7 @@ PUB DemoSpinner{} | i
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 48)
     eve.clear{}
@@ -510,7 +510,7 @@ PUB DemoSpinner{} | i
 PUB DemoTextWrap{}
 
     ser.strln(string("TextWrap(), Str()"))
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -522,7 +522,7 @@ PUB DemoTextWrap{}
 PUB DemoToggle{}
 
     ser.strln(string("Toggle()"))
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -531,7 +531,7 @@ PUB DemoToggle{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}
@@ -540,7 +540,7 @@ PUB DemoToggle{}
     eve.dlend{}
     time.msleep(INTER_DELAY)
 
-    eve.waitidle{}
+    eve.waitready{}
     eve.dlstart{}
     eve.clearcolor(0, 0, 0)
     eve.clear{}

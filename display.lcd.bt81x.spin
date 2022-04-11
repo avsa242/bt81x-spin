@@ -165,7 +165,7 @@ PUB Defaults{}
     displaywidth(_disp_width)
     displayheight(_disp_height)
 
-    waitidle{}
+    waitready{}
     dlstart{}
         clearcolor(0, 0, 0)
         clear{}
@@ -429,6 +429,14 @@ PUB DisplayListSwap(mode): dl_status
             dl_status := 0
             readreg(core#DLSWAP, 1, @dl_status)
             return dl_status & %11
+
+PUB DisplayReady{}: status | cmd_rd, cmd_wr
+' Flag indicating display coprocessor is ready
+'   Returns: TRUE (-1) if coprocessor is idle/ready, FALSE (0) if busy
+    longfill(@cmd_rd, 0, 2)
+    readreg(core#CMD_READ, 4, @cmd_rd)
+    readreg(core#CMD_WRITE, 4, @cmd_wr)
+    return (cmd_rd == cmd_wr)
 
 PUB DisplayTimings(hc, ho, hs0, hs1, vc, vo, vs0, vs1)
 ' Set all display timings
@@ -1115,11 +1123,11 @@ PUB VSync1(offs_lines): curr_offs
             readreg(core#VSYNC1, 2, @curr_offs)
             return curr_offs
 
-PUB WaitIdle{}
-' Waits until the coprocessor is idle
+PUB WaitReady{}
+' Wait until the display is ready
     repeat
         time.msleep(10)
-    until idle{}
+    until displayready{}
 
 PUB WidgetBGColor(rgb)
 ' Set background color for widgets (gauges, sliders, etc), as a 24-bit RGB number
@@ -1136,14 +1144,6 @@ PUB WidgetFGColor(rgb)
     rgb := $00_00_00 #> rgb <# $FF_FF_FF
     coproccmd(core#CMD_FGCOLOR)
     coproccmd(rgb)
-
-PUB Idle{}: status | cmd_rd, cmd_wr
-' Return idle status
-'   Returns: TRUE (-1) if coprocessor is idle, FALSE (0) if busy
-    longfill(@cmd_rd, 0, 2)
-    readreg(core#CMD_READ, 4, @cmd_rd)
-    readreg(core#CMD_WRITE, 4, @cmd_wr)
-    return (cmd_rd == cmd_wr)
 
 PRI cmd(cmd_word, param) | cmd_pkt, tmp
 
