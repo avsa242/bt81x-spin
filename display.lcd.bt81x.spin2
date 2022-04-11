@@ -418,7 +418,7 @@ PUB DLEnd()
     coproccmd(core.DISPLAY)
     coproccmd(core.CMD_SWAP)
 
-PUB DisplayListSwap(mode): dl_status
+PUB DLSwap(mode): dl_status
 ' Set when the graphics engine will render the screen
 '   Valid values:
 '       DLSWAP_LINE (1): Render screen immediately after current line is
