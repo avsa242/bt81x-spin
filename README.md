@@ -14,12 +14,12 @@ This is a P8X32A/Propeller driver object for the Bridgetek BT81x series Advanced
 * Set panel brightness
 * Set scissor clip region
 * Screen rotation
-* Touchscreen: define tags for display regions, read touch coordinates, read tagged area currently touched
+* Touchscreen: define tags for display regions, read touch coordinates, read tagged area currently touched, set resistive touch sensitivty, built-in EVE TS calibration
 * Set display-specific timings simply by #including the correct file for your display
 
 ## Requirements
 
-* BT815/816-based board (tested only with BT815 - capacitive touch version)
+* BT815/816-based board
 
 P1/SPIN1:
 * spin-standard-library
@@ -30,11 +30,11 @@ P2/SPIN2:
 
 ## Compiler Compatibility
 
+* P1/SPIN1 FlexSpin (bytecode): OK, tested with 5.9.10-beta
+* P1/SPIN1 FlexSpin (native): OK, tested with 5.9.10-beta
+* ~~P2/SPIN2 FlexSpin (nu-code)~~: Builds, but not functional
+* P2/SPIN2 FlexSpin (native): OK, tested with 5.9.10-beta
 * P1/SPIN1 OpenSpin (bytecode): Untested (deprecated)
-* P1/SPIN1 FlexSpin (bytecode): OK, tested with 5.9.7-beta
-* P1/SPIN1 FlexSpin (native): OK, tested with 5.9.7-beta
-* ~~P2/SPIN2 FlexSpin (nu-code): FTBFS, tested with 5.9.7-beta~~
-* P2/SPIN2 FlexSpin (native): OK, tested with 5.9.7-beta
 * ~~BST~~ (incompatible - no preprocessor)
 * ~~Propeller Tool~~ (incompatible - no preprocessor)
 * ~~PNut~~ (incompatible - no preprocessor)

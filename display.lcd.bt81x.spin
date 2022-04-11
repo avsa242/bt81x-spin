@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2022
     Started Sep 25, 2019
-    Updated Feb 13, 2022
+    Updated Apr 11, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -943,6 +943,11 @@ PUB Toggle(x, y, width, font, opts, state, ptr_str) | i, j
 }       byte[ptr_str][1] << 8 + byte[ptr_str][0])
         ptr_str += 4
 
+PUB TouchCal{}
+' Calibrate the touchscreen
+'   NOTE: This is only necessary for resistive touchscreens (BT816)
+    coproccmd(core#CMD_CALIBRATE)
+
 PUB TouchHostMode(state): curr_state
 ' Enable host mode (touchscreen data handled by the MCU, fed to the EVE)
 '   Valid values: TRUE (-1 or 1), FALSE (0)
@@ -1011,6 +1016,19 @@ PUB TouchScreenSupport{}: type
 '       1 - Resistive (BT816)
     readreg(core#TOUCH_CFG, 2, @type)
     return (type >> core#WORKMODE) & 1
+
+PUB TouchSens(level): curr_lvl
+' Set touchscreen sensitivity
+'   Valid values:
+'       0 (least sensitive) .. 65535 (most sensitive/all touches valid)
+'   Any other value polls the chip and returns the current setting
+'   NOTE: Only applicable to resistive touchscreens (BT816)
+    case level
+        0..65535:
+            writereg(core#TOUCH_RZTHRESH, 2, @level)
+        other:
+            curr_lvl := 0
+            readreg(core#TOUCH_RZTHRESH, 2, @curr_lvl)
 
 PUB TouchXY{}
 ' Coordinates of touch event
