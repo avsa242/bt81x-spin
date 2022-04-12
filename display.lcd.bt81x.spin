@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2022
     Started Sep 25, 2019
-    Updated Apr 11, 2022
+    Updated Apr 12, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -57,26 +57,26 @@ CON
     OPT_3D              = 0
     OPT_RGB565          = 0
     OPT_MONO            = 1
-    OPT_NODL            = 2
-    OPT_FLAT            = 256
-    OPT_SIGNED          = 256
-    OPT_CENTERX         = 512
-    OPT_CENTERY         = 1024
-    OPT_CENTER          = 1536
-    OPT_RIGHTX          = 2048
-    OPT_NOBACK          = 4096
-    OPT_FILL            = 8192
-    OPT_FLASH           = 64
-    OPT_FORMAT          = 4096
-    OPT_NOTICKS         = 8192
-    OPT_NOHM            = 16384
-    OPT_NOPOINTER       = 16384
-    OPT_NOSECS          = 32768
-    OPT_NOHANDS         = 49152
-    OPT_NOTEAR          = 4
-    OPT_FULLSCREEN      = 8
-    OPT_MEDIAFIFO       = 16
-    OPT_SOUND           = 32
+    OPT_NODL            = (1 << 1)
+    OPT_FLAT            = (1 << 8)
+    OPT_SIGNED          = (1 << 8)
+    OPT_CENTERX         = (1 << 9)
+    OPT_CENTERY         = (1 << 10)
+    OPT_CENTER          = OPT_CENTERX | OPT_CENTERY
+    OPT_RIGHTX          = (1 << 11)
+    OPT_NOBACK          = (1 << 12)
+    OPT_FILL            = (1 << 13)
+    OPT_FLASH           = (1 << 6)
+    OPT_FORMAT          = (1 << 12)
+    OPT_NOTICKS         = (1 << 13)
+    OPT_NOHM            = (1 << 14)
+    OPT_NOPOINTER       = (1 << 14)
+    OPT_NOSECS          = (1 << 15)
+    OPT_NOHANDS         = OPT_NOPOINTER | OPT_NOSECS
+    OPT_NOTEAR          = (1 << 2)
+    OPT_FULLSCREEN      = (1 << 3)
+    OPT_MEDIAFIFO       = (1 << 4)
+    OPT_SOUND           = (1 << 5)
 
 ' Transform and screen rotation
     #0, ROT_LAND, ROT_INV_LAND, ROT_PORT, ROT_INV_PORT, ROT_MIR_LAND,{
