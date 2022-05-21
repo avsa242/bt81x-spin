@@ -5,7 +5,7 @@
     Description: Demo of the BT81x driver
     Copyright (c) 2022
     Started Sep 30, 2019
-    Updated Apr 11, 2022
+    Updated May 21, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -87,7 +87,7 @@ PUB DemoBoxes{} | i
     eve.linewidth(1)
     repeat i from 10 to CENTERY step 20
         eve.colorrgb(0, i/4, 128)
-        eve.box(i, CENTERY-i, XMAX-i, CENTERY+i)
+        eve.box(i, CENTERY-i, XMAX-i, CENTERY+i, true)
     eve.dlend{}
     time.msleep(INTER_DELAY)
 

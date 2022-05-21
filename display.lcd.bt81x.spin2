@@ -7,7 +7,7 @@
         (P2 version)
     Copyright (c) 2022
     Started Dec 31, 2020
-    Updated Apr 12, 2022
+    Updated May 21, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -190,12 +190,18 @@ PUB Preset_HighPerf()
     defaults()
     clockfreq(HIGH)
 
-PUB Box(x1, y1, x2, y2) | tmp
+PUB Box(x1, y1, x2, y2, filled)
 ' Draw a box from x1, y1 to x2, y2 in the current color
-    primitivebegin(RECTS)
-    vertex2f(x1, y1)
-    vertex2f(x2, y2)
-    primitiveend()
+    if (filled)
+        primitivebegin(RECTS)
+        vertex2f(x1, y1)
+        vertex2f(x2, y2)
+        primitiveend()
+    else
+        line(x1, y1, x2, y1)
+        line(x1, y2, x2, y2)
+        line(x1, y1, x1, y2)
+        line(x2, y1, x2, y2)
 
 PUB BoxBeveled(x0, y0, width, height, b_size, b_mask) | corner'XXX optimize: reduce number of repeated calcs below
 ' Draw a box with zero or more beveled corners, specified by b_mask
