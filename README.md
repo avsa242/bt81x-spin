@@ -30,20 +30,23 @@ P2/SPIN2:
 
 ## Compiler Compatibility
 
-* P1/SPIN1 FlexSpin (bytecode): OK, tested with 5.9.10-beta
-* P1/SPIN1 FlexSpin (native): OK, tested with 5.9.10-beta
-* ~~P2/SPIN2 FlexSpin (nu-code)~~: Builds, but not functional
-* P2/SPIN2 FlexSpin (native): OK, tested with 5.9.10-beta
-* P1/SPIN1 OpenSpin (bytecode): Untested (deprecated)
-* ~~BST~~ (incompatible - no preprocessor)
-* ~~Propeller Tool~~ (incompatible - no preprocessor)
-* ~~PNut~~ (incompatible - no preprocessor)
+| Processor | Language | Compiler               | Backend     | Status                |
+|-----------|----------|------------------------|-------------|-----------------------|
+| P1        | SPIN1    | FlexSpin (5.9.14-beta) | Bytecode    | OK                    |
+| P1        | SPIN1    | FlexSpin (5.9.14-beta) | Native code | OK                    |
+| P1        | SPIN1    | OpenSpin (1.00.81)     | Bytecode    | Untested (deprecated) |
+| P2        | SPIN2    | FlexSpin (5.9.14-beta) | NuCode      | Build OK, doesn't run |
+| P2        | SPIN2    | FlexSpin (5.9.14-beta) | Native code | OK                    |
+| P1        | SPIN1    | Brad's Spin Tool (any) | Bytecode    | Unsupported           |
+| P1, P2    | SPIN1, 2 | Propeller Tool (any)   | Bytecode    | Unsupported           |
+| P1, P2    | SPIN1, 2 | PNut (any)             | Bytecode    | Unsupported           |
 
 ## Limitations
 
 * Very early in development - may malfunction, or outright fail to build
 * API not considered stable - not advisable to design a product around this
 * Single-channel SPI only (doesn't support DSPI, QSPI)
-* Doesn't support resetting/powering down using the "P_DN" pin (planned)
 * Doesn't support interrupts
+* Doesn't support flash
+* Doesn't support MIDI/audio
 
