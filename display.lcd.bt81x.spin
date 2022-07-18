@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2022
     Started Sep 25, 2019
-    Updated Jul 17, 2022
+    Updated Jul 18, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -281,6 +281,13 @@ PUB Button(x, y, width, height, font, opts, ptr_str) | i, j
         coproccmd(byte[ptr_str][3] << 24 + byte[ptr_str][2] << 16 + {
 }       byte[ptr_str][1] << 8 + byte[ptr_str][0])
         ptr_str += 4
+
+PUB ButtonPtr(ptr_btndef) | x, y, width, height, font, opts, ptr_str
+' Draw a button, reading from definition at ptr_btndef
+'   Structure:
+'       x, y, width, height, font, options, pointer to string
+    longmove(@x, ptr_btndef, 7)
+    button(x, y, width, height, font, opts, ptr_str)
 
 PUB Clear{}
 ' Clear display
