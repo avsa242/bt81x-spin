@@ -767,7 +767,7 @@ PUB Reset()
 ' Reset the display controller
     if (lookdown(_RST: 0..63))
         pinl(_RST)
-        waitms(core.T_PDN_RES)
+        waitus(core.T_PDN_RES)
         pinh(_RST)
     else
         softreset()

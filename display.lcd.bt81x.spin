@@ -761,7 +761,7 @@ PUB Reset{}
     if (lookdown(_RST: 0..31))
         outa[_RST] := 0
         dira[_RST] := 1
-        time.msleep(core#T_PDN_RES)
+        time.usleep(core#T_PDN_RES)
         outa[_RST] := 1
     else
         softreset{}
