@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2022
     Started Sep 25, 2019
-    Updated Jul 18, 2022
+    Updated Jul 19, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -927,7 +927,9 @@ PUB TagActive{}: acttag
 '   Returns: Tag number (u8)
 '       If tag is active:       1..255
 '       If no tag is active:    0
+    acttag := 0
     readreg(core#TOUCH_TAG, 4, @acttag)
+    return acttag & $ff
 
 PUB TagArea(tag_nr, sx, sy, w, h)
 ' Define screen area to be associated with tag

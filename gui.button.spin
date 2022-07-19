@@ -5,7 +5,7 @@
     Description: Generic object for manipulating GUI button structures
     Copyright (c) 2022
     Started Jul 18, 2022
-    Updated Jul 18, 2022
+    Updated Jul 19, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -51,7 +51,7 @@ pub get_attr(btn_idx, param): val
 '   param: attribute to modify
 '   Returns: value for attribute
     if (btn_idx => 1 and btn_idx =< _nr_btns) ' button idx 1-based so it maps 1:1 with tag #
-        return long[offs(btn_idx)][param]
+        return long[ptr(btn_idx)][param]
 
 pub min_height(btn_nr): w
 ' Get the minimum height of a button, considering its font size
@@ -59,9 +59,9 @@ pub min_height(btn_nr): w
 
 pub min_width(btn_nr): w
 ' Get the minimum width of a button, considering its font size and length of text
-    return (text_len(btn_nr) * (get_attr(btn_nr, TSZ)/3))
+    return (text_len(btn_nr) * (get_attr(btn_nr, TSZ)/2))
 
-pub offs(btn_nr): offs
+pub ptr(btn_nr): p
 ' Get pointer to start of btn_nr's structure in button buffer
     return _ptr_btns + ( ((btn_nr-1) * STRUCTSZ) * 4)
 
@@ -71,7 +71,7 @@ pub set_attr(btn_idx, param, val)
 '   param: attribute to modify
 '   val: new value for attribute
     if (btn_idx => 1 and btn_idx =< _nr_btns) ' button idx 1-based so it maps 1:1 with tag #
-        long[offs(btn_idx)][param] := val
+        long[ptr(btn_idx)][param] := val
 
 pub text_len(btn_idx): len
 ' Get the length of the text string pointed to by the button definition
