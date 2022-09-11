@@ -5,7 +5,7 @@
     Description: Generic object for manipulating GUI button structures
     Copyright (c) 2022
     Started Jul 18, 2022
-    Updated Jul 28, 2022
+    Updated Sep 11, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -58,9 +58,21 @@ pub get_attr(btn_idx, param): val
     if (btn_idx => 1 and btn_idx =< _nr_btns) ' button idx 1-based so it maps 1:1 with tag #
         return long[ptr(btn_idx)][param]
 
-pub get_ex(btn_idx)
+pub get_ex(btn_idx): c
 ' Get the ending X coordinate of the button, based on its starting coord and width
     return (get_attr(btn_idx, SX) + get_attr(btn_idx, WD))
+
+pub get_ey(btn_idx): c
+' Get the ending Y coordinate of the button, based on its starting coord and height
+    return (get_attr(btn_idx, SY) + get_attr(btn_idx, HT))
+
+pub get_sx(btn_idx): c
+' Get the ending X coordinate of the button, based on its starting coord and width
+    return (get_attr(btn_idx, SX))
+
+pub get_sy(btn_idx): c
+' Get the ending X coordinate of the button, based on its starting coord and width
+    return (get_attr(btn_idx, SY))
 
 pub min_height(btn_nr): w
 ' Get the minimum height of a button, considering its font size
@@ -73,6 +85,11 @@ pub min_width(btn_nr): w
 pub ptr(btn_nr): p
 ' Get pointer to start of btn_nr's structure in button buffer
     return _ptr_btns + ( ((btn_nr-1) * STRUCTSZ) * 4)
+
+pub ptr_e(btn_nr): p
+' Get pointer to start of btn_nr's structure in button buffer
+'   Directly compatible with EVE ButtonPtr()
+    return _ptr_btns + ( ((btn_nr-1) * STRUCTSZ) * 4) + 8
 
 pub set_attr_all(param, val) | b
 ' Set attribute of ALL buttons
