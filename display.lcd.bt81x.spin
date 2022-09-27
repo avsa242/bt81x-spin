@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2022
     Started Sep 25, 2019
-    Updated Jul 19, 2022
+    Updated Sep 27, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -103,7 +103,7 @@ CON
 
 VAR
 
-    long _RST
+    long _CS, _RST
 
     long _disp_width, _disp_height, _disp_xmax, _disp_ymax, _cent_x, _cent_y
     long _hcyc_clks, _hoffs_cyc, _hsync0_cyc, _hsync1_cyc, _vcyc_clks
@@ -112,7 +112,7 @@ VAR
 
 OBJ
 
-    spi : "com.spi.fast"
+    spi : "com.spi.fast-nocs"
     core: "core.con.bt81x"
     time: "time"
 
@@ -131,10 +131,12 @@ PUB Startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RST_PIN, PTR_DISP): status
 '       WIDTH, HEIGHT, XMAX, YMAX, HCYCLE_CLKS, HOFFSET_CYCS, HSYNC0_CYCS,
 '       HSYNC1_CYCS, VCYCLE_CLKS, VOFFSET_LNS, VSYNC0_CYCS, VSYNC1_CYCS,
 '       CLKDIV, SWIZZLE_MD, PCLK_POL, CLKSPRD, DITHER_MD, TS_I2CADDR
-    if lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and {
-}   lookdown(MOSI_PIN: 0..31) and lookdown(MISO_PIN: 0..31)
-        if (status := spi.init(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, {
-}       core#SPI_MODE))
+    if lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and lookdown(MOSI_PIN: 0..31) and {
+}   lookdown(MISO_PIN: 0..31)
+        if (status := spi.init(SCK_PIN, MOSI_PIN, MISO_PIN, core#SPI_MODE))
+            _CS := CS_PIN
+            outa[_CS] := 1
+            dira[_CS] := 1
             _RST := RST_PIN
             reset{}
             extclock{}
@@ -815,6 +817,13 @@ PUB ScissorSize(width, height)
 
 PUB Scrollbar(x, y, width, height, opts, val, size, range)
 ' Draw a scrollbar
+'   (x, y): upper-left coordinates
+'   (width, height): dimensions
+'   opts: OPT_3D (0), OPT_FLAT (256)
+'   val: displayed value on scroll bar (left-most or top-most edge)
+'   size: size of displayed scroll value (relative to val)
+'   range: full-scale range of values (1..65535)
+'   NOTE: val+size shouldn't exceed range
 '   NOTE: If width is greater than height, the scroll bar will be drawn horizontally,
 '       else it will be drawn vertically
     x := 0 #> x <# _disp_xmax
@@ -1180,8 +1189,9 @@ PRI cmd(cmd_word, param) | cmd_pkt, tmp
     cmd_pkt.byte[1] := param
     cmd_pkt.byte[2] := 0
 
-    spi.deselectafter(true)
+    outa[_CS] := 0
     spi.wrblock_lsbf(@cmd_pkt, 3)
+    outa[_CS] := 1
 
 PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Read nr_bytes from device into ptr_buff
@@ -1190,10 +1200,10 @@ PRI readReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
     cmd_pkt.byte[2] := reg_nr.byte[0]           ' ..
     cmd_pkt.byte[3] := 0                        ' Dummy byte
 
-    spi.deselectafter(false)
+    outa[_CS] := 0
     spi.wrblock_lsbf(@cmd_pkt, 4)
-    spi.deselectafter(true)
     spi.rdblock_lsbf(ptr_buff, nr_bytes)
+    outa[_CS] := 1
 
 PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Write nr_bytes from ptr_buff to device
@@ -1201,10 +1211,10 @@ PRI writeReg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
     cmd_pkt.byte[1] := reg_nr.byte[1]           ' .. address
     cmd_pkt.byte[2] := reg_nr.byte[0]           ' ..
 
-    spi.deselectafter(false)
+    outa[_CS] := 0
     spi.wrblock_lsbf(@cmd_pkt, 3)
-    spi.deselectafter(true)
     spi.wrblock_lsbf(ptr_buff, nr_bytes)
+    outa[_CS] := 1
 
 DAT
 {
