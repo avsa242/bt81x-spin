@@ -6,7 +6,7 @@
         * Draw an array of buttons
     Copyright (c) 2022
     Started Sep 11, 2022
-    Updated Sep 11, 2022
+    Updated Oct 4, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -69,7 +69,7 @@ VAR
 PUB main{} | i, btxtsz, row, col
 
     setup{}
-    eve.brightness(BRIGHTNESS)
+    eve.set_brightness(BRIGHTNESS)
     btn.init(@_btn_buff, NR_BUTTONS)
     row := col := 0
     btn.set_id_all(1)                               ' ID all buttons, starting with 1
@@ -92,20 +92,20 @@ PUB main{} | i, btxtsz, row, col
             row += btn.get_attr(i, btn#HT)
 
     repeat
-        _btn_active := eve.tagactive{}          ' which button is pressed?
+        _btn_active := eve.tag_active{}         ' which button is pressed?
         { draw the buttons }
-        eve.waitready{}
-        eve.dlstart{}
-        eve.clearcolor(0, 0, 0)
+        eve.wait_rdy{}
+        eve.dl_start{}
+        eve.clear_color(0, 0, 0)
         eve.clear{}
-        eve.widgetbgcolor($ff_ff_ff)            ' button colors (r_g_b)
-        eve.widgetfgcolor($55_55_55)            '
+        eve.widget_bgcolor($ff_ff_ff)           ' button colors (r_g_b)
+        eve.widget_fgcolor($55_55_55)           '
 
         repeat i from 1 to NR_BUTTONS
-            eve.tagattach(i)
-            eve.colorrgb24(btn.get_attr(i, btn#TCOLOR))
-            eve.buttonptr(btn.ptr_e(i))         ' draw button by pointing EVE to its structure
-        eve.dlend{}
+            eve.tag_attach(i)
+            eve.color_rgb24(btn.get_attr(i, btn#TCOLOR))
+            eve.button_ptr(btn.ptr_e(i))        ' draw button by pointing EVE to its structure
+        eve.dl_end{}
 
     repeat
 
@@ -144,19 +144,19 @@ PUB setup{}
 
     cognew(cog_btn_press{}, @_btn_stk)
 
-    if (eve.modelid{} == eve.BT816)             ' resistive TS?
+    if (eve.model_id{} == eve.BT816)            ' resistive TS?
         ts_cal{}
 
-PRI ts_cal()
+PRI ts_cal{}
 ' Calibrate the touchscreen (resistive touchscreens only)
-    eve.touchsens(1200)                         ' typical value, per BRT_AN_033
-    eve.waitready()
-    eve.dlstart()
-    eve.clear()
+    eve.ts_set_sens(1200)                       ' typical value, per BRT_AN_033
+    eve.wait_rdy{}
+    eve.dl_start{}
+    eve.clear{}
     eve.str(80, 30, 27, eve.OPT_CENTER, string("Please tap on the dot"))
-    eve.touchcal()
-    eve.dlend()
-    eve.waitready()
+    eve.ts_cal{}
+    eve.dl_end{}
+    eve.wait_rdy{}
 
 DAT
 {
