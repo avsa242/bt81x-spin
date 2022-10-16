@@ -5,7 +5,7 @@
     Description: Demo of the BT81x driver
     Copyright (c) 2022
     Started Sep 30, 2019
-    Updated Oct 4, 2022
+    Updated Oct 16, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -40,7 +40,7 @@ CON
 
 OBJ
 
-    cfg     : "core.con.boardcfg.flip"
+    cfg     : "boardcfg.flip"
     ser     : "com.serial.terminal.ansi"
     time    : "time"
     eve     : "display.lcd.bt81x"

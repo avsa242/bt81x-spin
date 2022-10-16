@@ -112,7 +112,7 @@ VAR
 
 OBJ
 
-    spi : "com.spi.fast-nocs"
+    spi : "com.spi.20mhz"
     core: "core.con.bt81x"
     time: "time"
 

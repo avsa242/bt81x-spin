@@ -6,7 +6,7 @@
         * Draw an array of buttons
     Copyright (c) 2022
     Started Sep 11, 2022
-    Updated Oct 4, 2022
+    Updated Oct 16, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -40,7 +40,7 @@ CON
 
 OBJ
 
-    cfg : "core.con.boardcfg.flip"
+    cfg : "boardcfg.flip"
     ser : "com.serial.terminal.ansi"
     eve : "display.lcd.bt81x"
     btn : "gui.button"
