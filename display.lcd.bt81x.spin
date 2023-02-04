@@ -4,30 +4,30 @@
     Author: Jesse Burt
     Description: Driver for the Bridgetek
         Advanced Embedded Video Engine (EVE) Graphic controller
-    Copyright (c) 2022
+    Copyright (c) 2023
     Started Sep 25, 2019
-    Updated Nov 3, 2022
+    Updated Feb 4, 2023
     See end of file for terms of use.
     --------------------------------------------
 }
 CON
 
-' Recognized IDs
+    { Recognized IDs }
     BT815               = $00_0815_01
     BT816               = $00_0816_01
 
-' Clock freq presets
+    { Clock freq presets }
     DEF                 = 60
     HIGH                = 72
     LOW                 = 24
 
-' CPU Reset status
+    { CPU Reset status }
     READY               = %000
     RST_AUDIO           = %100
     RST_TOUCH           = %010
     RST_COPRO           = %001
 
-' Output RGB signal swizzle
+    { Output RGB signal swizzle }
     SWIZZLE_RGBM        = 0
     SWIZZLE_RGBL        = 1
     SWIZZLE_BGRM        = 2
@@ -41,19 +41,19 @@ CON
     SWIZZLE_RBGM        = 14
     SWIZZLE_RBGL        = 15
 
-' Pixel clock polarity
+    { Pixel clock polarity }
     PCLKPOL_RISING      = 0
     PCLKPOL_FALLING     = 1
 
-' Display list swap modes
+    { Display list swap modes }
     DLSWAP_LINE         = 1
     DLSWAP_FRAME        = 2
 
-' Graphics primitives
+    { Graphics primitives }
     #1, BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L,{
 }   EDGE_STRIP_A, EDGE_STRIP_B, RECTS
 
-' Various rendering options
+    { Various rendering options }
     OPT_3D              = 0
     OPT_RGB565          = 0
     OPT_MONO            = 1
@@ -78,24 +78,23 @@ CON
     OPT_MEDIAFIFO       = (1 << 4)
     OPT_SOUND           = (1 << 5)
 
-' Transform and screen rotation
+    { button state aliases }
+    UP                  = OPT_3D
+    RELEASED            = OPT_3D
+    DOWN                = OPT_FLAT
+    PUSHED              = OPT_FLAT
+
+    { Transform and screen rotation }
     #0, ROT_LAND, ROT_INV_LAND, ROT_PORT, ROT_INV_PORT, ROT_MIR_LAND,{
 }   ROT_MIR_INV_LAND, ROT_MIR_PORT, ROT_MIR_INV_PORT
 
-' Spinner styles
+    { Spinner styles }
     SPIN_CIRCLE_DOTS    = 0
     SPIN_LINE_DOTS      = 1
     SPIN_CLOCKHAND      = 2
     SPIN_ORBIT_DOTS     = 3
 
-' Box bevel corners
-    UL                  = %0001
-    UR                  = %0010
-    LR                  = %0100
-    LL                  = %1000
-
-' Built-in fonts
-
+    { Built-in fonts }
     VGA8X8_ROM          = 16                    ' VGA ROM-like 8x8 font ($20..$7E)
     VGA8X8_ROM_HI       = 17                    ' same, but $80..$FF mapped to $00..$7F
     VGA8X12_ROM         = 18                    ' 8x12 variant of the above
