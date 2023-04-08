@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2023
     Started Sep 25, 2019
-    Updated Feb 4, 2023
+    Updated Apr 7, 2023
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -99,6 +99,8 @@ CON
     VGA8X8_ROM_HI       = 17                    ' same, but $80..$FF mapped to $00..$7F
     VGA8X12_ROM         = 18                    ' 8x12 variant of the above
     VGA8X12_ROM_HI      = 19
+
+    TCAL                = $4c_41_43_54          ' "TCAL" magic number
 
 VAR
 
@@ -995,6 +997,16 @@ PUB toggle(x, y, width, font, opts, state, ptr_str) | i, j
         coproc_cmd(byte[ptr_str][3] << 24 + byte[ptr_str][2] << 16 + {
 }       byte[ptr_str][1] << 8 + byte[ptr_str][0])
         ptr_str += 4
+
+PUB ts_rd_cal_matrix(ptr_buff)
+' Read the currently used touchscreen calibration matrix into MCU RAM
+'   ptr_buff: pointer to minimum 24-byte array to hold calibration matrix
+    readreg(core#TOUCH_TRANSFORM_A, 24, ptr_buff)
+
+PUB ts_wr_cal_matrix(ptr_buff)
+' Write the touchscreen calibration matrix to EVE
+'   ptr_buff: pointer to minimum 24-byte array containing a calibration matrix
+    writereg(core#TOUCH_TRANSFORM_A, 24, ptr_buff)
 
 PUB ts_cal{}
 ' Calibrate the touchscreen
