@@ -7,14 +7,14 @@ This is a P8X32A/Propeller driver object for the Bridgetek BT81x series Advanced
 
 ## Salient Features
 
-* SPI connection at 20MHz W/10MHz R (P1), 30MHz (P2)
+* SPI connection at 20MHz W/10MHz R (P1), up to 30MHz (P2)
 * Graphics primitives: Lines, Points, Text Strings (w/optional wrapping), Numbers (base 2..36), Boxes
 * Widgets: Buttons, Dials, Gauges, Gradients (w/or w/o alpha-blending), Keyboard keys, Progress bars, Scroll bars, Sliders, Spinners, Toggle switches
 * Set color of primitives, widgets, clear-screen color
 * Set panel brightness
 * Set scissor clip region
 * Screen rotation
-* Touchscreen: define tags for display regions, read touch coordinates, read tagged area currently touched, set resistive touch sensitivty, built-in EVE TS calibration
+* Touchscreen: define tags for display regions, read touch coordinates, read tagged area currently touched, set resistive touch sensitivty, built-in EVE TS calibration, read/write calibration matrix
 * Set display-specific timings simply by #including the correct file for your display
 
 ## Requirements
@@ -40,6 +40,11 @@ P2/SPIN2:
 | P1        | SPIN1    | Brad's Spin Tool (any) | Bytecode    | Unsupported           |
 | P1, P2    | SPIN1, 2 | Propeller Tool (any)   | Bytecode    | Unsupported           |
 | P1, P2    | SPIN1, 2 | PNut (any)             | Bytecode    | Unsupported           |
+
+## Hardware compatibility
+
+* Tested with EVE3 (BT815, 816) Matrix orbital 4.3" (Resistive), 5.0" (Capacitive), 7.0" (Capacitive)
+* Not tested with earlier (FTxxx) or newer EVE4 (BT817, BT818)
 
 ## Limitations
 
