@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller
     Copyright (c) 2023
     Started Sep 25, 2019
-    Updated Apr 7, 2023
+    Updated May 29, 2023
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -132,9 +132,9 @@ PUB startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RST_PIN, PTR_DISP): status
 '       WIDTH, HEIGHT, XMAX, YMAX, HCYCLE_CLKS, HOFFSET_CYCS, HSYNC0_CYCS,
 '       HSYNC1_CYCS, VCYCLE_CLKS, VOFFSET_LNS, VSYNC0_CYCS, VSYNC1_CYCS,
 '       CLKDIV, SWIZZLE_MD, PCLK_POL, CLKSPRD, DITHER_MD, TS_I2CADDR
-    if lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and lookdown(MOSI_PIN: 0..31) and {
-}   lookdown(MISO_PIN: 0..31)
-        if (status := spi.init(SCK_PIN, MOSI_PIN, MISO_PIN, core#SPI_MODE))
+    if ( lookdown(CS_PIN: 0..31) and lookdown(SCK_PIN: 0..31) and ...
+        lookdown(MOSI_PIN: 0..31) and lookdown(MISO_PIN: 0..31) )
+        if ( status := spi.init(SCK_PIN, MOSI_PIN, MISO_PIN, core#SPI_MODE) )
             _CS := CS_PIN
             outa[_CS] := 1
             dira[_CS] := 1
@@ -908,15 +908,13 @@ PUB str(x, y, font, opts, ptr_str) | i, j   'XXX rename to StrXY() or similar an
 '       font: 0..31 XXX expand/clarify
 '       opts: Options for the drawn text XXX expand/clarify
 '       ptr_str: Pointer to string
-    x := 0 #> x <# _disp_xmax
-    y := 0 #> y <# _disp_ymax
     coproc_cmd(core#CMD_TEXT)
-    coproc_cmd((y << 16) + x)
+    coproc_cmd(( (0 #> y <# _disp_ymax) << 16) + (0 #> x <# _disp_xmax) )
     coproc_cmd((opts << 16) + font)
-    j := (strsize(ptr_str) + 4) / 4
+    j := (strsize(ptr_str) + 4) >> 2 { / 4 }
     repeat i from 1 to j
         coproc_cmd(byte[ptr_str][3] << 24 + byte[ptr_str][2] << 16 + {
-}       byte[ptr_str][1] << 8 + byte[ptr_str][0])
+}                  byte[ptr_str][1] << 8 + byte[ptr_str][0])
         ptr_str += 4
 
 PUB swizzle(mode): curr_mode
@@ -966,8 +964,7 @@ PUB tag_area(tag_nr, sx, sy, w, h)
 
 PUB tag_attach(val)
 ' Attach tag value for the following objects drawn on the screen
-    val := 1 #> val <# 255
-    coproc_cmd(core#ATTACH_TAG | val)
+    coproc_cmd(core#ATTACH_TAG | (1 #> val <# 255) )
 
 PUB tag_ena(state)
 ' Enable numbered tags to be assigned to display regions
@@ -1167,14 +1164,11 @@ PRI readreg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
     spi.rdblock_lsbf(ptr_buff, nr_bytes)
     outa[_CS] := 1
 
-PRI writereg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
+PRI writereg(reg_nr, nr_bytes, ptr_buff)
 ' Write nr_bytes from ptr_buff to device
-    cmd_pkt.byte[0] := reg_nr.byte[2] | core#WRITE' %01 + reg_nr ..
-    cmd_pkt.byte[1] := reg_nr.byte[1]           ' .. address
-    cmd_pkt.byte[2] := reg_nr.byte[0]           ' ..
-
+    reg_nr.byte[2] |= core#WRITE
     outa[_CS] := 0
-    spi.wrblock_lsbf(@cmd_pkt, 3)
+    spi.wrblock_msbf(@reg_nr, 3)
     spi.wrblock_lsbf(ptr_buff, nr_bytes)
     outa[_CS] := 1
 
