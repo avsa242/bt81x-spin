@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller (P2 version)
     Copyright (c) 2023
     Started Dec 31, 2020
-    Updated May 29, 2023
+    Updated Jul 14, 2023
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -588,6 +588,17 @@ PUB dl_swap_mode(mode): dl_status
             dl_status := 0
             readreg(core.DLSWAP, 1, @dl_status)
             return dl_status & %11
+
+CON FONT_ROOT = $20_b834                        ' pointer read from ROM_FNTROOT_START
+PUB glyph_width(fnt_handle, ch): w | widths
+' Get width of a glyph
+'   fnt_handle: font handle/number (e.g., 31)
+'   ch: glyph/character (e.g., "g")
+'   Returns: width of glyph in pixels
+    widths := (FONT_ROOT + (148 * (fnt_handle-16)) ) + ch
+    w := 0
+    readreg(widths, 1, @w)
+    return w
 
 PUB gauge(x, y, radius, opts, major, minor, val, range)
 ' Draw a gauge
