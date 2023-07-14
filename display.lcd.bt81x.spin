@@ -50,8 +50,8 @@ CON
     DLSWAP_FRAME        = 2
 
     { Graphics primitives }
-    #1, BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L,{
-}   EDGE_STRIP_A, EDGE_STRIP_B, RECTS
+    #1, BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L, EDGE_STRIP_A, ...
+    EDGE_STRIP_B, RECTS
 
     { Various rendering options }
     OPT_3D              = 0
@@ -85,8 +85,8 @@ CON
     PUSHED              = OPT_FLAT
 
     { Transform and screen rotation }
-    #0, ROT_LAND, ROT_INV_LAND, ROT_PORT, ROT_INV_PORT, ROT_MIR_LAND,{
-}   ROT_MIR_INV_LAND, ROT_MIR_PORT, ROT_MIR_INV_PORT
+    #0, ROT_LAND, ROT_INV_LAND, ROT_PORT, ROT_INV_PORT, ROT_MIR_LAND, ROT_MIR_INV_LAND, ...
+    ROT_MIR_PORT, ROT_MIR_INV_PORT
 
     { Spinner styles }
     SPIN_CIRCLE_DOTS    = 0
@@ -101,6 +101,14 @@ CON
     VGA8X12_ROM_HI      = 19
 
     TCAL                = $4c_41_43_54          ' "TCAL" magic number
+
+    { default I/O settings; these can be overridden in the parent object }
+    CS                  = 0
+    SCK                 = 1
+    MOSI                = 2
+    MISO                = 3
+    RST                 = 4
+    SPI_FREQ            = 1_000_000
 
 VAR
 
@@ -119,6 +127,11 @@ OBJ
 
 PUB null{}
 ' This is not a top-level object
+
+PUB start(ptr_disp): status
+' Start the driver using default I/O settings
+'   ptr_disp: pointer to display setup (see startx() below)
+    return startx(CS, SCK, MOSI, MISO, RST, ptr_disp)
 
 PUB startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RST_PIN, PTR_DISP): status
 ' Start the driver using custom I/O settings
