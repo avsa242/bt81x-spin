@@ -5,7 +5,7 @@
     Description: Demo of the BT81x driver touchscreen functionality
     Copyright (c) 2023
     Started Sep 30, 2019
-    Updated Apr 8, 2023
+    Updated Jul 14, 2023
     See end of file for terms of use.
     --------------------------------------------
 
@@ -19,14 +19,8 @@ CON
     _xinfreq    = cfg#_xinfreq
 
 ' -- User-modifiable constants
-    LED         = cfg#LED1
     SER_BAUD    = 115_200
 
-    CS_PIN      = 0
-    SCK_PIN     = 1
-    MOSI_PIN    = 2
-    MISO_PIN    = 3
-    RST_PIN     = 4                             ' optional; pull high if unused
     BRIGHTNESS  = 100                           ' Initial brightness (0..128)
 
     { touchscreen calibration storage }
@@ -54,8 +48,9 @@ OBJ
     cfg:    "boardcfg.flip"
     ser:    "com.serial.terminal.ansi"
     time:   "time"
-    eve:    "display.lcd.bt81x"
     ee:     "memory.eeprom.24xxxx"
+    eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4
+'   NOTE: Pull RST high (tip: tie to Propeller reset) and define as -1 if unused
 
 VAR
 
@@ -216,7 +211,7 @@ PUB setup{}
     ser.clear{}
     ser.strln(string("Serial terminal started"))
 
-    if eve.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RST_PIN, @_disp_setup)
+    if ( eve.start(@_disp_setup) )
         ser.strln(string("BT81x driver started"))
     else
         ser.str(string("BT81x driver failed to start - halting"))

@@ -5,7 +5,7 @@
     Description: Demo of the BT81x driver touchscreen functionality (P2 version)
     Copyright (c) 2023
     Started Dec 31, 2020
-    Updated Apr 8, 2023
+    Updated Jul 14, 2023
     See end of file for terms of use.
     --------------------------------------------
 
@@ -19,14 +19,8 @@ CON
     _xtlfreq    = cfg._xtlfreq
 
 ' -- User-modifiable constants
-    LED         = cfg.LED1
     SER_BAUD    = 2_000_000
 
-    CS_PIN      = 0
-    SCK_PIN     = 1
-    MOSI_PIN    = 2
-    MISO_PIN    = 3
-    RST_PIN     = 4                             ' optional; pull high if unused
     SCK_FREQ    = 20_000_000                    ' max is 30_000_000
 
     BRIGHTNESS  = 100                           ' Initial brightness (0..128)
@@ -55,8 +49,9 @@ OBJ
 
     cfg:    "boardcfg.p2eval"
     ser:    "com.serial.terminal.ansi"
-    eve:    "display.lcd.bt81x"
     flash:  "memory.flash.25xxxx"
+    eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4, SPI_FREQ=20_000_000
+'   NOTE: Pull RST high (tip: tie to Propeller reset) and define as -1 if unused
 
 VAR
 
@@ -216,10 +211,9 @@ PRI ts_cal()
 PUB setup()
 
     ser.start(SER_BAUD)
-    waitms(30)
     ser.clear()
     ser.strln(@"Serial terminal started")
-    if eve.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, SCK_FREQ, RST_PIN, @_disp_setup)
+    if ( eve.start(@_disp_setup) )
         ser.strln(@"BT81x driver started")
     else
         ser.str(@"BT81x driver failed to start - halting")

@@ -4,9 +4,9 @@
     Author: Jesse Burt
     Description: Demo of the BT81x driver touchscreen functionality
         * Draw an array of buttons
-    Copyright (c) 2022
+    Copyright (c) 2023
     Started Sep 11, 2022
-    Updated Oct 16, 2022
+    Updated Jul 14, 2023
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -17,14 +17,8 @@ CON
     _xinfreq    = cfg#_xinfreq
 
 ' -- User-modifiable constants
-    LED         = cfg#LED1
     SER_BAUD    = 115_200
 
-    CS_PIN      = 0
-    SCK_PIN     = 1
-    MOSI_PIN    = 2
-    MISO_PIN    = 3
-    RST_PIN     = -1
     BRIGHTNESS  = 100                           ' Initial brightness (0..128)
 
     NR_BUTTONS  = 29
@@ -40,12 +34,13 @@ CON
 
 OBJ
 
-    cfg : "boardcfg.flip"
-    ser : "com.serial.terminal.ansi"
-    eve : "display.lcd.bt81x"
-    btn : "gui.button"
-    time: "time"
-    str : "string"
+    cfg:    "boardcfg.flip"
+    ser:    "com.serial.terminal.ansi"
+    btn:    "gui.button"
+    time:   "time"
+    str:    "string"
+    eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4
+'   NOTE: Pull RST high (tip: tie to Propeller reset) and define as -1 if unused
 
 CON
 
@@ -136,7 +131,7 @@ PUB setup{}
     time.msleep(30)
     ser.clear{}
     ser.strln(string("Serial terminal started"))
-    if eve.startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RST_PIN, @_disp_setup)
+    if ( eve.start(@_disp_setup) )
         ser.strln(string("BT81x driver started"))
     else
         ser.str(string("BT81x driver failed to start - halting"))
@@ -144,7 +139,7 @@ PUB setup{}
 
     cognew(cog_btn_press{}, @_btn_stk)
 
-    if (eve.model_id{} == eve.BT816)            ' resistive TS?
+    if ( eve.model_id{} == eve.BT816 )          ' resistive TS?
         ts_cal{}
 
 PRI ts_cal{}
@@ -160,7 +155,7 @@ PRI ts_cal{}
 
 DAT
 {
-Copyright 2022 Jesse Burt
+Copyright 2023 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
