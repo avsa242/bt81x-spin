@@ -36,7 +36,7 @@ P2/SPIN2:
 | P1        | SPIN1    | FlexSpin (6.2.1)       | Bytecode     | OK                    |
 | P1        | SPIN1    | FlexSpin (6.2.1)       | Native/PASM  | OK                    |
 | P2        | SPIN2    | FlexSpin (6.2.1)       | NuCode       | Builds, doesn't run   |
-| P2        | SPIN2    | FlexSpin (6.2.1)       | Native/PASM2 | Not yet implemented   |
+| P2        | SPIN2    | FlexSpin (6.2.1)       | Native/PASM2 | OK                    |
 
 ## Hardware compatibility
 
