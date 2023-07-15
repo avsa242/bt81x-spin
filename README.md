@@ -16,6 +16,7 @@ This is a P8X32A/Propeller driver object for the Bridgetek BT81x series Advanced
 * Screen rotation
 * Touchscreen: define tags for display regions, read touch coordinates, read tagged area currently touched, set resistive touch sensitivty, built-in EVE TS calibration, read/write calibration matrix
 * Set display-specific timings simply by #including the correct file for your display
+* Use custom fonts (generated with EVE asset builder or equivalent)
 
 ## Requirements
 
@@ -50,4 +51,6 @@ P2/SPIN2:
 * Doesn't support interrupts
 * Doesn't support flash
 * Doesn't support MIDI/audio
+* Custom fonts are currently limited to legacy format and must be embedded in the application, so
+may require substantial amounts of RAM
 
