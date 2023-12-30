@@ -1004,7 +1004,7 @@ PUB tag_area(tag_nr, sx, sy, w, h)
 
 PUB tag_attach(val)
 ' Attach tag value for the following objects drawn on the screen
-    coproc_cmd(core.ATTACH_TAG | (1 #> val <# 255) )
+    coproc_cmd(core.ATTACH_TAG | (0 #> val <# 255) )
 
 PUB tag_ena(state)
 ' Enable numbered tags to be assigned to display regions
