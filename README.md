@@ -14,7 +14,7 @@ This is a P8X32A/Propeller driver object for the Bridgetek BT81x series Advanced
 * Set panel brightness
 * Set scissor clip region
 * Screen rotation
-* Touchscreen: define tags for display regions, read touch coordinates, read tagged area currently touched, set resistive touch sensitivty, built-in EVE TS calibration, read/write calibration matrix
+* Touchscreen: define tags for display regions, read touch coordinates, read tagged area currently touched, set resistive touch sensitivty, set touch ADC oversampling factor, built-in EVE TS calibration, read/write calibration matrix (includes demo code to write calibration to MCU EE/Flash)
 * Set display-specific timings simply by #including the correct file for your display
 * Use custom fonts (generated with EVE asset builder or equivalent)
 
@@ -33,10 +33,13 @@ P2/SPIN2:
 
 | Processor | Language | Compiler               | Backend      | Status                |
 |-----------|----------|------------------------|--------------|-----------------------|
-| P1        | SPIN1    | FlexSpin (6.2.1)       | Bytecode     | OK                    |
-| P1        | SPIN1    | FlexSpin (6.2.1)       | Native/PASM  | OK                    |
-| P2        | SPIN2    | FlexSpin (6.2.1)       | NuCode       | Builds, doesn't run   |
-| P2        | SPIN2    | FlexSpin (6.2.1)       | Native/PASM2 | OK                    |
+| P1        | SPIN1    | FlexSpin (6.5.0)       | Bytecode     | OK                    |
+| P1        | SPIN1    | FlexSpin (6.5.0)       | Native/PASM  | OK                    |
+| P2        | SPIN2    | FlexSpin (6.5.0)       | NuCode       | Build OK (untested)   |
+| P2        | SPIN2    | FlexSpin (6.5.0)       | Native/PASM2 | OK                    |
+
+(other versions or toolchains not listed are __not supported__, and _may or may not_ work)
+
 
 ## Hardware compatibility
 

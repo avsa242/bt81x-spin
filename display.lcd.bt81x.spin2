@@ -6,7 +6,7 @@
         Advanced Embedded Video Engine (EVE) Graphic controller (P2 version)
     Copyright (c) 2023
     Started Dec 31, 2020
-    Updated Jul 15, 2023
+    Updated Dec 30, 2023
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -1096,6 +1096,14 @@ PUB ts_low_pwr_mode(state): curr_state
 
     state := ((curr_state & core.LOWPWR) | state) & core.TOUCH_CFG_MASK
     writereg(core.TOUCH_CFG, 2, @state)
+
+PUB ts_oversample_factor(f)
+' Set touchscreen oversampling factor
+'   NOTE: Higher values result in smoother touchscreen feedback, at the cost of
+'       higher current consumption)
+'   Valid values: 0..15 (default: 7)
+    f &= $0f
+    writereg(core.TOUCH_OVERSMP, 1, @f)
 
 PUB ts_sample_clks(clks): curr_clks
 ' Set number of touchscreen sampler clocks
