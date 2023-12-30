@@ -265,8 +265,8 @@ PUB clear{}
 PUB clear_buffers(color, stencil, tag)
 ' Clear buffers to preset values
 '   Valid values: FALSE (0), TRUE (-1 or 1) for color, stencil, tag
-    coproc_cmd(core#CLR | ((||(color) & 1) << core#COLOR) |{
-}   ((||stencil & 1) << core#STENCIL) | (||tag & 1))
+    coproc_cmd(core#CLR |   ((color & 1) << core#COLOR) | ((stencil & 1) << core#STENCIL) | ...
+                            (tag & 1))
 
 PUB clear_color(r, g, b)
 ' Set color value used by a following Clear()
