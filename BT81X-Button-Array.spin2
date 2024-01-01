@@ -4,9 +4,9 @@
     Author: Jesse Burt
     Description: Demo of the BT81x driver touchscreen functionality
         * Draw an array of buttons
-    Copyright (c) 2023
+    Copyright (c) 2024
     Started Sep 11, 2022
-    Updated Jul 14, 2023
+    Updated Jan 1, 2024
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -17,11 +17,17 @@ CON
     _xtlfreq    = cfg._xtlfreq
 
 ' -- User-modifiable constants
-    SER_BAUD    = 2_000_000
-
     BRIGHTNESS  = 100                           ' Initial brightness (0..128)
 
     NR_BUTTONS  = 29
+
+    { touchscreen calibration storage }
+    ERASE_TS_CAL= false                         ' set non-zero to delete TS cal from P2 flash
+    FL_MAGICADDR= $80000                        ' flash addr of 'magic' number (cal. identifier)
+    FL_CALBASE  = FL_MAGICADDR+4                ' flash base addr of calibration data (24 bytes)
+                                                ' NOTE: These need to be above the lower 512kbytes
+                                                '   of the flash to avoid being overwritten by
+                                                '   writing a P2 binary image
 ' --
 
 ' Uncomment one of the following, depending on your display size/resolution
@@ -35,10 +41,11 @@ CON
 OBJ
 
     cfg:    "boardcfg.p2eval"
-    ser:    "com.serial.terminal.ansi"
+    ser:    "com.serial.terminal.ansi" | SER_BAUD=2_000_000
     btn:    "gui.button"
     str:    "string"
-    eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4, SPI_FREQ=20_000_000
+    flash:  "memory.flash.25xxxx" | CS=61, SCK=60, MOSI=59, MISO=58, SPI_FREQ=10_000_000
+    eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4, SPI_FREQ=5_000_000
 '   NOTE: Pull RST high (tip: tie to Propeller reset) and define as -1 if unused
 
 CON
@@ -56,6 +63,8 @@ CON
 
 VAR
 
+    long _ts[6]
+
     long _btn_buff[NR_BUTTONS * btn.STRUCTSZ]
     byte _strbuff[NR_BUTTONS * STRSZ]
     byte _btn_active
@@ -72,7 +81,7 @@ PUB main() | i, btxtsz, row, col
     repeat i from 1 to NR_BUTTONS
         { set up buttons' initial state }
         btn.set_attr(i, btn.ST, UP)                 ' initial pushed state (UP = 0, DOWN = 1)
-        btn.set_attr(i, btn.PSTR, btntxt(i))        ' button text "Button .'"
+        btn.set_attr(i, btn.PSTR, btntxt(i))        ' button text "Button #'"
         btn.set_attr(i, btn.TSZ, btxtsz)            ' font size/style
         btn.set_attr(i, btn.WD, btn.min_width(i))   ' width
         btn.set_attr(i, btn.HT, btn.min_height(i)*2)' height
@@ -108,7 +117,7 @@ PRI btntxt(b_nr): ptr_str
 '   Returns: pointer to string
     ptr_str := @_strbuff + ((1 #> b_nr)-1) * STRSZ
     bytefill(ptr_str, 0, STRSZ)
-    str.sprintf(ptr_str, @"Button %2.2d", b_nr)
+    str.sprintf1(ptr_str, @"Button %2.2d", b_nr)
 
 VAR long _btn_stk[50]
 PRI cog_btn_press() | btn_id
@@ -126,16 +135,46 @@ PRI cog_btn_press() | btn_id
 
 PUB setup()
 
-    ser.start(SER_BAUD)
+    ser.start()
     ser.clear()
     ser.strln(@"Serial terminal started")
+
     if ( eve.start(@_disp_setup) )
         ser.strln(@"BT81x driver started")
     else
         ser.str(@"BT81x driver failed to start - halting")
         repeat
 
+    if ( flash.start() )
+        ser.strln(@"flash driver started")
+        if ( ERASE_TS_CAL )
+            erase_tscal()
+    else
+        ser.strln(@"flash driver failed to start - halting")
+        repeat
+
+    if ( eve.model_id() == eve.BT816 )          ' resistive TS?
+        if ( flash.rd_long_lsbf(FL_MAGICADDR) == eve.TCAL )
+            { look for magic number in EEPROM }
+            ser.strln(@"calibration found - restoring")
+            flash.rd_block_lsbf(@_ts, FL_CALBASE, 24)   ' read the calibration matrix
+            eve.ts_wr_cal_matrix(@_ts)          ' write it to EVE
+        else
+            { no calibration stored in EE - perform calibration }
+            ser.strln(@"no calibration found")
+            ts_cal()
+
     cogspin(NEWCOG, cog_btn_press(), @_btn_stk)
+
+
+PUB erase_tscal()
+' Erase calibration data and magic number from flash
+    ser.str(@"erasing touchscreen calibration from flash...")
+    flash.global_lock(false)
+    flash.writes_ena(true)
+    flash.erase(FL_MAGICADDR, flash.SECTOR)
+    repeat while flash.busy()                   ' wait for the erase to finish
+    ser.strln(@"done")
 
     if ( eve.model_id() == eve.BT816 )          ' resistive TS?
         ts_cal()
@@ -153,7 +192,7 @@ PRI ts_cal()
 
 DAT
 {
-Copyright 2023 Jesse Burt
+Copyright 2024 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
