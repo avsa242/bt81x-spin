@@ -1,15 +1,14 @@
 {
-    --------------------------------------------
-    Filename: display.lcd.bt81x.spin2
-    Author: Jesse Burt
-    Description: Driver for the Bridgetek
-        Advanced Embedded Video Engine (EVE) Graphic controller (P2 version)
-    Copyright (c) 2023
-    Started Dec 31, 2020
-    Updated Dec 30, 2023
-    See end of file for terms of use.
-    --------------------------------------------
+----------------------------------------------------------------------------------------------------
+    Filename:       display.lcd.bt81x.spin2
+    Description:    Driver for the Bridgetek Advanced Embedded Video Engine (EVE)
+    Author:         Jesse Burt
+    Started:        Dec 31, 2020
+    Updated:        Mar 9, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+----------------------------------------------------------------------------------------------------
 }
+
 CON
 
     { Recognized IDs }
@@ -202,6 +201,12 @@ PUB preset_high_perf()
     defaults()
     clk_set_freq(HIGH)
 
+PUB attach_flash()'xxx api tentative
+' Enable communication with the attached SPI flash chip
+'   NOTE: After calling this method, it is recommended to read the status of the SPI flash
+'       connection by reading the return value of flash_status()
+    coproc_cmd(core.CMD_FLASHATTACH)
+
 PUB box(x1, y1, x2, y2, filled)
 ' Draw a box in the currently set color (set using color_rgb() or color_rgb24() )
 '   (x1, y1): upper-left corner
@@ -370,6 +375,12 @@ PUB cpu_state(): s
 '       RST_COPRO (1): Coprocessor engine
     s := 0
     readreg(core.CPURESET, 2, @s)
+
+PUB detach_flash()'xxx api tentative
+' Disable communication with the attached SPI flash chip
+'   NOTE: After calling this method, the following methods may be used to control the SPI bus
+'       the flash chip is connected to: flash_deselect(), flash_tx(), flash_rx()
+    coproc_cmd(core.CMD_FLASHDETACH)
 
 PUB dev_id(): id
 ' Read device identification
@@ -558,6 +569,16 @@ PUB dither_ena(state)
     state := ((state <> 0) & 1)
     writereg(core.DITHER, 1, @state)
 
+PUB dl_append_from_flash(fl_addr, nr_bytes)'xxx api tentative
+' Append data from flash to the display list
+'   fl_addr: flash memory address to start reading from
+'   nr_bytes: number of bytes to append to the display list
+'   NOTE: fl_addr must be 64-byte aligned
+'   NOTE: nr_bytes must be a multiple of 4
+    coproc_cmd(core.CMD_APPENDF)
+    coproc_cmd(fl_addr)
+    coproc_cmd(nr_bytes)
+
 PUB dl_end()
 ' End a display list block and display the contents
     coproc_cmd(core.DISPLAY)
@@ -589,6 +610,102 @@ PUB dl_swap_mode(mode): dl_status
             dl_status := 0
             readreg(core.DLSWAP, 1, @dl_status)
             return dl_status & %11
+
+PUB flash_attach()'xxx api tentative
+' Re-connect SPI flash
+    coproc_cmd(core.CMD_FLASHATTACH)
+
+PUB flash_clear_cache()'xxx api tentative
+' Clear EVE's internal flash cache
+'   NOTE: This should be called after modifying graphics data in flash with flash_bytemove() or
+'       flash_wrblk_lsbf(), otherwise bitmaps from flash may be outdated data.
+'   NOTE: This _must_ be called only when the display list is empty, e.g.:
+'       dl_start()
+'       flash_clear_cache()
+'           otherwise a coprocessor fault will be generated.
+    coproc_cmd(core.CMD_CLEARCACHE)
+
+PUB flash_deselect()'XXX api tentative
+' De-assert the flash CS signal
+'   NOTE: Use of this method is only valid when the flash is detached using flash_detach()
+    coproc_cmd(core.CMD_FLASHSPIDESEL)
+
+PUB flash_detach()'xxx api tentative
+' Place flash SPI device lines into Hi-Z state
+'   NOTE: Only the following flash-related methods are valid after calling flash_detach():
+'       flash_deselect(), flash_tx(), flash_rx(), flash_attach()
+    coproc_cmd(core.CMD_FLASHDETACH)
+
+PUB flash_fastmode()'XXX api tentative
+' Drive SPI flash chip in full-speed mode (if possible)
+    coproc_cmd(core.CMD_FLASHFAST)
+
+PUB flash_rx(ram_addr, nr_bytes): b'XXX api tentative
+' Read a block of data from the SPI Flash interface, and write to EVE RAM_G
+'   ram_addr: address in EVE RAM_G to write to
+'   nr_bytes: number of bytes to read
+'   NOTE: This method is only valid when flash has been detached using flash_detach()
+    coproc_cmd(core.CMD_FLASHSPIRX)
+
+PUB flash_status(): s'xxx api tentative
+' Get the current state of the connection to the SPI flash chip
+'   Returns:
+'       FLASH_INIT (0)
+'       FLASH_DETACHED (1)
+'       FLASH_BASIC (2)
+'       FLASH_FULL (3)
+    s := 0
+    readreg(core.FLASH_STATUS, 2, @s)
+
+PUB flash_tx(ptr_buff, nr_bytes)'XXX api tentative
+' Write a block of data over the EVE <-> SPI Flash interface
+'   ptr_buff: pointer to buffer of data to write from
+'   nr_bytes: number of bytes to write
+    coproc_cmd(core.CMD_FLASHSPITX)
+    coproc_cmd(nr_bytes)
+    repeat while nr_bytes--
+        coproc_cmd(byte[ptr_buff++])
+
+PUB flash_rdblk_lsbf(ram_addr, fl_addr, nr_bytes)'XXX api tentative
+' Read a block of data from flash to EVE RAM
+'   ram_addr: address in EVE RAM_G to write to
+'   fl_addr: flash memory address to start reading from
+'   nr_bytes: number of bytes to read
+'   NOTE: ram_addr must be 4-byte aligned
+'   NOTE: fl_addr must be 64-byte aligned
+'   NOTE: nr_bytes must be a multiple of 4
+    coproc_cmd(core.CMD_FLASHREAD)
+    coproc_cmd(ram_addr)
+    coproc_cmd(fl_addr)
+    coproc_cmd(nr_bytes)
+
+PUB flash_bytemove(fl_addr, ptr_buff, nr_bytes)'XXX api tentative
+' Write a block of data to flash from Propeller RAM
+'   fl_addr: flash memory address to start writing to
+'   ptr_buff: pointer to buffer of data to write
+'   nr_bytes: number of bytes to write
+'   NOTE: fl_addr must be 256-byte aligned
+'   NOTE: nr_bytes must be a multiple of 256
+    coproc_cmd(core.CMD_FLASHWRITE)
+    coproc_cmd(fl_addr)
+    coproc_cmd(nr_bytes)
+    repeat while nr_bytes--                     ' keep going if > 0, and take one from the total
+        coproc_cmd(byte[ptr_buff++])            ' write from the buffer and advance to next byte
+
+PUB flash_wrblk_lsbf(fl_addr, ram_addr, nr_bytes)'XXX api tentative
+' Write a block of data to flash from EVE RAM
+'   fl_addr: flash memory address to start writing to
+'   ram_addr: address in EVE RAM_G to read from
+'   nr_bytes: number of bytes to write
+'   NOTE: If the data matches the existing contents of flash, nothing is done. Otherwise, the
+'       flash is erased in 4kB units, and the data is written.
+'   NOTE: ram_addr must be 4-byte aligned
+'   NOTE: fl_addr must be 4096-byte aligned
+'   NOTE: nr_bytes must be a multiple of 4096
+    coproc_cmd(core.CMD_FLASHREAD)
+    coproc_cmd(fl_addr)                         ' destination
+    coproc_cmd(ram_addr)                        ' source
+    coproc_cmd(nr_bytes)
 
 CON FONT_ROOT = $20_b834                        ' pointer read from ROM_FNTROOT_START
 PUB glyph_width(fnt_handle, ch): w | widths
@@ -947,6 +1064,14 @@ PUB set_base(radix)
 '   Any other value is ignored
     coproc_cmd(core.CMD_SETBASE)
     coproc_cmd(2 #> radix <# 36)
+
+PUB set_flash_source(fl_addr)
+' Set source address in flash for data to be used by load_image(), play_video(), video_startf(),
+'   and inflate2()
+'   fl_addr: flash address
+'   NOTE: fl_addr must be 64-byte aligned
+    coproc_cmd(core.CMD_FLASHSOURCE)
+    coproc_cmd(fl_addr)
 
 PUB setup_font(mem_ptr, fnt_sz, fnt_ptr, fnt_nr, first_ch)
 ' Upload and set up a custom font
@@ -1310,7 +1435,7 @@ PRI writereg(reg_nr, nr_bytes, ptr_buff)
 
 DAT
 {
-Copyright 2023 Jesse Burt
+Copyright 2024 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

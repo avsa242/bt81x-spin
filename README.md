@@ -5,6 +5,7 @@ This is a P8X32A/Propeller driver object for the Bridgetek BT81x series Advanced
 
 **IMPORTANT**: This software is meant to be used with the [spin-standard-library](https://github.com/avsa242/spin-standard-library) (P8X32A) or [p2-spin-standard-library](https://github.com/avsa242/p2-spin-standard-library) (P2X8C4M64P). Please install the applicable library first before attempting to use this code, otherwise you will be missing several files required to build the project.
 
+
 ## Salient Features
 
 * SPI connection at 20MHz W/10MHz R (P1), up to 30MHz (P2)
@@ -18,6 +19,7 @@ This is a P8X32A/Propeller driver object for the Bridgetek BT81x series Advanced
 * Set display-specific timings simply by #including the correct file for your display
 * Use custom fonts (generated with EVE asset builder or equivalent)
 
+
 ## Requirements
 
 * BT815/816-based board
@@ -28,6 +30,7 @@ P1/SPIN1:
 
 P2/SPIN2:
 * p2-spin-standard-library
+
 
 ## Compiler Compatibility
 
@@ -46,13 +49,13 @@ P2/SPIN2:
 * Tested with EVE3 (BT815, 816) Matrix orbital 4.3" (Resistive), 5.0" (Capacitive), 7.0" (Capacitive)
 * Not tested with earlier (FTxxx) or newer EVE4 (BT817, BT818)
 
+
 ## Limitations
 
 * Very early in development - may malfunction, or outright fail to build
 * API not considered stable - not advisable to design a product around this
 * Single-channel SPI only (doesn't support DSPI, QSPI)
 * Doesn't support interrupts
-* Doesn't support flash
 * Doesn't support MIDI/audio
 * Custom fonts are currently limited to legacy format and must be embedded in the application, so
 may require substantial amounts of RAM
