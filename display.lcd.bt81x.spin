@@ -4,12 +4,21 @@
     Description:    Driver for the Bridgetek Advanced Embedded Video Engine (EVE)
     Author:         Jesse Burt
     Started:        Sep 25, 2019
-    Updated:        Mar 9, 2024
+    Updated:        Aug 14, 2024
     Copyright (c) 2024 - See end of file for terms of use.
 ---------------------------------------------------------------------------------------------------
 }
 
 CON
+
+    { default I/O settings; these can be overridden in the parent object }
+    CS                  = 0
+    SCK                 = 1
+    MOSI                = 2
+    MISO                = 3
+    RST                 = 4
+    SPI_FREQ            = 1_000_000
+
 
     { Recognized IDs }
     BT815               = $00_0815_01
@@ -101,13 +110,6 @@ CON
 
     TCAL                = $4c_41_43_54          ' "TCAL" magic number
 
-    { default I/O settings; these can be overridden in the parent object }
-    CS                  = 0
-    SCK                 = 1
-    MOSI                = 2
-    MISO                = 3
-    RST                 = 4
-    SPI_FREQ            = 1_000_000
 
 VAR
 
@@ -118,19 +120,23 @@ VAR
     long _voffs_lns, _vsync0_cyc, _vsync1_cyc, _clkdiv, _swiz_md, _pclk_pol
     long _clksprd, _dith_md, _ts_i2caddr
 
+
 OBJ
 
     spi:    "com.spi.20mhz"
     core:   "core.con.bt81x"
     time:   "time"
 
+
 PUB null()
 ' This is not a top-level object
+
 
 PUB start(ptr_disp): status
 ' Start the driver using default I/O settings
 '   ptr_disp: pointer to display setup (see startx() below)
     return startx(CS, SCK, MOSI, MISO, RST, ptr_disp)
+
 
 PUB startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RST_PIN, PTR_DISP): status
 ' Start the driver using custom I/O settings
@@ -166,10 +172,12 @@ PUB startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RST_PIN, PTR_DISP): status
     ' Lastly - make sure you have at least one free core/cog
     return FALSE
 
+
 PUB stop()
 ' Stop the driver
     powered(FALSE)
     spi.deinit()
+
 
 PUB defaults()
 ' Default settings, based on lcd chosen
@@ -197,16 +205,19 @@ PUB defaults()
     disp_set_pix_clk_div(_clkdiv)
     ts_i2c_addr(_ts_i2caddr)
 
+
 PUB preset_high_perf()
 ' Like Defaults(), but sets clock to highest performance (72MHz)
     defaults()
     clk_set_freq(HIGH)
+
 
 PUB attach_flash()'xxx api tentative
 ' Enable communication with the attached SPI flash chip
 '   NOTE: After calling this method, it is recommended to read the status of the SPI flash
 '       connection by reading the return value of flash_status()
     coproc_cmd(core.CMD_FLASHATTACH)
+
 
 PUB box(x1, y1, x2, y2, filled)
 ' Draw a box in the currently set color (set using color_rgb() or color_rgb24() )
@@ -223,10 +234,12 @@ PUB box(x1, y1, x2, y2, filled)
         line(x1, y1, x1, y2)
         line(x2, y1, x2, y2)
 
+
 PUB brightness(): lvl
 ' Get display brightness
     lvl := 0
     readreg(core.PWM_DUTY, 1, @lvl)
+
 
 PUB set_brightness(lvl)
 ' Set display brightness
@@ -234,6 +247,7 @@ PUB set_brightness(lvl)
 '   Any other value polls the chip and returns the current setting
     lvl := 0 #> lvl <# 128
     writereg(core.PWM_DUTY, 1, @lvl)
+
 
 PUB button(x, y, width, height, font, opts, ptr_str) | i, j
 ' Draw a button
@@ -259,6 +273,7 @@ PUB button(x, y, width, height, font, opts, ptr_str) | i, j
                     byte[ptr_str][0] )
         ptr_str += 4
 
+
 PUB button_ptr(ptr_btndef) | x, y, width, height, font, opts, ptr_str
 ' Draw a button, reading from definition at ptr_btndef
 '   Structure:
@@ -266,10 +281,12 @@ PUB button_ptr(ptr_btndef) | x, y, width, height, font, opts, ptr_str
     longmove(@x, ptr_btndef, 7)
     button(x, y, width, height, font, opts, ptr_str)
 
+
 PUB clear()
 ' Clear display
 '   NOTE: This clears color, stencil and tag buffers
     clear_buffers(TRUE, TRUE, TRUE)
+
 
 PUB clear_buffers(color, stencil, tag)
 ' Clear buffers to preset values
@@ -277,6 +294,7 @@ PUB clear_buffers(color, stencil, tag)
     coproc_cmd(core.CLR |   ((color & 1) << core.COLOR) | ...
                             ((stencil & 1) << core.STENCIL) | ...
                             (tag & 1))
+
 
 PUB clear_color(r, g, b)
 ' Set color value used by a following clear()
@@ -287,10 +305,12 @@ PUB clear_color(r, g, b)
     b := 0 #> b <# 255
     coproc_cmd(core.CLR_COLOR_RGB | (r << 16) | (g << 8) | b)
 
+
 PUB clear_screen(color)
 ' Clear screen using color (RGB24)
     clear_color((color >> 16) & $FF, (color >> 8) & $FF, color & $FF)
     clear()
+
 
 PUB clk_freq(): freq
 ' Get clock frequency
@@ -299,21 +319,25 @@ PUB clk_freq(): freq
     readreg(core.FREQ, 4, @freq)
     return (freq / 1_000_000)
 
+
 PUB clk_set_freq(freq) | tmp
 ' Set clock frequency, in MHz
 '   Valid values: 24, 36, 48, *60, 72
-'   Any other value polls the chip and returns the current setting
+'   Any other value is ignored
 '   NOTE: Changing this value incurs a 300ms delay
     case freq
         24, 36, 48, 60, 72:
             tmp := lookdown(freq: 24, 36, 48, 60, 72)
             tmp := ((lookup(tmp: 0, 0, 1, 1, 1) << 6) | tmp) + 1
             freq *= 1_000_000
-    sleep()
-    cmd(core.CLKSEL1, tmp)
-    powered(TRUE)
-    time.msleep(core.TPOR)
-    writereg(core.FREQ, 4, @freq)
+            sleep()
+            cmd(core.CLKSEL1, tmp)
+            powered(TRUE)
+            time.msleep(core.TPOR)
+            writereg(core.FREQ, 4, @freq)
+        other:
+            return
+
 
 PUB clk_spread_ena(state): curr_state
 ' Enable output clock spreading, to reduce switching noise
@@ -328,6 +352,7 @@ PUB clk_spread_ena(state): curr_state
             readreg(core.CSPREAD, 1, @curr_state)
             return (curr_state & 1) == 1
 
+
 PUB color_rgb(r, g, b)
 ' Specify color for following graphics primitive
 '   Valid values: 0..$ff (RGB 8, 8, 8)
@@ -336,11 +361,13 @@ PUB color_rgb(r, g, b)
     b := 0 #> b <# 255
     coproc_cmd(core.COLOR_RGB | (r << core.RED) | (g << core.GREEN) | b)
 
+
 PUB color_rgb24(rgb24)
 ' Specify color for following graphics primitive
 '   Valid values: 0..$ff_ff_ff (RGB24)
     rgb24 := 0 #> rgb24 <# $ff_ff_ff
     coproc_cmd(core.COLOR_RGB | rgb24)
+
 
 PUB coproc_cmd(command)
 ' Queue a coprocessor command
@@ -348,12 +375,14 @@ PUB coproc_cmd(command)
 '       per Bridgetek AN033
     writereg(core.CMDB_WRITE, 4, @command)
 
+
 PUB coproc_err(): flag
 ' Flag indicating coprocessor error
 '   Returns:
 '       TRUE if the coprocessor has returned a fault, FALSE otherwise
     readreg(core.CMD_READ, 2, @flag)
     return (flag == $FFF)
+
 
 PUB cpu_reset(mask)
 ' Reset any combination of audio, touch, and coprocessor engines
@@ -367,6 +396,7 @@ PUB cpu_reset(mask)
     mask &= core.CPURESET_MASK
     writereg(core.CPURESET, 2, @mask)
 
+
 PUB cpu_state(): s
 ' Get current CPU state/reset status
 '   Returns:
@@ -377,16 +407,19 @@ PUB cpu_state(): s
     s := 0
     readreg(core.CPURESET, 2, @s)
 
+
 PUB detach_flash()'xxx api tentative
 ' Disable communication with the attached SPI flash chip
 '   NOTE: After calling this method, the following methods may be used to control the SPI bus
 '       the flash chip is connected to: flash_deselect(), flash_tx(), flash_rx()
     coproc_cmd(core.CMD_FLASHDETACH)
 
+
 PUB dev_id(): id
 ' Read device identification
 '   Returns: $7C
     readreg(core.ID, 1, @id)
+
 
 PUB dial(x, y, radius, opts, val)
 ' Draw a dial
@@ -399,15 +432,18 @@ PUB dial(x, y, radius, opts, val)
     coproc_cmd((opts << 16) | radius)
     coproc_cmd(val)
 
+
 PUB disp_hcycle(): pclks
 ' Get horizontal total cycle count
 '   Returns: pixel clocks
     pclks := 0
     readreg(core.HCYCLE, 2, @pclks)
 
+
 PUB disp_height(pixels)
 ' Set display height, in pixels
     disp_set_vsize(pixels)
+
 
 PUB disp_hoffset(): pclkc
 ' Get horizontal display start offset
@@ -415,11 +451,13 @@ PUB disp_hoffset(): pclkc
     pclkc := 0
     readreg(core.HOFFSET, 2, @pclkc)
 
+
 PUB disp_hsync0(pclk_cycles): curr_cyc
 ' Get horizontal sync fall offset
 '   Returns: pixel clock cycles
     pclkc := 0
     readreg(core.HSYNC0, 2, @pclkc)
+
 
 PUB disp_hsync1(): pclkc
 ' Get horizontal sync rise offset
@@ -427,10 +465,12 @@ PUB disp_hsync1(): pclkc
     pclkc := 0
     readreg(core.HSYNC1, 2, @pclkc)
 
+
 PUB disp_pix_clk_div(): divisor
 ' Get pixel clock divisor
     divisor := 0
     readreg(core.PCLK, 2, @divisor)
+
 
 PUB disp_rdy(): status | cmd_rd, cmd_wr
 ' Flag indicating display coprocessor is ready
@@ -439,6 +479,7 @@ PUB disp_rdy(): status | cmd_rd, cmd_wr
     readreg(core.CMD_READ, 4, @cmd_rd)
     readreg(core.CMD_WRITE, 4, @cmd_wr)
     return (cmd_rd == cmd_wr)
+
 
 PUB disp_rot(orientation)
 ' Rotate the display
@@ -458,6 +499,7 @@ PUB disp_rot(orientation)
         other:
             return
 
+
 PUB disp_set_hoffset(pclkc)
 ' Set horizontal display start offset, in pixel clock cycles
 '   Valid values: 0..4095
@@ -465,11 +507,13 @@ PUB disp_set_hoffset(pclkc)
     pclkc := 0 #> pclkc <# 4095
     writereg(core.HOFFSET, 2, @pclkc)
 
+
 PUB disp_set_hcycle(pclks)
 ' Set horizontal total cycle count, in pixel clocks
 '   Valid values: 0..4095 (clamped to range)
     pclks := 0 #> pclks <# 4095
     writereg(core.HCYCLE, 2, @pclks)
+
 
 PUB disp_set_hsync0(pclkc)
 ' Set horizontal sync fall offset, in pixel clock cycles
@@ -477,11 +521,13 @@ PUB disp_set_hsync0(pclkc)
     pclkc := 0 #> pclkc <# 4095
     writereg(core.HSYNC0, 2, @pclkc)
 
+
 PUB disp_set_hsync1(pclkc)
 ' Set horizontal sync rise offset, in pixel clock cycles
 '   Valid values: 0..4095 (clamped to range)
     pclkc := 0 #> pclkc <# 4095
     writereg(core.HSYNC1, 2, @pclkc)
+
 
 PUB disp_set_pix_clk_div(divisor)
 ' Set pixel clock divisor
@@ -490,11 +536,13 @@ PUB disp_set_pix_clk_div(divisor)
     divisor := 0 #> divisor <# 1023
     writereg(core.PCLK, 2, @divisor)
 
+
 PUB disp_set_voffset(lns)
 ' Set vertical display start offset, in lines
 '   Valid values: 0..4095 (clamped to range)
     lns := 0 #> lns <# 4095
     writereg(core.VOFFSET, 2, @lns)
+
 
 PUB disp_set_vsize(lns)
 ' Set vertical display line count
@@ -502,11 +550,13 @@ PUB disp_set_vsize(lns)
     lns := 0 #> lns <# 4095
     writereg(core.VSIZE, 2, @lns)
 
+
 PUB disp_set_vcycle(lns)
 ' Set vertical total cycle count, in lns
 '   Valid values: 0..4095 (clamped to range)
     lns := 0 #> lns <# 4095
     writereg(core.VCYCLE, 2, @lns)
+
 
 PUB disp_set_vsync0(lns)
 ' Set vertical sync fall offset, in lns
@@ -514,11 +564,13 @@ PUB disp_set_vsync0(lns)
     lns := 0 #> lns <# 1023
     writereg(core.VSYNC0, 2, @lns)
 
+
 PUB disp_set_vsync1(lns)
 ' Set vertical sync rise offset, in lns
 '   Valid values: 0..1023 (clamped to range)
     lns := 0 #> lns <# 1023
     writereg(core.VSYNC1, 2, @lns)
+
 
 PUB disp_timings(hc, ho, hs0, hs1, vc, vo, vs0, vs1)
 ' Set all display timings
@@ -531,11 +583,13 @@ PUB disp_timings(hc, ho, hs0, hs1, vc, vo, vs0, vs1)
     disp_set_vsync0(vs0)
     disp_set_vsync1(vs1)
 
+
 PUB disp_vcycle(): lns
 ' Get vertical total cycle count
 '   Returns: lines
     lns := 0
     readreg(core.VCYCLE, 2, @lns)
+
 
 PUB disp_voffset(): lns
 ' Get vertical display start offset
@@ -543,11 +597,13 @@ PUB disp_voffset(): lns
     lns := 0
     readreg(core.VOFFSET, 2, @lns)
 
+
 PUB disp_vsize(): lns
 ' Get vertical display line count
 '   Returns: lines
     lns := 0
     readreg(core.VSIZE, 2, @lns)
+
 
 PUB disp_vsync0(): lns
 ' Get vertical sync fall offset
@@ -555,20 +611,24 @@ PUB disp_vsync0(): lns
     lns := 0
     readreg(core.VSYNC0, 2, @lns)
 
+
 PUB disp_vsync1(): lns
 ' Get vertical sync rise offset
 '   Returns: lines
     readreg(core.VSYNC1, 2, @lns)
 
+
 PUB disp_width(pixels)
 ' Set display width, in pixels
     disp_set_hsize(pixels)
+
 
 PUB dither_ena(state)
 ' Enable dithering on RGB output
 '   Valid values: *TRUE (non-zero), FALSE (0)
     state := ((state <> 0) & 1)
     writereg(core.DITHER, 1, @state)
+
 
 PUB dl_append_from_flash(fl_addr, nr_bytes)'xxx api tentative
 ' Append data from flash to the display list
@@ -580,18 +640,22 @@ PUB dl_append_from_flash(fl_addr, nr_bytes)'xxx api tentative
     coproc_cmd(fl_addr)
     coproc_cmd(nr_bytes)
 
+
 PUB dl_end()
 ' End a display list block and display the contents
     coproc_cmd(core.DISPLAY)
     coproc_cmd(core.CMD_SWAP)
 
+
 PUB dl_ptr(): dl_ptr
 ' Returns: Current address pointer offset within display list RAM
     readreg(core.CMD_DL, 2, @dl_ptr)
 
+
 PUB dl_start()
 ' Begin a display list block
     coproc_cmd(core.CMD_DLSTART)
+
 
 PUB dl_swap_mode(mode): dl_status
 ' Set when the graphics engine will render the screen
@@ -612,9 +676,11 @@ PUB dl_swap_mode(mode): dl_status
             readreg(core.DLSWAP, 1, @dl_status)
             return dl_status & %11
 
+
 PUB flash_attach()'xxx api tentative
 ' Re-connect SPI flash
     coproc_cmd(core.CMD_FLASHATTACH)
+
 
 PUB flash_clear_cache()'xxx api tentative
 ' Clear EVE's internal flash cache
@@ -626,10 +692,12 @@ PUB flash_clear_cache()'xxx api tentative
 '           otherwise a coprocessor fault will be generated.
     coproc_cmd(core.CMD_CLEARCACHE)
 
+
 PUB flash_deselect()'XXX api tentative
 ' De-assert the flash CS signal
 '   NOTE: Use of this method is only valid when the flash is detached using flash_detach()
     coproc_cmd(core.CMD_FLASHSPIDESEL)
+
 
 PUB flash_detach()'xxx api tentative
 ' Place flash SPI device lines into Hi-Z state
@@ -637,9 +705,11 @@ PUB flash_detach()'xxx api tentative
 '       flash_deselect(), flash_tx(), flash_rx(), flash_attach()
     coproc_cmd(core.CMD_FLASHDETACH)
 
+
 PUB flash_fastmode()'XXX api tentative
 ' Drive SPI flash chip in full-speed mode (if possible)
     coproc_cmd(core.CMD_FLASHFAST)
+
 
 PUB flash_rx(ram_addr, nr_bytes): b'XXX api tentative
 ' Read a block of data from the SPI Flash interface, and write to EVE RAM_G
@@ -647,6 +717,7 @@ PUB flash_rx(ram_addr, nr_bytes): b'XXX api tentative
 '   nr_bytes: number of bytes to read
 '   NOTE: This method is only valid when flash has been detached using flash_detach()
     coproc_cmd(core.CMD_FLASHSPIRX)
+
 
 PUB flash_status(): s'xxx api tentative
 ' Get the current state of the connection to the SPI flash chip
@@ -658,6 +729,7 @@ PUB flash_status(): s'xxx api tentative
     s := 0
     readreg(core.FLASH_STATUS, 2, @s)
 
+
 PUB flash_tx(ptr_buff, nr_bytes)'XXX api tentative
 ' Write a block of data over the EVE <-> SPI Flash interface
 '   ptr_buff: pointer to buffer of data to write from
@@ -666,6 +738,7 @@ PUB flash_tx(ptr_buff, nr_bytes)'XXX api tentative
     coproc_cmd(nr_bytes)
     repeat while nr_bytes--
         coproc_cmd(byte[ptr_buff++])
+
 
 PUB flash_rdblk_lsbf(ram_addr, fl_addr, nr_bytes)'XXX api tentative
 ' Read a block of data from flash to EVE RAM
@@ -680,6 +753,7 @@ PUB flash_rdblk_lsbf(ram_addr, fl_addr, nr_bytes)'XXX api tentative
     coproc_cmd(fl_addr)
     coproc_cmd(nr_bytes)
 
+
 PUB flash_bytemove(fl_addr, ptr_buff, nr_bytes)'XXX api tentative
 ' Write a block of data to flash from Propeller RAM
 '   fl_addr: flash memory address to start writing to
@@ -692,6 +766,7 @@ PUB flash_bytemove(fl_addr, ptr_buff, nr_bytes)'XXX api tentative
     coproc_cmd(nr_bytes)
     repeat while nr_bytes--                     ' keep going if > 0, and take one from the total
         coproc_cmd(byte[ptr_buff++])            ' write from the buffer and advance to next byte
+
 
 PUB flash_wrblk_lsbf(fl_addr, ram_addr, nr_bytes)'XXX api tentative
 ' Write a block of data to flash from EVE RAM
@@ -720,6 +795,7 @@ PUB glyph_width(fnt_handle, ch): w | widths
     readreg(widths, 1, @w)
     return w
 
+
 PUB gauge(x, y, radius, opts, major, minor, val, range)
 ' Draw a gauge
 '   (x, y): screen coordinates (gauge center)
@@ -744,25 +820,30 @@ PUB gauge(x, y, radius, opts, major, minor, val, range)
     coproc_cmd(( (0 #> minor <# 10) << 16) | (0 #> major <# 10) )
     coproc_cmd((range << 16) | val)
 
+
 PUB gpio_state(): state
 ' Get GPIO pins state
     state := 0
     readreg(core.GPIOX, 2, @state)
+
 
 PUB gpio_set_state(state)
 ' Set GPIO pins state
     state &= $ffff
     writereg(core.GPIOX, 2, @state)
 
+
 PUB gpio_dir(): mask
 ' Get GPIO pins direction
     mask := 0
     readreg(core.GPIOX_DIR, 2, @mask)
 
+
 PUB gpio_set_dir(mask)
 ' Set GPIO pins direction
     mask &= $ffff
     writereg(core.GPIOX_DIR, 2, @mask)
+
 
 PUB gradient(x0, y0, rgb0, x1, y1, rgb1)
 ' Draw a smooth color gradient
@@ -785,6 +866,7 @@ PUB gradient(x0, y0, rgb0, x1, y1, rgb1)
     coproc_cmd((y1 << 16) | x1)
     coproc_cmd(rgb1)
 
+
 PUB gradient_trans(x0, y0, argb0, x1, y1, argb1)
 ' Draw a smooth color gradient, with transparency
 '   (x0, y0): screen coordinates of point 0 of gradient
@@ -805,10 +887,12 @@ PUB gradient_trans(x0, y0, argb0, x1, y1, argb1)
     coproc_cmd((y1 << 16) | x1)
     coproc_cmd(argb1)
 
+
 PUB disp_hsize():pclks
 ' Get horizontal display pixel count
     pclks := 0
     readreg(core.HSIZE, 2, @pclks)
+
 
 PUB disp_set_hsize(pclks)
 ' Set horizontal display pixel count
@@ -816,12 +900,14 @@ PUB disp_set_hsize(pclks)
     pclks := 0 #> pclks <# 4095
     writereg(core.HSIZE, 2, @pclks)
 
+
 PUB is_dither_ena(): s
 ' Get dithering state
 '   Returns: TRUE (-1) or FALSE (0)
     s := 0
     readreg(core.DITHER, 1, @s)
     return ((s & 1) == 1)
+
 
 PUB keys(x, y, width, height, font, opts, ptr_str) | i, j
 ' Draw a horizontal row of keys
@@ -852,6 +938,7 @@ PUB keys(x, y, width, height, font, opts, ptr_str) | i, j
                     byte[ptr_str][0] )
         ptr_str += 4
 
+
 PUB line(x1, y1, x2, y2)
 ' Draw a line in the currently set color (set using color_rgb() or color_rgb24() )
 '   (x1, y1): point 1
@@ -861,12 +948,14 @@ PUB line(x1, y1, x2, y2)
     vertex_2f(x2, y2)
     prim_end()
 
+
 PUB line_width(pixels)
 ' Set width of line, in pixels
 '   NOTE: This affects the line() and box() primitives
     pixels := 1 #> pixels <# 255
     pixels <<= 4
     coproc_cmd(core.LINE_WIDTH | pixels)
+
 
 PUB model_id(): id
 ' Read chip model
@@ -880,6 +969,7 @@ PUB model_id(): id
     id.byte[2] := id.byte[0]
     id.byte[0] := id.byte[3]
     id.byte[3] := 0
+
 
 PUB num(x, y, font, opts, val)
 ' Draw a 32-bit number, with radix/base specified by set_base()
@@ -903,6 +993,7 @@ PUB num(x, y, font, opts, val)
     coproc_cmd((opts << 16) | font)
     coproc_cmd(val)
 
+
 PUB pix_clk_polarity(edge): curr_edge
 ' Set pixel clock polarity
 '   Valid values:
@@ -917,17 +1008,20 @@ PUB pix_clk_polarity(edge): curr_edge
             readreg(core.PCLK_POL, 1, @curr_edge)
             return
 
+
 PUB pll_clk_ext()
 ' Select PLL input from external crystal oscillator or clock
 '   NOTE: This will have no effect if external clock is already selected.
 '       Otherwise, the chip will be reset
     cmd(core.CLKEXT, 0)
 
+
 PUB pll_clk_int()
 ' Select PLL input from internal relaxation oscillator (default)
 '   NOTE: This will have no effect if internal clock is already selected.
 '       Otherwise, the chip will be reset
     cmd(core.CLKINT, 0)
+
 
 PUB plot(x, y)
 ' Plot pixel at x, y in current color
@@ -938,10 +1032,12 @@ PUB plot(x, y)
         vertex_2f(x, y)
     prim_end()
 
+
 PUB point_size(radius)
 ' Set point size/radius of following plot(), in 1/16th pixels
     radius := 0 #> radius <# 8191
     coproc_cmd(core.POINT_SIZE | radius)
+
 
 PUB powered(state)
 ' Enable display power
@@ -951,6 +1047,7 @@ PUB powered(state)
         cmd(core.ACTIVE, 0)
     else
         cmd(core.PWRDOWN1, 0)
+
 
 PUB prim_begin(prim)
 ' Begin drawing a graphics primitive
@@ -967,9 +1064,11 @@ PUB prim_begin(prim)
         other:
             return
 
+
 PUB prim_end()
 ' End drawing a graphics primitive
     coproc_cmd(core.END)
+
 
 PUB progress_bar(x, y, width, height, opts, val, range)
 ' Draw a progress bar
@@ -991,10 +1090,12 @@ PUB progress_bar(x, y, width, height, opts, val, range)
     coproc_cmd((val << 16) | opts)
     coproc_cmd(range)
 
+
 PUB rd_err(ptr_buff)
 ' Read errors/faults reported by the coprocessor, in plaintext
 '   NOTE: ptr_buff must be at least 128 bytes long
     readreg(core.EVE_ERR, 128, ptr_buff)
+
 
 PUB reset()
 ' Reset the display controller
@@ -1005,6 +1106,7 @@ PUB reset()
         outa[_RST] := 1
     else
         soft_reset()
+
 
 PUB reset_copro() | ptr_tmp, tmp
 ' Reset the Coprocessor
@@ -1019,6 +1121,7 @@ PUB reset_copro() | ptr_tmp, tmp
     cpu_reset(0)                                ' bring coprocessor out of reset
     writereg(core.COPRO_PATCH_PTR, 2, @ptr_tmp) ' restore coprocessor pointer
 
+
 PUB scissor_rect(x, y, width, height)
 ' Specify scissor clip rectangle
 '   (x, y): screen coordinates
@@ -1026,17 +1129,20 @@ PUB scissor_rect(x, y, width, height)
     scissor_xy(x, y)
     scissor_sz(width, height)
 
+
 PUB scissor_xy(x, y)
 ' Specify top left corner of scissor clip rectangle
     x := 0 #> x <# 2047
     y := 0 #> y <# 2047
     coproc_cmd(core.SCISSOR_XY | (x << core.SCISSOR_X) | y)
 
+
 PUB scissor_sz(width, height)
 ' Specify size of scissor clip rectangle
     width := 0 #> width <# 2048
     height := 0 #> height <# 2048
     coproc_cmd(core.SCISSOR_SIZE | (width << core.WIDTH) | height)
+
 
 PUB scrollbar(x, y, width, height, opts, val, size, range)
 ' Draw a scrollbar
@@ -1061,12 +1167,14 @@ PUB scrollbar(x, y, width, height, opts, val, size, range)
     coproc_cmd((val << 16) | opts)
     coproc_cmd((range << 16) | size)
 
+
 PUB set_base(radix)
 ' Set base/radix for numbers drawn with the num() method
 '   Valid values: 2..36 (clamped to range)
 '   Any other value is ignored
     coproc_cmd(core.CMD_SETBASE)
     coproc_cmd(2 #> radix <# 36)
+
 
 PUB set_flash_source(fl_addr)
 ' Set source address in flash for data to be used by load_image(), play_video(), video_startf(),
@@ -1075,6 +1183,7 @@ PUB set_flash_source(fl_addr)
 '   NOTE: fl_addr must be 64-byte aligned
     coproc_cmd(core.CMD_FLASHSOURCE)
     coproc_cmd(fl_addr)
+
 
 PUB setup_font(mem_ptr, fnt_sz, fnt_ptr, fnt_nr, first_ch)
 ' Upload and set up a custom font
@@ -1093,10 +1202,12 @@ PUB setup_font(mem_ptr, fnt_sz, fnt_ptr, fnt_nr, first_ch)
         coproc_cmd(first_ch)
     dl_end()
 
+
 PUB sleep()
 ' Power clock gate, PLL and oscillator off
 '   NOTE: Call Active() to wake up
     cmd(core.SLEEP, 0)
+
 
 PUB slider(x, y, width, height, opts, val, range)
 ' Draw a slider
@@ -1119,9 +1230,11 @@ PUB slider(x, y, width, height, opts, val, range)
     coproc_cmd((val << 16) | opts)
     coproc_cmd(range)
 
+
 PUB soft_reset()
 ' Perform a soft-reset of the BT81x
     cmd(core.RST_PULSE, 0)
+
 
 PUB spinner(x, y, style, scale)
 ' Draw a spinner/busy indicator
@@ -1143,14 +1256,17 @@ PUB spinner(x, y, style, scale)
     coproc_cmd(y << 16 + x)
     coproc_cmd(scale << 16 + style)
 
+
 PUB standby()
 ' Power clock gate off (PLL and oscillator remain on)
 ' Use Active to wake up
     cmd(core.STANDBY, 0)
 
+
 PUB stop_op()
 ' Stop a running Sketch, spinner(), or Screensaver operation
     coproc_cmd(core.CMD_STOP)
+
 
 PUB str(x, y, font, opts, ptr_str) | i, j
 ' Draw a text string
@@ -1168,6 +1284,7 @@ PUB str(x, y, font, opts, ptr_str) | i, j
                     (byte[ptr_str][1] << 8) + ...
                     byte[ptr_str][0] )
         ptr_str += 4
+
 
 PUB swizzle(mode): curr_mode
 ' Control arrangement of output color pins
@@ -1194,6 +1311,7 @@ PUB swizzle(mode): curr_mode
             readreg(core.SWIZZLE, 1, @curr_mode)
             return curr_mode
 
+
 PUB tag_active(): a
 ' Tag that is currently active
 '   Returns: Tag number (u8)
@@ -1202,6 +1320,7 @@ PUB tag_active(): a
     a := 0
     readreg(core.TOUCH_TAG, 4, @a)
     return (a & $ff)
+
 
 PUB tag_area(tag_nr, sx, sy, w, h)
 ' Define screen area to be associated with tag
@@ -1214,14 +1333,17 @@ PUB tag_area(tag_nr, sx, sy, w, h)
     coproc_cmd(h << 16 + w)
     coproc_cmd(tag_nr)
 
+
 PUB tag_attach(val)
 ' Attach tag value for the following objects drawn on the screen
     coproc_cmd(core.ATTACH_TAG | (0 #> val <# 255) )
+
 
 PUB tag_ena(state)
 ' Enable numbered tags to be assigned to display regions
 '   Valid values: TRUE (non-zero), FALSE (0)
     coproc_cmd(core.TAG_MASK | ((state <> 0) & 1))
+
 
 PUB text_wrap_wid(pixels)
 ' Set pixel width for text wrapping
@@ -1229,6 +1351,7 @@ PUB text_wrap_wid(pixels)
     pixels := 0 #> pixels <# _disp_xmax
     coproc_cmd(core.CMD_FILLWIDTH)
     coproc_cmd(pixels)
+
 
 PUB toggle(x, y, width, font, opts, state, ptr_str) | i, j
 ' Draw a horizontal toggle switch
@@ -1256,20 +1379,24 @@ PUB toggle(x, y, width, font, opts, state, ptr_str) | i, j
                     byte[ptr_str][0] )
         ptr_str += 4
 
+
 PUB ts_rd_cal_matrix(ptr_buff)
 ' Read the currently used touchscreen calibration matrix into MCU RAM
 '   ptr_buff: pointer to minimum 24-byte array to hold calibration matrix
     readreg(core.TOUCH_TRANSFORM_A, 24, ptr_buff)
+
 
 PUB ts_wr_cal_matrix(ptr_buff)
 ' Write the touchscreen calibration matrix to EVE
 '   ptr_buff: pointer to minimum 24-byte array containing a calibration matrix
     writereg(core.TOUCH_TRANSFORM_A, 24, ptr_buff)
 
+
 PUB ts_cal()
 ' Calibrate the touchscreen
 '   NOTE: This is only necessary for resistive touchscreens (BT816)
     coproc_cmd(core.CMD_CALIBRATE)
+
 
 PUB ts_host_mode_ena(state): curr_state
 ' Enable host mode (touchscreen data handled by the MCU, fed to the EVE)
@@ -1280,11 +1407,11 @@ PUB ts_host_mode_ena(state): curr_state
     case ||(state)
         0, 1:
             state := ||(state) << core.HOSTMODE
+            state := ((curr_state & core.HOSTMODE_MASK) | state) & core.TOUCH_CFG_MASK
+            writereg(core.TOUCH_CFG, 2, @state)
         other:
             return ((curr_state >> core.HOSTMODE) & 1) == 1
 
-    state := ((curr_state & core.HOSTMODE_MASK) | state) & core.TOUCH_CFG_MASK
-    writereg(core.TOUCH_CFG, 2, @state)
 
 PUB ts_i2c_addr(addr): curr_addr
 ' Set I2C slave address of attached touchscreen
@@ -1297,11 +1424,11 @@ PUB ts_i2c_addr(addr): curr_addr
     case addr
         $01..$7F:
             addr <<= core.TOUCH_ADDR
+            addr := ((curr_addr & core.TOUCH_ADDR) | addr) & core.TOUCH_CFG_MASK
+            writereg(core.TOUCH_CFG, 2, @addr)
         other:
             return ((curr_addr >> core.TOUCH_ADDR) & core.TOUCH_ADDR)
 
-    addr := ((curr_addr & core.TOUCH_ADDR) | addr) & core.TOUCH_CFG_MASK
-    writereg(core.TOUCH_CFG, 2, @addr)
 
 PUB ts_low_pwr_mode(state): curr_state
 ' Enable touchscreen low-power mode
@@ -1312,11 +1439,11 @@ PUB ts_low_pwr_mode(state): curr_state
     case ||(state)
         0, 1:
             state := ||(state) << core.LOWPWR
+            state := ((curr_state & core.LOWPWR) | state) & core.TOUCH_CFG_MASK
+            writereg(core.TOUCH_CFG, 2, @state)
         other:
             return ((curr_state >> core.LOWPWR) & 1) == 1
 
-    state := ((curr_state & core.LOWPWR) | state) & core.TOUCH_CFG_MASK
-    writereg(core.TOUCH_CFG, 2, @state)
 
 PUB ts_oversample_factor(f)
 ' Set touchscreen oversampling factor
@@ -1326,6 +1453,7 @@ PUB ts_oversample_factor(f)
     f &= $0f
     writereg(core.TOUCH_OVERSMP, 1, @f)
 
+
 PUB ts_sample_clks(clks): curr_clks
 ' Set number of touchscreen sampler clocks
 '   Valid values: 0..7
@@ -1334,11 +1462,11 @@ PUB ts_sample_clks(clks): curr_clks
     readreg(core.TOUCH_CFG, 2, @curr_clks)
     case clks
         0..7:
+            clks := ((curr_clks & core.SAMPLER_CLKS_MASK) | clks) & core.TOUCH_CFG_MASK
+            writereg(core.TOUCH_CFG, 2, @curr_clks)
         other:
             return curr_clks & core.SAMPLER_CLKS_BITS
 
-    clks := ((curr_clks & core.SAMPLER_CLKS_MASK) | clks) & core.TOUCH_CFG_MASK
-    writereg(core.TOUCH_CFG, 2, @curr_clks)
 
 PUB ts_type(): t
 ' Get touchscreen type supported by connected EVE chip
@@ -1348,10 +1476,12 @@ PUB ts_type(): t
     readreg(core.TOUCH_CFG, 2, @t)
     return (t >> core.WORKMODE) & 1
 
+
 PUB ts_sens(): lvl
 ' Get touchscreen sensitivity
     lvl := 0
     readreg(core.TOUCH_RZTHRESH, 2, @lvl)
+
 
 PUB ts_set_sens(lvl)
 ' Set touchscreen sensitivity
@@ -1361,6 +1491,7 @@ PUB ts_set_sens(lvl)
     lvl := 0 #> lvl <# 65535
     writereg(core.TOUCH_RZTHRESH, 2, @lvl)
 
+
 PUB ts_xy(): xy
 ' Coordinates of touch event
 '   Returns:
@@ -1369,6 +1500,7 @@ PUB ts_xy(): xy
     xy := 0
     readreg(core.TOUCH_SCREEN_XY, 4, @xy)
 
+
 PUB vertex_2f(x, y)
 ' Specify coordinates for following graphics primitive
     x := 0 #> x <# _disp_xmax
@@ -1376,6 +1508,7 @@ PUB vertex_2f(x, y)
     x <<= 4
     y <<= 4
     coproc_cmd(core.VERTEX2F | (x << core.V2F_X) | y)
+
 
 PUB vertex_2ii(x, y, handle, cell)
 ' Start the operation of graphics primitive at the specified coordinates in pixel precision
@@ -1388,9 +1521,11 @@ PUB vertex_2ii(x, y, handle, cell)
                 ((0 #> handle <# 31) << core.HANDLE) | ...
                 (0 #> cell <# 127) )
 
+
 PUB wait_rdy()
 ' Wait until the display is ready
     repeat until disp_rdy()
+
 
 PUB widget_bgcolor(rgb)
 ' Set background color for widgets (gauges, sliders, etc), as a 24-bit RGB number
@@ -1399,12 +1534,14 @@ PUB widget_bgcolor(rgb)
     coproc_cmd(core.CMD_BGCOLOR)
     coproc_cmd(rgb)
 
+
 PUB widget_fgcolor(rgb)
 ' Set foreground color for widgets (gauges, sliders, etc), as a 24-bit RGB number
 '   Valid values: $00_00_00..$FF_FF_FF (clamped to range)
     rgb := $00_00_00 #> rgb <# $FF_FF_FF
     coproc_cmd(core.CMD_FGCOLOR)
     coproc_cmd(rgb)
+
 
 PRI cmd(cmd_word, param) | cmd_pkt
 
@@ -1415,6 +1552,7 @@ PRI cmd(cmd_word, param) | cmd_pkt
     outa[_CS] := 0
     spi.wrblock_lsbf(@cmd_pkt, 3)
     outa[_CS] := 1
+
 
 PRI readreg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 ' Read nr_bytes from device into ptr_buff
@@ -1428,6 +1566,7 @@ PRI readreg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
     spi.rdblock_lsbf(ptr_buff, nr_bytes)
     outa[_CS] := 1
 
+
 PRI writereg(reg_nr, nr_bytes, ptr_buff)
 ' Write nr_bytes from ptr_buff to device
     reg_nr.byte[2] |= core.WRITE
@@ -1435,6 +1574,7 @@ PRI writereg(reg_nr, nr_bytes, ptr_buff)
     spi.wrblock_msbf(@reg_nr, 3)
     spi.wrblock_lsbf(ptr_buff, nr_bytes)
     outa[_CS] := 1
+
 
 DAT
 {
