@@ -1,14 +1,13 @@
 {
-    --------------------------------------------
-    Filename: BT81X-Button-Array.spin
-    Author: Jesse Burt
-    Description: Demo of the BT81x driver touchscreen functionality
+---------------------------------------------------------------------------------------------------
+    Filename:       BT81X-Button-Array.spin
+    Description:    Demo of the BT81x driver touchscreen functionality
         * Draw an array of buttons
-    Copyright (c) 2024
-    Started Sep 11, 2022
-    Updated Jan 1, 2024
-    See end of file for terms of use.
-    --------------------------------------------
+    Author:         Jesse Burt
+    Started:        Sep 11, 2022
+    Updated:        Aug 15, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+---------------------------------------------------------------------------------------------------
 }
 
 CON
@@ -38,6 +37,7 @@ CON
 '#include "eve3-lcdtimings.320x240.spinh"
 '#include "eve3-lcdtimings.320x102.spinh"
 
+
 OBJ
 
     cfg:    "boardcfg.flip"
@@ -48,6 +48,7 @@ OBJ
     ee:     "memory.eeprom.24xxxx"
     eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4
 '   NOTE: Pull RST high (tip: tie to Propeller reset) and define as -1 if unused
+
 
 CON
 
@@ -62,6 +63,7 @@ CON
 
     STRSZ       = 12
 
+
 VAR
 
     long _ts[6]
@@ -69,6 +71,7 @@ VAR
     long _btn_buff[NR_BUTTONS * btn.STRUCTSZ]
     byte _strbuff[NR_BUTTONS * STRSZ]
     byte _btn_active
+
 
 PUB main() | i, btxtsz, row, col
 
@@ -113,12 +116,14 @@ PUB main() | i, btxtsz, row, col
 
     repeat
 
+
 PRI btntxt(b_nr): ptr_str
 ' Build button text string along with passed number
 '   Returns: pointer to string
     ptr_str := @_strbuff + ((1 #> b_nr)-1) * STRSZ
     bytefill(ptr_str, 0, STRSZ)
     str.sprintf1(ptr_str, @"Button %2.2d", b_nr)
+
 
 VAR long _btn_stk[50]
 PRI cog_btn_press() | btn_id
@@ -133,6 +138,7 @@ PRI cog_btn_press() | btn_id
         repeat while _btn_active                ' wait for the button to be released
         btn.set_attr(btn_id, btn.OPT, UP)       ' style it depressed (up)
         btn.set_attr(btn_id, btn.TCOLOR, TCOLOR_UP)
+
 
 PUB setup()
 
@@ -168,12 +174,14 @@ PUB setup()
 
     cognew(cog_btn_press(), @_btn_stk)
 
+
 PUB erase_tscal() | i
 ' Erase calibration data and magic number from EEPROM
     ser.str(@"erasing touchscreen calibration from EEPROM...")
     repeat i from 0 to 27
         ee.wr_byte(EE_MAGICADDR + i, $00)
     ser.strln(@"done")
+
 
 PRI ts_cal()
 ' Calibrate the touchscreen (resistive touchscreens only)
@@ -185,6 +193,7 @@ PRI ts_cal()
     eve.ts_cal()
     eve.dl_end()
     eve.wait_rdy()
+
 
 DAT
 {

@@ -1,13 +1,12 @@
 {
-    --------------------------------------------
-    Filename: BT81X-TouchDemo.spin2
-    Author: Jesse Burt
-    Description: Demo of the BT81x driver touchscreen functionality (P2 version)
-    Copyright (c) 2024
-    Started Dec 31, 2020
-    Updated Jan 1, 2024
-    See end of file for terms of use.
-    --------------------------------------------
+---------------------------------------------------------------------------------------------------
+    Filename:       BT81X-TouchDemo.spin2
+    Description:    Demo of the BT81x driver touchscreen functionality
+    Author:         Jesse Burt
+    Started:        Dec 31, 2020
+    Updated:        Aug 15, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+---------------------------------------------------------------------------------------------------
 
     NOTE: This demo will write touchscreen calibration data to the P2's flash
         (above the bottom 512k area by default)
@@ -41,6 +40,7 @@ CON
 '#include "eve3-lcdtimings.320x240.spinh"
 '#include "eve3-lcdtimings.320x102.spinh"
 
+
 OBJ
 
     cfg:    "boardcfg.p2eval"
@@ -49,9 +49,11 @@ OBJ
     eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4, SPI_FREQ=20_000_000
 '   NOTE: Pull RST high (tip: tie to Propeller reset) and define as -1 if unused
 
+
 VAR
 
     long _ts[7]
+
 
 PUB main() | count, idle, state, x, y, t1, t2, t3, t4
 
@@ -127,6 +129,7 @@ PUB main() | count, idle, state, x, y, t1, t2, t3, t4
     eve.powered(FALSE)
     repeat
 
+
 PUB update_btn(state) | btn_cx, btn_cy
 
     btn_cx := CENTERX - (BUTTON_W / 2)
@@ -148,6 +151,7 @@ PUB update_btn(state) | btn_cx, btn_cy
         eve.button(btn_cx, btn_cy, 100, 50, 30, 0, @"TEST")
     eve.dl_end()                                ' end list; display everything
 
+
 PUB update_scrlbar(val) | w, h, x, y, sz
 
     sz := 10                                    ' scrollbar size
@@ -165,6 +169,7 @@ PUB update_scrlbar(val) | w, h, x, y, sz
     eve.tag_attach(1)
     eve.scrollbar(x, y, w, h, 0, x #> val <# w, sz, w)
     eve.dl_end()
+
 
 PUB update_tog(t1, t2, t3, t4) | tag, tmp, x, y, w, sw, h
 
@@ -189,6 +194,7 @@ PUB update_tog(t1, t2, t3, t4) | tag, tmp, x, y, w, sw, h
     eve.toggle(x, y + (4 * (h*2)), w, h, 0, t4, string("OFF", $FF, "ON"))
     eve.dl_end()
 
+
 PRI ts_cal()
 ' Calibrate the touchscreen (resistive only)
     eve.ts_set_sens(1200)                       ' typical value, per BRT_AN_033
@@ -205,6 +211,7 @@ PRI ts_cal()
     flash.writes_ena(true)
     flash.wr_block_lsbf(FL_MAGICADDR, @_ts, 28) ' write the cal results to flash
     repeat while flash.busy()                   ' wait for it to finish writing
+
 
 PUB setup()
 
@@ -237,6 +244,7 @@ PUB setup()
             ser.strln(@"no calibration found")
             ts_cal()
 
+
 PUB erase_tscal()
 ' Erase calibration data and magic number from flash
     ser.str(@"erasing touchscreen calibration from flash...")
@@ -244,6 +252,7 @@ PUB erase_tscal()
     flash.writes_ena(true)
     flash.erase(FL_MAGICADDR, flash.SECTOR)
     repeat while flash.busy()                   ' wait for the erase to finish
+
     ser.strln(@"done")
 
 DAT

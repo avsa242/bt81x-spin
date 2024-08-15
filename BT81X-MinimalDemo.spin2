@@ -1,14 +1,13 @@
 {
-    --------------------------------------------
-    Filename: BT81X-MinimalDemo.spin2
-    Author: Jesse Burt
-    Description: Demo of the BT81x driver (P2 version)
+---------------------------------------------------------------------------------------------------
+    Filename:       BT81X-MinimalDemo.spin
+    Description:    Demo of the BT81x driver
         * Minimal code with a few drawing examples
-    Copyright (c) 2024
-    Started Jan 2, 2024
-    Updated Jan 2, 2024
-    See end of file for terms of use.
-    --------------------------------------------
+    Author:         Jesse Burt
+    Started:        Jan 2, 2024
+    Updated:        Aug 15, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+---------------------------------------------------------------------------------------------------
 }
 
 CON
@@ -24,10 +23,12 @@ CON
 '#include "eve3-lcdtimings.320x240.spinh"
 '#include "eve3-lcdtimings.320x102.spinh"
 
+
 OBJ
 
     eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4
 '   NOTE: If RST is not used, pull it high or tie to Propeller reset and define above as -1
+
 
 PUB main()
 

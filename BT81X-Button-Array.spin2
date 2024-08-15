@@ -1,14 +1,13 @@
 {
-    --------------------------------------------
-    Filename: BT81X-Button-Array.spin2
-    Author: Jesse Burt
-    Description: Demo of the BT81x driver touchscreen functionality
+---------------------------------------------------------------------------------------------------
+    Filename:       BT81X-Button-Array.spin
+    Description:    Demo of the BT81x driver touchscreen functionality
         * Draw an array of buttons
-    Copyright (c) 2024
-    Started Sep 11, 2022
-    Updated Jan 1, 2024
-    See end of file for terms of use.
-    --------------------------------------------
+    Author:         Jesse Burt
+    Started:        Sep 11, 2022
+    Updated:        Aug 15, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+---------------------------------------------------------------------------------------------------
 }
 
 CON
@@ -38,6 +37,7 @@ CON
 '#include "eve3-lcdtimings.320x240.spinh"
 '#include "eve3-lcdtimings.320x102.spinh"
 
+
 OBJ
 
     cfg:    "boardcfg.p2eval"
@@ -47,6 +47,7 @@ OBJ
     flash:  "memory.flash.25xxxx" | CS=61, SCK=60, MOSI=59, MISO=58, SPI_FREQ=10_000_000
     eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4, SPI_FREQ=5_000_000
 '   NOTE: Pull RST high (tip: tie to Propeller reset) and define as -1 if unused
+
 
 CON
 
@@ -61,6 +62,7 @@ CON
 
     STRSZ       = 12
 
+
 VAR
 
     long _ts[6]
@@ -68,6 +70,7 @@ VAR
     long _btn_buff[NR_BUTTONS * btn.STRUCTSZ]
     byte _strbuff[NR_BUTTONS * STRSZ]
     byte _btn_active
+
 
 PUB main() | i, btxtsz, row, col
 
@@ -112,12 +115,14 @@ PUB main() | i, btxtsz, row, col
 
     repeat
 
+
 PRI btntxt(b_nr): ptr_str
 ' Build button text string along with passed number
 '   Returns: pointer to string
     ptr_str := @_strbuff + ((1 #> b_nr)-1) * STRSZ
     bytefill(ptr_str, 0, STRSZ)
     str.sprintf1(ptr_str, @"Button %2.2d", b_nr)
+
 
 VAR long _btn_stk[50]
 PRI cog_btn_press() | btn_id
@@ -132,6 +137,7 @@ PRI cog_btn_press() | btn_id
         repeat while _btn_active                ' wait for the button to be released
         btn.set_attr(btn_id, btn.OPT, UP)       ' style it depressed (up)
         btn.set_attr(btn_id, btn.TCOLOR, TCOLOR_UP)
+
 
 PUB setup()
 
@@ -179,6 +185,7 @@ PUB erase_tscal()
     if ( eve.model_id() == eve.BT816 )          ' resistive TS?
         ts_cal()
 
+
 PRI ts_cal()
 ' Calibrate the touchscreen (resistive touchscreens only)
     eve.ts_set_sens(1200)                       ' typical value, per BRT_AN_033
@@ -189,6 +196,7 @@ PRI ts_cal()
     eve.ts_cal()
     eve.dl_end()
     eve.wait_rdy()
+
 
 DAT
 {
