@@ -1,19 +1,18 @@
 {
-    --------------------------------------------
-    Filename: BT81X-Demo.spin
-    Author: Jesse Burt
-    Description: Demo of the BT81x driver
-    Copyright (c) 2024
-    Started Sep 30, 2019
-    Updated Jan 1, 2024
-    See end of file for terms of use.
-    --------------------------------------------
+---------------------------------------------------------------------------------------------------
+    Filename:       BT81X-Demo.spin
+    Description:    Demo of the BT81x driver
+    Author:         Jesse Burt
+    Started:        Oct 5, 2019
+    Updated:        Aug 15, 2024
+    Copyright (c) 2024 - See end of file for terms of use.
+---------------------------------------------------------------------------------------------------
 }
 
 CON
 
-    _clkmode    = cfg#_clkmode
-    _xinfreq    = cfg#_xinfreq
+    _clkmode    = cfg._clkmode
+    _xinfreq    = cfg._xinfreq
 
 ' -- User-modifiable constants
     BRIGHTNESS  = 100                           ' Initial brightness (0..128)
@@ -29,6 +28,7 @@ CON
 '#include "eve3-lcdtimings.320x240.spinh"
 '#include "eve3-lcdtimings.320x102.spinh"
 
+
 OBJ
 
     cfg:    "boardcfg.flip"
@@ -36,6 +36,7 @@ OBJ
     time:   "time"
     eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4
 '   NOTE: Pull RST high (tip: tie to Propeller reset) and define as -1 if unused
+
 
 PUB main()
 
@@ -69,6 +70,7 @@ PUB main()
     eve.powered(FALSE)
     repeat
 
+
 PUB demo_box() | i
 
     ser.strln(string("box()"))
@@ -83,6 +85,7 @@ PUB demo_box() | i
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
+
 PUB demo_button() | i, btn_w, btn_h
 
     ser.strln(string("button()"))
@@ -96,6 +99,7 @@ PUB demo_button() | i, btn_w, btn_h
     eve.button(400-btn_w, 240-btn_h, btn_w, btn_h, 16, eve.OPT_3D, string("A button!"))
     eve.dl_end()
     time.msleep(INTER_DELAY)
+
 
 PUB demo_dial()
 
@@ -129,6 +133,7 @@ PUB demo_dial()
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
+
 PUB demo_gauge() | i
 
     ser.strln(string("gauge()"))
@@ -158,6 +163,7 @@ PUB demo_gauge() | i
 
     time.msleep(INTER_DELAY)
 
+
 PUB demo_gradient()
 
     ser.strln(string("gradient()"))
@@ -185,6 +191,7 @@ PUB demo_gradient()
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
+
 PUB demo_gradient_trans()
 
     ser.strln(string("gradient_trans()"))
@@ -207,6 +214,7 @@ PUB demo_gradient_trans()
     eve.gradient_trans(0, 20, $40FF0000, 0, 100, $FF0000FF)
     eve.dl_end()
     time.msleep(INTER_DELAY)
+
 
 PUB demo_keys() | k
 
@@ -278,6 +286,7 @@ PUB demo_keys() | k
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
+
 PUB demo_line() | i
 
     ser.strln(string("line()"))
@@ -293,6 +302,7 @@ PUB demo_line() | i
         eve.line(XMAX-10, i, 10, YMAX-10-i)
     eve.dl_end()
     time.msleep(INTER_DELAY)
+
 
 PUB demo_num()
 
@@ -344,6 +354,7 @@ PUB demo_num()
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
+
 PUB demo_progress_bar()
 
     ser.strln(string("progress_bar()"))
@@ -372,6 +383,7 @@ PUB demo_progress_bar()
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
+
 PUB demo_disp_rot() | r
 
     ser.strln(string("disp_rot()"))
@@ -385,6 +397,7 @@ PUB demo_disp_rot() | r
         eve.dl_end()
         time.msleep(INTER_DELAY)
     time.msleep(INTER_DELAY)
+
 
 PUB demo_scrollbar()
 
@@ -415,6 +428,7 @@ PUB demo_scrollbar()
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
+
 PUB demo_slider()
 
     ser.strln(string("slider()"))
@@ -443,6 +457,7 @@ PUB demo_slider()
     eve.slider(76, 10, 8, 100, 0, 20000, 65535)
     eve.dl_end()
     time.msleep(INTER_DELAY)
+
 
 PUB demo_spinner() | i
 
@@ -499,6 +514,7 @@ PUB demo_spinner() | i
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
+
 PUB demo_text_wrap_wid()
 
     ser.strln(string("text_wrap_wid(), str()"))
@@ -510,6 +526,7 @@ PUB demo_text_wrap_wid()
     eve.str(0, 0, 30, eve.OPT_FILL, string("This text doesn't fit on one line"))
     eve.dl_end()
     time.msleep(INTER_DELAY)
+
 
 PUB demo_toggle()
 
@@ -543,12 +560,14 @@ PUB demo_toggle()
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
+
 PUB fadeout(delay_ms) | i
 
     ser.strln(string("set_brightness()"))
     repeat i from BRIGHTNESS to 0
         eve.set_brightness(i)
         time.msleep(delay_ms)
+
 
 PUB setup()
 
