@@ -4,7 +4,7 @@
     Description:    BT81x-specific constants
     Author:         Jesse Burt
     Started:        Sep 25, 2019
-    Updated:        Mar 9, 2024
+    Updated:        Aug 18, 2024
     Copyright (c) 2024 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -33,6 +33,15 @@ CON
     ROM_FNTROOT_START           = $2f_fffc
     ROM_FNTROOT_END             = $2f_ffff
     ROM_START                   = $20_0000
+    ROM_FONT_ROOT               = ROM_START + $b834
+        FNT_BLK_SZ              = 148           ' length of each legacy font metrics block
+        CH_WIDTH                = 0             ' offsets within each legacy font block
+        BMAP_FMT                = 128
+        STRIDE                  = 132
+        SCR_WIDTH               = 136
+        SCR_HEIGHT              = 140
+        P_GLYPHDATA             = 144
+
     ROM_END                     = $2f_ffff
     RAM_DISPLIST_START          = $30_0000
     RAM_DISPLIST_END            = $30_1fff

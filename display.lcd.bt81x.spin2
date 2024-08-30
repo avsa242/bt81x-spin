@@ -783,16 +783,23 @@ PUB flash_wrblk_lsbf(fl_addr, ram_addr, nr_bytes)'XXX api tentative
     coproc_cmd(nr_bytes)
 
 
-CON FONT_ROOT = $20_b834                        ' pointer read from ROM_FNTROOT_START
-PUB glyph_width(fnt_handle, ch): w | widths
+PUB glyph_height(fnt_handle): h | offs
+' Get height of a font
+'   fnt_handle: font handle/number (e.g., 31)
+'   Returns: height of font in pixels
+    offs := (core.ROM_FONT_ROOT + ( core.FNT_BLK_SZ * (fnt_handle-16) )) + core.SCR_HEIGHT
+    h := 0
+    readreg(offs, 4, @h)
+
+
+PUB glyph_width(fnt_handle, ch): w | offs
 ' Get width of a glyph
 '   fnt_handle: font handle/number (e.g., 31)
 '   ch: glyph/character (e.g., "g")
 '   Returns: width of glyph in pixels
-    widths := (FONT_ROOT + (148 * (fnt_handle-16)) ) + ch
+    offs := (core.ROM_FONT_ROOT + (core.FNT_BLK_SZ * (fnt_handle-16)) ) + ch
     w := 0
-    readreg(widths, 1, @w)
-    return w
+    readreg(offs, 1, @w)
 
 
 PUB gauge(x, y, radius, opts, major, minor, val, range)

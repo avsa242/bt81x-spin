@@ -1,19 +1,19 @@
 {
----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
     Filename:       BT81X-Button-Array.spin
     Description:    Demo of the BT81x driver touchscreen functionality
         * Draw an array of buttons
     Author:         Jesse Burt
     Started:        Sep 11, 2022
-    Updated:        Aug 15, 2024
+    Updated:        Aug 30, 2024
     Copyright (c) 2024 - See end of file for terms of use.
----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 }
 
 CON
 
-    _clkfreq    = cfg._clkfreq_def
-    _xtlfreq    = cfg._xtlfreq
+    _clkfreq    = 180_000_000
+    _xtlfreq    = 20_000_000
 
 ' -- User-modifiable constants
     BRIGHTNESS  = 100                           ' Initial brightness (0..128)
@@ -40,11 +40,10 @@ CON
 
 OBJ
 
-    cfg:    "boardcfg.p2eval"
-    ser:    "com.serial.terminal.ansi" | SER_BAUD=2_000_000
     btn:    "gui.button"
     str:    "string"
-    flash:  "memory.flash.25xxxx" | CS=61, SCK=60, MOSI=59, MISO=58, SPI_FREQ=10_000_000
+    ser:    "com.serial.terminal.ansi" | SER_BAUD=2_000_000
+    mem:    "memory.flash.25xxxx" | CS=61, SCK=60, MOSI=59, MISO=58, SPI_FREQ=10_000_000
     eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4, SPI_FREQ=5_000_000
 '   NOTE: Pull RST high (tip: tie to Propeller reset) and define as -1 if unused
 
@@ -151,7 +150,7 @@ PUB setup()
         ser.str(@"BT81x driver failed to start - halting")
         repeat
 
-    if ( flash.start() )
+    if ( mem.start() )
         ser.strln(@"flash driver started")
         if ( ERASE_TS_CAL )
             erase_tscal()
@@ -160,10 +159,10 @@ PUB setup()
         repeat
 
     if ( eve.model_id() == eve.BT816 )          ' resistive TS?
-        if ( flash.rd_long_lsbf(FL_MAGICADDR) == eve.TCAL )
+        if ( mem.rd_long_lsbf(FL_MAGICADDR) == eve.TCAL )
             { look for magic number in EEPROM }
             ser.strln(@"calibration found - restoring")
-            flash.rd_block_lsbf(@_ts, FL_CALBASE, 24)   ' read the calibration matrix
+            mem.rd_block_lsbf(@_ts, FL_CALBASE, 24)   ' read the calibration matrix
             eve.ts_wr_cal_matrix(@_ts)          ' write it to EVE
         else
             { no calibration stored in EE - perform calibration }
@@ -175,11 +174,11 @@ PUB setup()
 
 PUB erase_tscal()
 ' Erase calibration data and magic number from flash
-    ser.str(@"erasing touchscreen calibration from flash...")
-    flash.global_lock(false)
-    flash.writes_ena(true)
-    flash.erase(FL_MAGICADDR, flash.SECTOR)
-    repeat while flash.busy()                   ' wait for the erase to finish
+    ser.str(@"erasing touchscreen calibration from mem...")
+    mem.global_lock(false)
+    mem.writes_ena(true)
+    mem.erase(FL_MAGICADDR, mem.SECTOR)
+    repeat while mem.busy()                   ' wait for the erase to finish
     ser.strln(@"done")
 
     if ( eve.model_id() == eve.BT816 )          ' resistive TS?

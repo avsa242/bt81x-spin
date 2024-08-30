@@ -5,7 +5,7 @@
         * Minimal code with a few drawing examples
     Author:         Jesse Burt
     Started:        Jan 2, 2024
-    Updated:        Aug 15, 2024
+    Updated:        Aug 30, 2024
     Copyright (c) 2024 - See end of file for terms of use.
 ---------------------------------------------------------------------------------------------------
 }
@@ -48,7 +48,7 @@ PUB main()
             Some of the widgets would typically be interacted with using a touchscreen, but
                 that isn't implemented here, for simplicity's sake. }
         { draw a button: button(x, y, w, h, options, text_string) }
-        eve.button(0, 0, 80, 32, 16, eve.OPT_3D, string("A button!"))
+        eve.button(0, 0, 80, 32, 16, eve.OPT_3D, @"A button!")
 
         { draw two toggle switches: one 'no' and another 'yes' }
         { toggle(x, y, w, h, options, off/on, string("off_text", $ff, "on_text")) }
@@ -61,7 +61,7 @@ PUB main()
 
         { draw a row of keys }
         {   keys(x, y, w, h, font_nr, ascii_of_key_pressed, string("1_char_for_each_key")) }
-        eve.keys(90, 0, 140, 30, 26, "2", string("12345"))
+        eve.keys(90, 0, 140, 30, 26, "2", @"12345")
 
         { draw a scrollbar on the right edge of the screen }
         {   scrollbar(x, y, w, h, options, inner_start, value, range) }
@@ -78,6 +78,7 @@ PUB main()
         eve.line(90, 100, 160, 120)
     eve.dl_end()                                ' end the display list and display it
     repeat
+
 
 DAT
 {

@@ -4,7 +4,7 @@
     Description:    Demo of the BT81x driver touchscreen functionality
     Author:         Jesse Burt
     Started:        May 27, 2020
-    Updated:        Aug 15, 2024
+    Updated:        Aug 30, 2024
     Copyright (c) 2024 - See end of file for terms of use.
 ---------------------------------------------------------------------------------------------------
 
@@ -14,8 +14,8 @@
 
 CON
 
-    _clkmode    = cfg._clkmode
-    _xinfreq    = cfg._xinfreq
+    _clkmode    = xtal1+pll16x
+    _xinfreq    = 5_000_000
 
 ' -- User-modifiable constants
     BRIGHTNESS  = 100                           ' Initial brightness (0..128)
@@ -43,10 +43,9 @@ CON
 
 OBJ
 
-    cfg:    "boardcfg.flip"
-    ser:    "com.serial.terminal.ansi" | SER_BAUD=115_200
     time:   "time"
-    ee:     "memory.eeprom.24xxxx"
+    mem:    "memory.eeprom.24xxxx" | SCL=28, SDA=29, I2C_FREQ=1_000_000, I2C_ADDR=%000
+    ser:    "com.serial.terminal.ansi" | SER_BAUD=115_200
     eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4
 '   NOTE: Pull RST high (tip: tie to Propeller reset) and define as -1 if unused
 
@@ -71,26 +70,26 @@ PUB main() | count, idle, state, x, y, t1, t2, t3, t4
 
     repeat
         state := eve.tag_active()               ' get state of button
-        if state == 1                           ' pushed
-            if idle == TRUE                     ' mark not idle so only one
+        if ( state == 1 )                       ' pushed
+            if ( idle == TRUE )                     ' mark not idle so only one
                 idle := FALSE                   '   push is registered if held
                 update_btn(1)                   '   down
                 count++
-                if count == 3                   ' if pressed 3 times, exit the
+                if ( count == 3 )                  ' if pressed 3 times, exit the
                     quit                        '   loop
 
-        elseif state == 0                       ' not pushed
-            if idle == FALSE                    ' mark idle
+        elseif ( state == 0 )                      ' not pushed
+            if ( idle == FALSE )                   ' mark idle
                 idle := TRUE
                 update_btn(0)                   ' redraw button up
 
     update_scrlbar(0)                           ' set initial scrollbar state
     repeat
         state := eve.tag_active()
-        if state == 1                           ' only update the scrollbar pos
+        if ( state == 1 )                           ' only update the scrollbar pos
             x := eve.ts_xy() >> 16              '   if it's being touched
             update_scrlbar(x)
-            if x > WIDTH-20                     ' if pulled near the right edge
+            if ( x > (WIDTH-20) )                     ' if pulled near the right edge
                 quit                            '   of the screen, exit loop
 
     t1 := t2 := t3 := t4 := 0
@@ -99,30 +98,30 @@ PUB main() | count, idle, state, x, y, t1, t2, t3, t4
     repeat
         case state := eve.tag_active()          ' which toggle was touched?
             1:                                  ' toggle #1
-                if idle == TRUE
+                if ( idle == TRUE )
                     idle := FALSE
                     t1 ^= $FFFF                 ' flip all bits to change state
                     update_tog(t1, t2, t3, t4)
             2:                                  ' toggle #2
-                if idle == TRUE
+                if ( idle == TRUE )
                     idle := FALSE
                     t2 ^= $FFFF
                     update_tog(t1, t2, t3, t4)
             3:                                  ' toggle #3
-                if idle == TRUE
+                if ( idle == TRUE )
                     idle := FALSE
                     t3 ^= $FFFF
                     update_tog(t1, t2, t3, t4)
             4:                                  ' toggle #4
-                if idle == TRUE
+                if ( idle == TRUE )
                     idle := FALSE
                     t4 ^= $FFFF
                     update_tog(t1, t2, t3, t4)
             other:
-                if idle == FALSE
+                if ( idle == FALSE )
                     idle := TRUE
 
-        if t1 == $FFFF and t2 == $FFFF and t3 == $FFFF and t4 == $FFFF
+        if ( (t1 == $FFFF) and (t2 == $FFFF) and (t3 == $FFFF) and (t4 == $FFFF) )
             quit                                ' if all toggles are switched
                                                 '   on, end the demo
 
@@ -138,18 +137,18 @@ PUB update_btn(state) | btn_cx, btn_cy
 
     eve.wait_rdy()                              ' wait for EVE to be ready
     eve.dl_start()                              ' begin list of graphics cmds
-    eve.clear_color(0, 0, 0)
-    eve.clear()
-    eve.widget_bgcolor($ff_ff_ff)               ' button colors (r_g_b)
-    eve.widget_fgcolor($55_55_55)               '
-    if state                                    ' button pressed
-        eve.color_rgb(255, 255, 255)            ' button text color (pressed)
-        eve.tag_attach(1)                       ' tag or id# for this button
-        eve.button(btn_cx, btn_cy, 100, 50, 30, 0, @"TEST")
-    else
-        eve.color_rgb(0, 0, 192)                ' button text color (up)
-        eve.tag_attach(1)
-        eve.button(btn_cx, btn_cy, 100, 50, 30, 0, @"TEST")
+        eve.clear_color(0, 0, 0)                ' indentation of this block isn't necessary;
+        eve.clear()                             '   it's only a visual cue it runs inside dl_*()
+        eve.widget_bgcolor($ff_ff_ff)           ' button colors (r_g_b)
+        eve.widget_fgcolor($55_55_55)           '
+        if ( state )                            ' button pressed
+            eve.color_rgb(255, 255, 255)        ' button text color (pressed)
+            eve.tag_attach(1)                   ' tag or id# for this button
+            eve.button(btn_cx, btn_cy, 100, 50, 30, 0, @"TEST")
+        else
+            eve.color_rgb(0, 0, 192)            ' button text color (up)
+            eve.tag_attach(1)
+            eve.button(btn_cx, btn_cy, 100, 50, 30, 0, @"TEST")
     eve.dl_end()                                ' end list; display everything
 
 
@@ -163,12 +162,12 @@ PUB update_scrlbar(val) | w, h, x, y, sz
 
     eve.wait_rdy()
     eve.dl_start()
-    eve.clear_color(0, 0, 0)
-    eve.clear()
-    eve.widget_bgcolor($55_55_55)
-    eve.widget_fgcolor($00_00_C0)
-    eve.tag_attach(1)
-    eve.scrollbar(x, y, w, h, 0, x #> val <# w, sz, w)
+        eve.clear_color(0, 0, 0)
+        eve.clear()
+        eve.widget_bgcolor($55_55_55)
+        eve.widget_fgcolor($00_00_C0)
+        eve.tag_attach(1)
+        eve.scrollbar(x, y, w, h, 0, x #> val <# w, sz, w)
     eve.dl_end()
 
 
@@ -181,18 +180,18 @@ PUB update_tog(t1, t2, t3, t4) | tag, tmp, x, y, w, sw, h
 
     eve.wait_rdy()
     eve.dl_start()
-    eve.clear_color(0, 0, 0)
-    eve.clear()
-    eve.widget_bgcolor($55_55_55)
-    eve.widget_fgcolor($00_00_C0)
-    eve.tag_attach(1)                           ' different
-    eve.toggle(x, y + (1 * (h*2)), w, h, 0, t1, string("OFF", $FF, "ON"))
-    eve.tag_attach(2)                           ' tag
-    eve.toggle(x, y + (2 * (h*2)), w, h, 0, t2, string("OFF", $FF, "ON"))
-    eve.tag_attach(3)                           ' for each
-    eve.toggle(x, y + (3 * (h*2)), w, h, 0, t3, string("OFF", $FF, "ON"))
-    eve.tag_attach(4)                           ' button
-    eve.toggle(x, y + (4 * (h*2)), w, h, 0, t4, string("OFF", $FF, "ON"))
+        eve.clear_color(0, 0, 0)
+        eve.clear()
+        eve.widget_bgcolor($55_55_55)
+        eve.widget_fgcolor($00_00_C0)
+        eve.tag_attach(1)                       ' different
+        eve.toggle(x, y + (1 * (h*2)), w, h, 0, t1, string("OFF", $FF, "ON"))
+        eve.tag_attach(2)                       ' tag
+        eve.toggle(x, y + (2 * (h*2)), w, h, 0, t2, string("OFF", $FF, "ON"))
+        eve.tag_attach(3)                       ' for each
+        eve.toggle(x, y + (3 * (h*2)), w, h, 0, t3, string("OFF", $FF, "ON"))
+        eve.tag_attach(4)                       ' button
+        eve.toggle(x, y + (4 * (h*2)), w, h, 0, t4, string("OFF", $FF, "ON"))
     eve.dl_end()
 
 
@@ -201,14 +200,14 @@ PRI ts_cal()
     eve.ts_set_sens(1200)                       ' typical value, per BRT_AN_033
     eve.wait_rdy()
     eve.dl_start()
-    eve.clear()
-    eve.str(80, 30, 27, eve.OPT_CENTER, @"Please tap on the dot")
-    eve.ts_cal()
+        eve.clear()
+        eve.str(80, 30, 27, eve.OPT_CENTER, @"Please tap on the dot")
+        eve.ts_cal()
     eve.dl_end()
     eve.wait_rdy()
     _ts[0] := eve.TCAL
     eve.ts_rd_cal_matrix(@_ts+4)                ' read in the touch calibration results
-    ee.wr_block_lsbf(EE_MAGICADDR, @_ts, 28)    '   to high EEPROM (req's >= 64kbyte EE)
+    mem.wr_block_lsbf(EE_MAGICADDR, @_ts, 28)    '   to high EEPROM (req's >= 64kbyte EE)
 
 
 PUB setup()
@@ -224,7 +223,7 @@ PUB setup()
         ser.str(@"BT81x driver failed to start - halting")
         repeat
 
-    if ( ee.start() )
+    if ( mem.start() )
         ser.strln(@"EEPROM driver started")
         if ( ERASE_TS_CAL )
             erase_tscal()
@@ -233,10 +232,10 @@ PUB setup()
         repeat
 
     if ( eve.model_id() == eve.BT816 )          ' resistive TS?
-        if ( ee.rd_long_lsbf(EE_MAGICADDR) == eve.TCAL )
+        if ( mem.rd_long_lsbf(EE_MAGICADDR) == eve.TCAL )
             { look for magic number in EEPROM }
             ser.strln(@"calibration found - restoring")
-            ee.rd_block_lsbf(@_ts, EE_CALBASE, 24)   ' read the calibration matrix
+            mem.rd_block_lsbf(@_ts, EE_CALBASE, 24)   ' read the calibration matrix
             eve.ts_wr_cal_matrix(@_ts)          ' write it to EVE
         else
             { no calibration stored in EE - perform calibration }
@@ -248,7 +247,7 @@ PUB erase_tscal() | i
 ' Erase calibration data and magic number from EEPROM
     ser.str(@"erasing touchscreen calibration from EEPROM...")
     repeat i from 0 to 27
-        ee.wr_byte(EE_MAGICADDR + i, $00)
+        mem.wr_byte(EE_MAGICADDR + i, $00)
     ser.strln(@"done")
 
 

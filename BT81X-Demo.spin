@@ -1,18 +1,18 @@
 {
----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
     Filename:       BT81X-Demo.spin
     Description:    Demo of the BT81x driver
     Author:         Jesse Burt
     Started:        Oct 5, 2019
-    Updated:        Aug 15, 2024
+    Updated:        Aug 30, 2024
     Copyright (c) 2024 - See end of file for terms of use.
----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 }
 
 CON
 
-    _clkmode    = cfg._clkmode
-    _xinfreq    = cfg._xinfreq
+    _clkmode    = xtal1+pll16x
+    _xinfreq    = 5_000_000
 
 ' -- User-modifiable constants
     BRIGHTNESS  = 100                           ' Initial brightness (0..128)
@@ -31,9 +31,8 @@ CON
 
 OBJ
 
-    cfg:    "boardcfg.flip"
-    ser:    "com.serial.terminal.ansi" | SER_BAUD=115_200
     time:   "time"
+    ser:    "com.serial.terminal.ansi" | SER_BAUD=115_200
     eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4
 '   NOTE: Pull RST high (tip: tie to Propeller reset) and define as -1 if unused
 
@@ -73,7 +72,7 @@ PUB main()
 
 PUB demo_box() | i
 
-    ser.strln(string("box()"))
+    ser.strln(@"box()")
     eve.wait_rdy()
     eve.dl_start()
     eve.clear_color(0, 0, 0)
@@ -88,7 +87,7 @@ PUB demo_box() | i
 
 PUB demo_button() | i, btn_w, btn_h
 
-    ser.strln(string("button()"))
+    ser.strln(@"button()")
     btn_w := 78
     btn_h := 32
     eve.wait_rdy()
@@ -96,14 +95,14 @@ PUB demo_button() | i, btn_w, btn_h
     eve.clear_color(0, 0, 48)
     eve.clear()
     eve.widget_fgcolor($40_40_40)
-    eve.button(400-btn_w, 240-btn_h, btn_w, btn_h, 16, eve.OPT_3D, string("A button!"))
+    eve.button(400-btn_w, 240-btn_h, btn_w, btn_h, 16, eve.OPT_3D, @"A button!")
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
 
 PUB demo_dial()
 
-    ser.strln(string("dial()"))
+    ser.strln(@"dial()")
     eve.wait_rdy()
     eve.dl_start()
     eve.clear_color(0, 0, 0)
@@ -125,22 +124,23 @@ PUB demo_dial()
     eve.clear_color(0, 0, 0)
     eve.clear()
     eve.dial(28, 60, 24, 0, $0000)
-    eve.str(28, 100, 26, eve.OPT_CENTER, string("0%"))
+    eve.str(28, 100, 26, eve.OPT_CENTER, @"0%")
     eve.dial(80, 60, 24, 0, $5555)
-    eve.str(80, 100, 26, eve.OPT_CENTER, string("33%"))
+    eve.str(80, 100, 26, eve.OPT_CENTER, @"33%")
     eve.dial(132, 60, 24, 0, $AAAA)
-    eve.str(132, 100, 26, eve.OPT_CENTER, string("66%"))
+    eve.str(132, 100, 26, eve.OPT_CENTER, @"66%")
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
 
 PUB demo_gauge() | i
 
-    ser.strln(string("gauge()"))
+    ser.strln(@"gauge()")
     eve.wait_rdy()
     eve.dl_start()
     eve.clear_color(0, 0, 48)
     eve.clear()
+    i := 0
     eve.gauge(CENTERX, CENTERY, 100, eve.OPT_FLAT, 10, 5, i, 100)
     eve.dl_end()
     time.msleep(INTER_DELAY)
@@ -166,7 +166,7 @@ PUB demo_gauge() | i
 
 PUB demo_gradient()
 
-    ser.strln(string("gradient()"))
+    ser.strln(@"gradient()")
     eve.wait_rdy()
     eve.dl_start()
     eve.clear_color(0, 0, 0)
@@ -194,12 +194,12 @@ PUB demo_gradient()
 
 PUB demo_gradient_trans()
 
-    ser.strln(string("gradient_trans()"))
+    ser.strln(@"gradient_trans()")
     eve.wait_rdy()
     eve.dl_start()
     eve.clear_color(0, 0, 0)
     eve.clear()
-    eve.str(80, 60, 30, eve.OPT_CENTER, string("background"))
+    eve.str(80, 60, 30, eve.OPT_CENTER, @"background")
     eve.gradient_trans(0, 0, $FF00FF00, 160, 0, $0000FF00)
     eve.dl_end()
     time.msleep(INTER_DELAY)
@@ -208,9 +208,9 @@ PUB demo_gradient_trans()
     eve.dl_start()
     eve.clear_color(0, 0, 0)
     eve.clear()
-    eve.str(80, 30, 30, eve.OPT_CENTER, string("background"))
-    eve.str(80, 60, 30, eve.OPT_CENTER, string("background"))
-    eve.str(80, 90, 30, eve.OPT_CENTER, string("background"))
+    eve.str(80, 30, 30, eve.OPT_CENTER, @"background")
+    eve.str(80, 60, 30, eve.OPT_CENTER, @"background")
+    eve.str(80, 90, 30, eve.OPT_CENTER, @"background")
     eve.gradient_trans(0, 20, $40FF0000, 0, 100, $FF0000FF)
     eve.dl_end()
     time.msleep(INTER_DELAY)
@@ -218,12 +218,12 @@ PUB demo_gradient_trans()
 
 PUB demo_keys() | k
 
-    ser.strln(string("keys()"))
+    ser.strln(@"keys()")
     eve.wait_rdy()
     eve.dl_start()
     eve.clear_color(0, 0, 0)
     eve.clear()
-    eve.keys(10, 10, 140, 30, 26, 0, string("12345"))
+    eve.keys(10, 10, 140, 30, 26, 0, @"12345")
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
@@ -231,7 +231,7 @@ PUB demo_keys() | k
     eve.dl_start()
     eve.clear_color(0, 0, 0)
     eve.clear()
-    eve.keys(10, 10, 140, 30, 26, eve.OPT_FLAT, string("12345"))
+    eve.keys(10, 10, 140, 30, 26, eve.OPT_FLAT, @"12345")
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
@@ -239,8 +239,8 @@ PUB demo_keys() | k
     eve.dl_start()
     eve.clear_color(0, 0, 0)
     eve.clear()
-    eve.keys(10, 10, 140, 30, 26, 0, string("12345"))
-    eve.keys(10, 60, 140, 30, 26, eve.OPT_CENTER, string("12345"))
+    eve.keys(10, 10, 140, 30, 26, 0, @"12345")
+    eve.keys(10, 60, 140, 30, 26, eve.OPT_CENTER, @"12345")
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
@@ -248,7 +248,7 @@ PUB demo_keys() | k
     eve.dl_start()
     eve.clear_color(0, 0, 0)
     eve.clear()
-    eve.keys(10, 10, 140, 30, 26, $32, string("12345"))
+    eve.keys(10, 10, 140, 30, 26, $32, @"12345")
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
@@ -256,10 +256,10 @@ PUB demo_keys() | k
     eve.dl_start()
     eve.clear_color(0, 0, 0)
     eve.clear()
-    eve.keys(22, 1, 116, 28, 29, 0, string("789"))
-    eve.keys(22, 31, 116, 28, 29, 0, string("456"))
-    eve.keys(22, 61, 116, 28, 29, 0, string("123"))
-    eve.keys(22, 91, 116, 28, 29, 0, string("0."))
+    eve.keys(22, 1, 116, 28, 29, 0, @"789")
+    eve.keys(22, 31, 116, 28, 29, 0, @"456")
+    eve.keys(22, 61, 116, 28, 29, 0, @"123")
+    eve.keys(22, 91, 116, 28, 29, 0, @"0.")
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
@@ -267,10 +267,10 @@ PUB demo_keys() | k
     eve.dl_start()
     eve.clear_color(0, 0, 0)
     eve.clear()
-    eve.keys(2, 2, 156, 21, 20, eve.OPT_CENTER, string("qwertyuiop"))
-    eve.keys(2, 26, 156, 21, 20, eve.OPT_CENTER, string("asdfghjkl"))
-    eve.keys(2, 50, 156, 21, 20, eve.OPT_CENTER, string("zxcvbnm"))
-    eve.button(2, 74, 156, 21, 20, 0, string(" "))
+    eve.keys(2, 2, 156, 21, 20, eve.OPT_CENTER, @"qwertyuiop")
+    eve.keys(2, 26, 156, 21, 20, eve.OPT_CENTER, @"asdfghjkl")
+    eve.keys(2, 50, 156, 21, 20, eve.OPT_CENTER, @"zxcvbnm")
+    eve.button(2, 74, 156, 21, 20, 0, @" ")
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
@@ -279,17 +279,17 @@ PUB demo_keys() | k
     eve.dl_start()
     eve.clear_color(0, 0, 0)
     eve.clear()
-    eve.keys(2, 2, 156, 21, 20, k | eve.OPT_CENTER, string("qwertyuiop"))
-    eve.keys(2, 26, 156, 21, 20, k | eve.OPT_CENTER, string("asdfghjkl"))
-    eve.keys(2, 50, 156, 21, 20, k | eve.OPT_CENTER, string("zxcvbnm"))
-    eve.button(2, 74, 156, 21, 20, 0, string(" "))
+    eve.keys(2, 2, 156, 21, 20, k | eve.OPT_CENTER, @"qwertyuiop")
+    eve.keys(2, 26, 156, 21, 20, k | eve.OPT_CENTER, @"asdfghjkl")
+    eve.keys(2, 50, 156, 21, 20, k | eve.OPT_CENTER, @"zxcvbnm")
+    eve.button(2, 74, 156, 21, 20, 0, @" ")
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
 
 PUB demo_line() | i
 
-    ser.strln(string("line()"))
+    ser.strln(@"line()")
     eve.wait_rdy()
     eve.dl_start()
     eve.clear_color(0, 0, 0)
@@ -306,7 +306,7 @@ PUB demo_line() | i
 
 PUB demo_num()
 
-    ser.strln(string("num()"))
+    ser.strln(@"num()")
     eve.wait_rdy()
     eve.dl_start()
     eve.clear_color(0, 0, 0)
@@ -357,7 +357,7 @@ PUB demo_num()
 
 PUB demo_progress_bar()
 
-    ser.strln(string("progress_bar()"))
+    ser.strln(@"progress_bar()")
     eve.wait_rdy()
     eve.dl_start()
     eve.clear_color(0, 0, 0)
@@ -386,14 +386,14 @@ PUB demo_progress_bar()
 
 PUB demo_disp_rot() | r
 
-    ser.strln(string("disp_rot()"))
+    ser.strln(@"disp_rot()")
     repeat r from 0 to 7
         eve.wait_rdy()
         eve.dl_start()
         eve.clear_color(0, 0, 0)
         eve.clear()
         eve.disp_rot(r)
-        eve.str(CENTERX, CENTERY, 31, eve.OPT_CENTER, string("Screen rotation"))
+        eve.str(CENTERX, CENTERY, 31, eve.OPT_CENTER, @"Screen rotation")
         eve.dl_end()
         time.msleep(INTER_DELAY)
     time.msleep(INTER_DELAY)
@@ -401,7 +401,7 @@ PUB demo_disp_rot() | r
 
 PUB demo_scrollbar()
 
-    ser.strln(string("scrollbar()"))
+    ser.strln(@"scrollbar()")
     eve.wait_rdy()
     eve.dl_start()
     eve.clear_color(0, 0, 0)
@@ -431,7 +431,7 @@ PUB demo_scrollbar()
 
 PUB demo_slider()
 
-    ser.strln(string("slider()"))
+    ser.strln(@"slider()")
     eve.wait_rdy()
     eve.dl_start()
     eve.clear_color(0, 0, 0)
@@ -461,12 +461,12 @@ PUB demo_slider()
 
 PUB demo_spinner() | i
 
-    ser.strln(string("spinner()"))
+    ser.strln(@"spinner()")
     eve.wait_rdy()
     eve.dl_start()
     eve.clear_color(0, 0, 48)
     eve.clear()
-    eve.str(CENTERX, CENTERY-30, 27, eve.OPT_CENTER, string("Please wait..."))
+    eve.str(CENTERX, CENTERY-30, 27, eve.OPT_CENTER, @"Please wait...")
     eve.spinner(CENTERX, CENTERY, eve.SPIN_CIRCLE_DOTS, 0)
     eve.dl_end()
     time.msleep(INTER_DELAY)
@@ -475,7 +475,7 @@ PUB demo_spinner() | i
     eve.dl_start()
     eve.clear_color(0, 0, 48)
     eve.clear()
-    eve.str(CENTERX, CENTERY-30, 27, eve.OPT_CENTER, string("Please wait..."))
+    eve.str(CENTERX, CENTERY-30, 27, eve.OPT_CENTER, @"Please wait...")
     eve.spinner(CENTERX, CENTERY, eve.SPIN_LINE_DOTS, 0)
     eve.dl_end()
     time.msleep(INTER_DELAY)
@@ -484,7 +484,7 @@ PUB demo_spinner() | i
     eve.dl_start()
     eve.clear_color(0, 0, 48)
     eve.clear()
-    eve.str(CENTERX, CENTERY-40, 27, eve.OPT_CENTER, string("Please wait..."))
+    eve.str(CENTERX, CENTERY-40, 27, eve.OPT_CENTER, @"Please wait...")
     eve.spinner(CENTERX, CENTERY, eve.SPIN_CLOCKHAND, 0)
     eve.dl_end()
     time.msleep(INTER_DELAY)
@@ -493,7 +493,7 @@ PUB demo_spinner() | i
     eve.dl_start()
     eve.clear_color(0, 0, 48)
     eve.clear()
-    eve.str(CENTERX, CENTERY-30, 27, eve.OPT_CENTER, string("Please wait..."))
+    eve.str(CENTERX, CENTERY-30, 27, eve.OPT_CENTER, @"Please wait...")
     eve.spinner(CENTERX, CENTERY, eve.SPIN_ORBIT_DOTS, 0)
     eve.dl_end()
     time.msleep(INTER_DELAY)
@@ -517,20 +517,20 @@ PUB demo_spinner() | i
 
 PUB demo_text_wrap_wid()
 
-    ser.strln(string("text_wrap_wid(), str()"))
+    ser.strln(@"text_wrap_wid(), str()")
     eve.wait_rdy()
     eve.dl_start()
     eve.clear_color(0, 0, 0)
     eve.clear()
     eve.text_wrap_wid(160)
-    eve.str(0, 0, 30, eve.OPT_FILL, string("This text doesn't fit on one line"))
+    eve.str(0, 0, 30, eve.OPT_FILL, @"This text doesn't fit on one line")
     eve.dl_end()
     time.msleep(INTER_DELAY)
 
 
 PUB demo_toggle()
 
-    ser.strln(string("toggle()"))
+    ser.strln(@"toggle()")
     eve.wait_rdy()
     eve.dl_start()
     eve.clear_color(0, 0, 0)
@@ -563,7 +563,7 @@ PUB demo_toggle()
 
 PUB fadeout(delay_ms) | i
 
-    ser.strln(string("set_brightness()"))
+    ser.strln(@"set_brightness()")
     repeat i from BRIGHTNESS to 0
         eve.set_brightness(i)
         time.msleep(delay_ms)
@@ -574,12 +574,12 @@ PUB setup()
     ser.start()
     time.msleep(30)
     ser.clear()
-    ser.strln(string("Serial terminal started"))
+    ser.strln(@"Serial terminal started")
 
     if ( eve.start(@_disp_setup) )
-        ser.strln(string("BT81x driver started"))
+        ser.strln(@"BT81x driver started")
     else
-        ser.strln(string("BT81x driver failed to start - halting"))
+        ser.strln(@"BT81x driver failed to start - halting")
         repeat
 
 DAT
