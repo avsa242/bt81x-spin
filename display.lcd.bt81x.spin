@@ -160,8 +160,10 @@ PUB startx(CS_PIN, SCK_PIN, MOSI_PIN, MISO_PIN, RST_PIN, PTR_DISP): status
             reset()
             pll_clk_ext()
             clk_set_freq(DEF)                   ' set clock to default (60MHz)
-            repeat until ( dev_id() == core.CHIPID_VALID )
-            repeat until ( cpu_state() == READY )
+            repeat
+            until ( dev_id() == core.CHIPID_VALID )
+            repeat
+            until ( cpu_state() == READY )
             if ( coproc_err() )                 ' reset coprocessor if it's
                 reset_copro()                   '   in an error state
             longmove(@_disp_width, PTR_DISP, 20)
@@ -263,16 +265,14 @@ PUB box(x1, y1, x2, y2, filled)
 
 PUB brightness(): lvl
 ' Get display brightness
-    lvl := 0
-    readreg(core.PWM_DUTY, 1, @lvl)
+    return readreg(core.PWM_DUTY)
 
 
 PUB set_brightness(lvl)
 ' Set display brightness
 '   Valid values: 0..128 (clamped to range; default 128)
 '   Any other value polls the chip and returns the current setting
-    lvl := 0 #> lvl <# 128
-    writereg(core.PWM_DUTY, 1, @lvl)
+    writereg(core.PWM_DUTY, 1, (0 #> lvl <# 128) )
 
 
 PUB button(x, y, width, height, font, opts, ptr_str) | i, j
@@ -342,8 +342,7 @@ PUB clk_freq(): freq
 ' Get clock frequency
 '   Returns: MHz
     powered(TRUE)
-    readreg(core.FREQ, 4, @freq)
-    return (freq / 1_000_000)
+    return ( readreg(core.FREQ, 4) / 1_000_000)
 
 
 PUB clk_set_freq(freq) | tmp
@@ -355,12 +354,11 @@ PUB clk_set_freq(freq) | tmp
         24, 36, 48, 60, 72:
             tmp := lookdown(freq: 24, 36, 48, 60, 72)
             tmp := ((lookup(tmp: 0, 0, 1, 1, 1) << 6) | tmp) + 1
-            freq *= 1_000_000
             sleep()
             cmd(core.CLKSEL1, tmp)
             powered(TRUE)
             time.msleep(core.TPOR)
-            writereg(core.FREQ, 4, @freq)
+            writereg(core.FREQ, 4, (freq * 1_000_000) )
         other:
             return
 
@@ -371,12 +369,9 @@ PUB clk_spread_ena(state): curr_state
 '   Any other value polls the chip and returns the current setting
     case abs(state)
         0, 1:
-            state := abs(state) & 1
-            writereg(core.CSPREAD, 1, @state)
+            writereg(core.CSPREAD, 1, state & 1)
         other:
-            curr_state := 0
-            readreg(core.CSPREAD, 1, @curr_state)
-            return (curr_state & 1) == 1
+            return ( readreg(core.CSPREAD) & 1) == 1
 
 
 PUB color_alpha(a)
@@ -405,15 +400,14 @@ PUB coproc_cmd(command)
 ' Queue a coprocessor command
 '   NOTE: This method will always write 4 bytes to the FIFO,
 '       per Bridgetek AN033
-    writereg(core.CMDB_WRITE, 4, @command)
+    writereg(core.CMDB_WRITE, 4, command)
 
 
 PUB coproc_err(): flag
 ' Flag indicating coprocessor error
 '   Returns:
 '       TRUE if the coprocessor has returned a fault, FALSE otherwise
-    readreg(core.CMD_READ, 2, @flag)
-    return (flag == $FFF)
+    return ( readreg(core.CMD_READ, 2) == $FFF)
 
 
 PUB cpu_reset(mask)
@@ -425,8 +419,7 @@ PUB cpu_reset(mask)
 '   Example:
 '       cpu_reset(%010) will reset only the touch engine
 '       cpu_reset(%110) will reset the audio and touch engines
-    mask &= core.CPURESET_MASK
-    writereg(core.CPURESET, 2, @mask)
+    writereg(core.CPURESET, 2, (mask & core.CPURESET_MASK) )
 
 
 PUB cpu_state(): s
@@ -436,8 +429,7 @@ PUB cpu_state(): s
 '       RST_AUDIO (4): Audio engine
 '       RST_TOUCH (2): Touch engine
 '       RST_COPRO (1): Coprocessor engine
-    s := 0
-    readreg(core.CPURESET, 2, @s)
+    return readreg(core.CPURESET, 2)
 
 
 PUB detach_flash()'xxx api tentative
@@ -450,26 +442,24 @@ PUB detach_flash()'xxx api tentative
 PUB dev_id(): id
 ' Read device identification
 '   Returns: $7C
-    readreg(core.ID, 1, @id)
+    return readreg(core.ID)
 
 
 PUB dial(x, y, radius, opts, val)
 ' Draw a dial
     x := 0 #> x <# _disp_xmax
     y := 0 #> y <# _disp_ymax
-    radius := 0 #> radius <# _disp_xmax
 
     coproc_cmd(core.CMD_DIAL)
     coproc_cmd((y << 16) | x)
-    coproc_cmd((opts << 16) | radius)
+    coproc_cmd((opts << 16) | (0 #> radius <# _disp_xmax) )
     coproc_cmd(val)
 
 
 PUB disp_hcycle(): pclks
 ' Get horizontal total cycle count
 '   Returns: pixel clocks
-    pclks := 0
-    readreg(core.HCYCLE, 2, @pclks)
+    return readreg(core.HCYCLE, 2)
 
 
 PUB disp_height(pixels)
@@ -480,37 +470,30 @@ PUB disp_height(pixels)
 PUB disp_hoffset(): pclkc
 ' Get horizontal display start offset
 '   Returns: pixel clock cycles
-    pclkc := 0
-    readreg(core.HOFFSET, 2, @pclkc)
+    return readreg(core.HOFFSET, 2)
 
 
 PUB disp_hsync0(pclk_cycles): curr_cyc
 ' Get horizontal sync fall offset
 '   Returns: pixel clock cycles
-    pclkc := 0
-    readreg(core.HSYNC0, 2, @pclkc)
+    return readreg(core.HSYNC0, 2)
 
 
 PUB disp_hsync1(): pclkc
 ' Get horizontal sync rise offset
 '   Returns: pixel clock cycles
-    pclkc := 0
-    readreg(core.HSYNC1, 2, @pclkc)
+    return readreg(core.HSYNC1, 2)
 
 
 PUB disp_pix_clk_div(): divisor
 ' Get pixel clock divisor
-    divisor := 0
-    readreg(core.PCLK, 2, @divisor)
+    return readreg(core.PCLK, 2)
 
 
-PUB disp_rdy(): status | cmd_rd, cmd_wr
+PUB disp_rdy(): status
 ' Flag indicating display coprocessor is ready
 '   Returns: TRUE (-1) if coprocessor is idle/ready, FALSE (0) if busy
-    longfill(@cmd_rd, 0, 2)
-    readreg(core.CMD_READ, 4, @cmd_rd)
-    readreg(core.CMD_WRITE, 4, @cmd_wr)
-    return (cmd_rd == cmd_wr)
+    return ( readreg(core.CMD_READ, 4) == readreg(core.CMD_WRITE, 4) )
 
 
 PUB disp_rot(orientation)
@@ -536,72 +519,62 @@ PUB disp_set_hoffset(pclkc)
 ' Set horizontal display start offset, in pixel clock cycles
 '   Valid values: 0..4095
 '   Any other value polls the chip and returns the current setting
-    pclkc := 0 #> pclkc <# 4095
-    writereg(core.HOFFSET, 2, @pclkc)
+    writereg(core.HOFFSET, 2, (0 #> pclkc <# 4095) )
 
 
 PUB disp_set_hcycle(pclks)
 ' Set horizontal total cycle count, in pixel clocks
 '   Valid values: 0..4095 (clamped to range)
-    pclks := 0 #> pclks <# 4095
-    writereg(core.HCYCLE, 2, @pclks)
+    writereg(core.HCYCLE, 2, (0 #> pclks <# 4095) )
 
 
 PUB disp_set_hsync0(pclkc)
 ' Set horizontal sync fall offset, in pixel clock cycles
 '   Valid values: 0..4095 (clamped to range)
-    pclkc := 0 #> pclkc <# 4095
-    writereg(core.HSYNC0, 2, @pclkc)
+    writereg(core.HSYNC0, 2, (0 #> pclkc <# 4095) )
 
 
 PUB disp_set_hsync1(pclkc)
 ' Set horizontal sync rise offset, in pixel clock cycles
 '   Valid values: 0..4095 (clamped to range)
-    pclkc := 0 #> pclkc <# 4095
-    writereg(core.HSYNC1, 2, @pclkc)
+    writereg(core.HSYNC1, 2, (0 #> pclkc <# 4095) )
 
 
 PUB disp_set_pix_clk_div(divisor)
 ' Set pixel clock divisor
 '   Valid values: 0..1023 (clamped to range)
 '   NOTE: A setting of 0 disables the pixel clock output
-    divisor := 0 #> divisor <# 1023
-    writereg(core.PCLK, 2, @divisor)
+    writereg(core.PCLK, 2, (0 #> divisor <# 1023) )
 
 
 PUB disp_set_voffset(lns)
 ' Set vertical display start offset, in lines
 '   Valid values: 0..4095 (clamped to range)
-    lns := 0 #> lns <# 4095
-    writereg(core.VOFFSET, 2, @lns)
+    writereg(core.VOFFSET, 2, (0 #> lns <# 4095) )
 
 
 PUB disp_set_vsize(lns)
 ' Set vertical display line count
 '   Valid values: 0..4095 (clamped to range)
-    lns := 0 #> lns <# 4095
-    writereg(core.VSIZE, 2, @lns)
+    writereg(core.VSIZE, 2, (0 #> lns <# 4095) )
 
 
 PUB disp_set_vcycle(lns)
 ' Set vertical total cycle count, in lns
 '   Valid values: 0..4095 (clamped to range)
-    lns := 0 #> lns <# 4095
-    writereg(core.VCYCLE, 2, @lns)
+    writereg(core.VCYCLE, 2, (0 #> lns <# 4095) )
 
 
 PUB disp_set_vsync0(lns)
 ' Set vertical sync fall offset, in lns
 '   Valid values: 0..1023 (clamped to range)
-    lns := 0 #> lns <# 1023
-    writereg(core.VSYNC0, 2, @lns)
+    writereg(core.VSYNC0, 2, (0 #> lns <# 1023) )
 
 
 PUB disp_set_vsync1(lns)
 ' Set vertical sync rise offset, in lns
 '   Valid values: 0..1023 (clamped to range)
-    lns := 0 #> lns <# 1023
-    writereg(core.VSYNC1, 2, @lns)
+    writereg(core.VSYNC1, 2, (0 #> lns <# 1023) )
 
 
 PUB disp_timings(hc, ho, hs0, hs1, vc, vo, vs0, vs1)
@@ -619,35 +592,31 @@ PUB disp_timings(hc, ho, hs0, hs1, vc, vo, vs0, vs1)
 PUB disp_vcycle(): lns
 ' Get vertical total cycle count
 '   Returns: lines
-    lns := 0
-    readreg(core.VCYCLE, 2, @lns)
+    return readreg(core.VCYCLE, 2)
 
 
 PUB disp_voffset(): lns
 ' Get vertical display start offset
 '   Returns: lines
-    lns := 0
-    readreg(core.VOFFSET, 2, @lns)
+    return readreg(core.VOFFSET, 2)
 
 
 PUB disp_vsize(): lns
 ' Get vertical display line count
 '   Returns: lines
-    lns := 0
-    readreg(core.VSIZE, 2, @lns)
+    return readreg(core.VSIZE, 2)
 
 
 PUB disp_vsync0(): lns
 ' Get vertical sync fall offset
 '   Returns: lines
-    lns := 0
-    readreg(core.VSYNC0, 2, @lns)
+    return readreg(core.VSYNC0, 2)
 
 
 PUB disp_vsync1(): lns
 ' Get vertical sync rise offset
 '   Returns: lines
-    readreg(core.VSYNC1, 2, @lns)
+    return readreg(core.VSYNC1, 2)
 
 
 PUB disp_width(pixels)
@@ -659,7 +628,7 @@ PUB dither_ena(state)
 ' Enable dithering on RGB output
 '   Valid values: *TRUE (non-zero), FALSE (0)
     state := ((state <> 0) & 1)
-    writereg(core.DITHER, 1, @state)
+    writereg(core.DITHER, 1, state)
 
 
 PUB dl_append_from_flash(fl_addr, nr_bytes)'xxx api tentative
@@ -681,7 +650,7 @@ PUB dl_end()
 
 PUB dl_ptr(): dl_ptr
 ' Returns: Current address pointer offset within display list RAM
-    readreg(core.CMD_DL, 2, @dl_ptr)
+    return readreg(core.CMD_DL, 2)
 
 
 PUB dl_start()
@@ -702,11 +671,9 @@ PUB dl_swap_mode(mode): dl_status
 '       1 - buffer not ready
     case mode
         DLSWAP_LINE, DLSWAP_FRAME:
-            writereg(core.DLSWAP, 1, @mode)
+            writereg(core.DLSWAP, 1, mode)
         other:
-            dl_status := 0
-            readreg(core.DLSWAP, 1, @dl_status)
-            return dl_status & %11
+            return ( readreg(core.DLSWAP) & %11 )
 
 
 PUB flash_attach()'xxx api tentative
@@ -758,18 +725,17 @@ PUB flash_status(): s'xxx api tentative
 '       FLASH_DETACHED (1)
 '       FLASH_BASIC (2)
 '       FLASH_FULL (3)
-    s := 0
-    readreg(core.FLASH_STATUS, 2, @s)
+    return readreg(core.FLASH_STATUS, 2)
 
 
-PUB flash_tx(ptr_buff, nr_bytes)'XXX api tentative
+PUB flash_tx(p_src, len)'XXX api tentative
 ' Write a block of data over the EVE <-> SPI Flash interface
-'   ptr_buff: pointer to buffer of data to write from
-'   nr_bytes: number of bytes to write
+'   p_src: pointer to buffer of data to write from
+'   len: number of bytes to write
     coproc_cmd(core.CMD_FLASHSPITX)
-    coproc_cmd(nr_bytes)
-    repeat while nr_bytes--
-        coproc_cmd(byte[ptr_buff++])
+    coproc_cmd(len)
+    repeat while len--
+        coproc_cmd(byte[p_src++])
 
 
 PUB flash_rdblk_lsbf(ram_addr, fl_addr, nr_bytes)'XXX api tentative
@@ -820,9 +786,8 @@ PUB glyph_height(fnt_handle): h | offs
 ' Get height of a font
 '   fnt_handle: font handle/number (e.g., 31)
 '   Returns: height of font in pixels
-    offs := (core.ROM_FONT_ROOT + ( core.FNT_BLK_SZ * (fnt_handle-16) )) + core.SCR_HEIGHT
-    h := 0
-    readreg(offs, 4, @h)
+    return readreg( (core.ROM_FONT_ROOT + ...
+                    ( core.FNT_BLK_SZ * (fnt_handle-16) ) ) + core.SCR_HEIGHT, 4)
 
 
 PUB glyph_width(fnt_handle, ch): w | offs
@@ -830,9 +795,7 @@ PUB glyph_width(fnt_handle, ch): w | offs
 '   fnt_handle: font handle/number (e.g., 31)
 '   ch: glyph/character (e.g., "g")
 '   Returns: width of glyph in pixels
-    offs := (core.ROM_FONT_ROOT + (core.FNT_BLK_SZ * (fnt_handle-16)) ) + ch
-    w := 0
-    readreg(offs, 1, @w)
+    return readreg( (core.ROM_FONT_ROOT + (core.FNT_BLK_SZ * (fnt_handle-16)) ) + ch )
 
 
 PUB gauge(x, y, radius, opts, major, minor, val, range)
@@ -862,26 +825,22 @@ PUB gauge(x, y, radius, opts, major, minor, val, range)
 
 PUB gpio_state(): state
 ' Get GPIO pins state
-    state := 0
-    readreg(core.GPIOX, 2, @state)
+    return readreg(core.GPIOX, 2)
 
 
 PUB gpio_set_state(state)
 ' Set GPIO pins state
-    state &= $ffff
-    writereg(core.GPIOX, 2, @state)
+    writereg(core.GPIOX, 2, (state & $ffff) )
 
 
 PUB gpio_dir(): mask
 ' Get GPIO pins direction
-    mask := 0
-    readreg(core.GPIOX_DIR, 2, @mask)
+    return readreg(core.GPIOX_DIR, 2)
 
 
 PUB gpio_set_dir(mask)
 ' Set GPIO pins direction
-    mask &= $ffff
-    writereg(core.GPIOX_DIR, 2, @mask)
+    writereg(core.GPIOX_DIR, 2, (mask & $ffff) )
 
 
 PUB gradient(x0, y0, rgb0, x1, y1, rgb1)
@@ -927,17 +886,15 @@ PUB gradient_trans(x0, y0, argb0, x1, y1, argb1)
     coproc_cmd(argb1)
 
 
-PUB disp_hsize():pclks
+PUB disp_hsize(): pclks
 ' Get horizontal display pixel count
-    pclks := 0
-    readreg(core.HSIZE, 2, @pclks)
+    return readreg(core.HSIZE, 2)
 
 
 PUB disp_set_hsize(pclks)
 ' Set horizontal display pixel count
 '   Valid values: 0..4095 (clamped to range)
-    pclks := 0 #> pclks <# 4095
-    writereg(core.HSIZE, 2, @pclks)
+    writereg(core.HSIZE, 2, (0 #> pclks <# 4095) )
 
 
 PUB int_ena(e)
@@ -997,9 +954,7 @@ PUB interrupt(): f
 PUB is_dither_ena(): s
 ' Get dithering state
 '   Returns: TRUE (-1) or FALSE (0)
-    s := 0
-    readreg(core.DITHER, 1, @s)
-    return ((s & 1) == 1)
+    return ( (readreg(core.DITHER) & 1) == 1 )
 
 
 PUB keys(x, y, width, height, font, opts, ptr_str) | i, j
@@ -1037,8 +992,8 @@ PUB line(x1, y1, x2, y2)
 '   (x1, y1): point 1
 '   (x2, y2): point 2
     prim_begin(core.LINES)
-    vertex_2f(x1, y1)
-    vertex_2f(x2, y2)
+        vertex_2f(x1, y1)
+        vertex_2f(x2, y2)
     prim_end()
 
 
@@ -1057,7 +1012,7 @@ PUB model_id(): id
 '       $00081601: BT816
 '   NOTE: This value is only guaranteed immediately after POR, as it is a RAM location,
 '       thus can be overwritten
-    readreg(core.CHIPID, 4, @id)
+    id := readreg(core.CHIPID, 4)
     id.byte[3] := id.byte[2]
     id.byte[2] := id.byte[0]
     id.byte[0] := id.byte[3]
@@ -1095,11 +1050,9 @@ PUB pix_clk_polarity(edge): curr_edge
 '   Any other value polls the chip and returns the current setting
     case edge
         PCLKPOL_RISING, PCLKPOL_FALLING:
-            writereg(core.PCLK_POL, 1, @edge)
+            writereg(core.PCLK_POL, 1, edge)
         other:
-            curr_edge := 0
-            readreg(core.PCLK_POL, 1, @curr_edge)
-            return
+            return readreg(core.PCLK_POL)
 
 
 PUB pll_clk_ext()
@@ -1184,10 +1137,10 @@ PUB progress_bar(x, y, width, height, opts, val, range)
     coproc_cmd(range)
 
 
-PUB rd_err(ptr_buff)
+PUB rd_err(p_dest)
 ' Read errors/faults reported by the coprocessor, in plaintext
 '   NOTE: ptr_buff must be at least 128 bytes long
-    readreg(core.EVE_ERR, 128, ptr_buff)
+    readreg(core.EVE_ERR, 128, p_dest)
 
 
 PUB reset()
@@ -1201,18 +1154,17 @@ PUB reset()
         soft_reset()
 
 
-PUB reset_copro() | ptr_tmp, tmp
+PUB reset_copro() | p_tmp, tmp
 ' Reset the Coprocessor
 '   NOTE: To be used after the coprocessor generates a fault
-    ptr_tmp := 0
-    readreg(core.COPRO_PATCH_PTR, 2, @ptr_tmp)  ' store current coprocessor pointer
+    p_tmp := readreg(core.COPRO_PATCH_PTR, 2)   ' store current coprocessor pointer
     cpu_reset(RST_COPRO)                        ' reset only the coprocessor
     tmp := 0
-    writereg(core.CMD_READ, 2, @tmp)            ' reset pointers
-    writereg(core.CMD_WRITE, 2, @tmp)
-    writereg(core.CMD_DL, 2, @tmp)
+    writereg(core.CMD_READ, 2, tmp)             ' reset pointers
+    writereg(core.CMD_WRITE, 2, tmp)
+    writereg(core.CMD_DL, 2, tmp)
     cpu_reset(0)                                ' bring coprocessor out of reset
-    writereg(core.COPRO_PATCH_PTR, 2, @ptr_tmp) ' restore coprocessor pointer
+    writereg(core.COPRO_PATCH_PTR, 2, p_tmp)    ' restore coprocessor pointer
 
 
 PUB scissor_rect(x, y, width, height)
@@ -1298,7 +1250,7 @@ PUB setup_font(mem_ptr, fnt_sz, fnt_ptr, fnt_nr, first_ch)
 
 PUB sleep()
 ' Power clock gate, PLL and oscillator off
-'   NOTE: Call Active() to wake up
+'   NOTE: Call active() to wake up
     cmd(core.SLEEP, 0)
 
 
@@ -1398,11 +1350,9 @@ PUB swizzle(mode): curr_mode
 '   Any other value polls the chip and returns the current setting
     case mode
         %0000..%0011, %1000..%1111:
-            writereg(core.SWIZZLE, 1, @mode)
+            writereg(core.SWIZZLE, 1, mode)
         other:
-            curr_mode := 0
-            readreg(core.SWIZZLE, 1, @curr_mode)
-            return curr_mode
+            return readreg(core.SWIZZLE)
 
 
 PUB tag_active(): a
@@ -1410,9 +1360,7 @@ PUB tag_active(): a
 '   Returns: Tag number (u8)
 '       If tag is active:       1..255
 '       If no tag is active:    0
-    a := 0
-    readreg(core.TOUCH_TAG, 4, @a)
-    return (a & $ff)
+    return ( readreg(core.TOUCH_TAG, 4) & $ff )
 
 
 PUB tag_area(tag_nr, sx, sy, w, h)
@@ -1441,9 +1389,8 @@ PUB tag_ena(state)
 PUB text_wrap_wid(pixels)
 ' Set pixel width for text wrapping
 '   NOTE: This setting applies to the str() and button() (when using the OPT_FILL option) methods
-    pixels := 0 #> pixels <# _disp_xmax
     coproc_cmd(core.CMD_FILLWIDTH)
-    coproc_cmd(pixels)
+    coproc_cmd( 0 #> pixels <# _disp_xmax )
 
 
 PUB toggle(x, y, width, font, opts, state, ptr_str) | i, j
@@ -1495,13 +1442,12 @@ PUB ts_host_mode_ena(state): curr_state
 ' Enable host mode (touchscreen data handled by the MCU, fed to the EVE)
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    curr_state := 0
-    readreg(core.TOUCH_CFG, 2, @curr_state)
+    curr_state := readreg(core.TOUCH_CFG, 2)
     case abs(state)
         0, 1:
             state := abs(state) << core.HOSTMODE
-            state := ((curr_state & core.HOSTMODE_MASK) | state) & core.TOUCH_CFG_MASK
-            writereg(core.TOUCH_CFG, 2, @state)
+            state := ((curr_state & core.HOSTMODE_MASK) | state)
+            writereg(core.TOUCH_CFG, 2, state)
         other:
             return ((curr_state >> core.HOSTMODE) & 1) == 1
 
@@ -1512,13 +1458,12 @@ PUB ts_i2c_addr(addr): curr_addr
 '       Focaltec: $3B (default)
 '       Goodix: $5D
 '   NOTE: Slave address must be 7-bit format
-    curr_addr := 0
-    readreg(core.TOUCH_CFG, 2, @curr_addr)
+    curr_addr := readreg(core.TOUCH_CFG, 2)
     case addr
         $01..$7F:
             addr <<= core.TOUCH_ADDR
-            addr := ((curr_addr & core.TOUCH_ADDR) | addr) & core.TOUCH_CFG_MASK
-            writereg(core.TOUCH_CFG, 2, @addr)
+            addr := ((curr_addr & core.TOUCH_ADDR) | addr)
+            writereg(core.TOUCH_CFG, 2, addr)
         other:
             return ((curr_addr >> core.TOUCH_ADDR) & core.TOUCH_ADDR)
 
@@ -1527,13 +1472,12 @@ PUB ts_low_pwr_mode(state): curr_state
 ' Enable touchscreen low-power mode
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    curr_state := 0
-    readreg(core.TOUCH_CFG, 2, @curr_state)
+    curr_state := readreg(core.TOUCH_CFG, 2)
     case abs(state)
         0, 1:
             state := abs(state) << core.LOWPWR
-            state := ((curr_state & core.LOWPWR) | state) & core.TOUCH_CFG_MASK
-            writereg(core.TOUCH_CFG, 2, @state)
+            state := ((curr_state & core.LOWPWR) | state)
+            writereg(core.TOUCH_CFG, 2, state)
         other:
             return ((curr_state >> core.LOWPWR) & 1) == 1
 
@@ -1543,20 +1487,18 @@ PUB ts_oversample_factor(f)
 '   NOTE: Higher values result in smoother touchscreen feedback, at the cost of
 '       higher current consumption)
 '   Valid values: 0..15 (default: 7)
-    f &= $0f
-    writereg(core.TOUCH_OVERSMP, 1, @f)
+    writereg(core.TOUCH_OVERSMP, 1, (f & $0f) )
 
 
 PUB ts_sample_clks(clks): curr_clks
 ' Set number of touchscreen sampler clocks
 '   Valid values: 0..7
 '   Any other value polls the chip and returns the current setting
-    curr_clks := 0
-    readreg(core.TOUCH_CFG, 2, @curr_clks)
+    curr_clks := readreg(core.TOUCH_CFG, 2)
     case clks
         0..7:
-            clks := ((curr_clks & core.SAMPLER_CLKS_MASK) | clks) & core.TOUCH_CFG_MASK
-            writereg(core.TOUCH_CFG, 2, @curr_clks)
+            clks := ((curr_clks & core.SAMPLER_CLKS_MASK) | clks)
+            writereg(core.TOUCH_CFG, 2, curr_clks)
         other:
             return curr_clks & core.SAMPLER_CLKS_BITS
 
@@ -1566,14 +1508,12 @@ PUB ts_type(): t
 '   Returns:
 '       0 - Capacitive (BT815)
 '       1 - Resistive (BT816)
-    readreg(core.TOUCH_CFG, 2, @t)
-    return (t >> core.WORKMODE) & 1
+    return ( ( readreg(core.TOUCH_CFG, 2) >> core.WORKMODE) & 1 )
 
 
 PUB ts_sens(): lvl
 ' Get touchscreen sensitivity
-    lvl := 0
-    readreg(core.TOUCH_RZTHRESH, 2, @lvl)
+    return readreg(core.TOUCH_RZTHRESH, 2)
 
 
 PUB ts_set_sens(lvl)
@@ -1581,8 +1521,7 @@ PUB ts_set_sens(lvl)
 '   Valid values:
 '       0 (least sensitive) .. 65535 (most sensitive/all touches valid)
 '   NOTE: Only applicable to resistive touchscreens (BT816)
-    lvl := 0 #> lvl <# 65535
-    writereg(core.TOUCH_RZTHRESH, 2, @lvl)
+    writereg(core.TOUCH_RZTHRESH, 2, (0 #> lvl <# 65535) )
 
 
 PUB ts_xy(): xy
@@ -1590,8 +1529,7 @@ PUB ts_xy(): xy
 '   Returns:
 '       [31..16]: u16 X coord ($8000 if not touched)
 '       [15..0]: u16 Y coord ($8000 if not touched)
-    xy := 0
-    readreg(core.TOUCH_SCREEN_XY, 4, @xy)
+    return readreg(core.TOUCH_SCREEN_XY, 4)
 
 
 PUB vertex_2f(x, y)
@@ -1617,7 +1555,8 @@ PUB vertex_2ii(x, y, handle, cell)
 
 PUB wait_rdy()
 ' Wait until the display is ready
-    repeat until disp_rdy()
+    repeat
+    until disp_rdy()
 
 
 PUB widget_bgcolor(rgb)
@@ -1647,7 +1586,7 @@ PRI cmd(cmd_word, param) | cmd_pkt
     outa[_CS] := 1
 
 
-PRI readreg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
+PRI readreg(reg_nr, len=1, p_dest=0): v | cmd_pkt
 ' Read nr_bytes from device into ptr_buff
     cmd_pkt.byte[0] := reg_nr.byte[2] | core.READ' %00 + reg_nr ..
     cmd_pkt.byte[1] := reg_nr.byte[1]           ' .. address
@@ -1656,16 +1595,23 @@ PRI readreg(reg_nr, nr_bytes, ptr_buff) | cmd_pkt
 
     outa[_CS] := 0
     spi.wrblock_lsbf(@cmd_pkt, 4)
-    spi.rdblock_lsbf(ptr_buff, nr_bytes)
+    if ( len > 4 )
+        spi.rdblock_lsbf(p_dest, len)
+    else
+        v := 0
+        spi.rdblock_lsbf(@v, len)
     outa[_CS] := 1
 
 
-PRI writereg(reg_nr, nr_bytes, ptr_buff)
+PRI writereg(reg_nr, len=1, val=0)
 ' Write nr_bytes from ptr_buff to device
     reg_nr.byte[2] |= core.WRITE
     outa[_CS] := 0
     spi.wrblock_msbf(@reg_nr, 3)
-    spi.wrblock_lsbf(ptr_buff, nr_bytes)
+    if ( len > 4 )
+        spi.wrblock_lsbf(val, len)
+    else
+        spi.wrblock_lsbf(@val, len)
     outa[_CS] := 1
 
 
