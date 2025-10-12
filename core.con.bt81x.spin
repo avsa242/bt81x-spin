@@ -4,8 +4,8 @@
     Description:    BT81x-specific constants
     Author:         Jesse Burt
     Started:        Sep 25, 2019
-    Updated:        Aug 18, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Updated:        Oct 12, 2025
+    Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
 
@@ -327,6 +327,8 @@ CON
         GREEN                   = 8
         BLUE                    = 0
 
+    BLEND_FUNC                  = $0b_00_00_00
+    COLOR_A                     = $10_00_00_00
     POINT_SIZE                  = $0D_00_00_00
     LINE_WIDTH                  = $0E_00_00_00
 
@@ -368,7 +370,7 @@ PUB null()
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

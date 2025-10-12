@@ -4,8 +4,8 @@
     Description:    Driver for the Bridgetek Advanced Embedded Video Engine (EVE)
     Author:         Jesse Burt
     Started:        Sep 25, 2019
-    Updated:        Aug 14, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Updated:        Oct 12, 2025
+    Copyright (c) 2025 - See end of file for terms of use.
 ---------------------------------------------------------------------------------------------------
 }
 
@@ -219,6 +219,26 @@ PUB attach_flash()'xxx api tentative
     coproc_cmd(core.CMD_FLASHATTACH)
 
 
+con
+
+    ' blend_function() algorithms
+    #0, BLEND_ZERO, BLEND_ONE, BLEND_SRC_ALPHA, BLEND_DST_ALPHA, BLEND_ONE_MINUS_SRC_ALPHA, ...
+    BLEND_ONE_MINUS_DST_ALPHA
+
+PUB blend_function(src, dest)
+' Control how new color values are combined with existing values in the color buffer
+'   src:    source blending factor algorithm
+'   dest:   destination blending factor algorithm
+'   blending functions:
+'       BLEND_ZERO (0)
+'       BLEND_ONE (1)
+'       BLEND_SRC_ALPHA (2)
+'       BLEND_DST_ALPHA (3)
+'       BLEND_ONE_MINUS_SRC_ALPHA (4)
+'       BLEND_ONE_MINUS_DST_ALPHA (5)
+    coproc_cmd(core.BLEND_FUNC | ( (src) << 3) | (dest) )
+
+
 PUB box(x1, y1, x2, y2, filled)
 ' Draw a box in the currently set color (set using color_rgb() or color_rgb24() )
 '   (x1, y1): upper-left corner
@@ -351,6 +371,12 @@ PUB clk_spread_ena(state): curr_state
             curr_state := 0
             readreg(core.CSPREAD, 1, @curr_state)
             return (curr_state & 1) == 1
+
+
+PUB color_alpha(a)
+' Specify alpha value (opacity/transparency) of subsequent drawn elements
+'   a:  0..255 (default is 255 or 100% or solid)
+    coproc_cmd(core.COLOR_A | (0 #> a <# 255) )
 
 
 PUB color_rgb(r, g, b)
@@ -1585,7 +1611,7 @@ PRI writereg(reg_nr, nr_bytes, ptr_buff)
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
