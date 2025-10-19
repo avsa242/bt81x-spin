@@ -4,7 +4,7 @@
     Description:    Driver for the Bridgetek Advanced Embedded Video Engine (EVE)
     Author:         Jesse Burt
     Started:        Dec 31, 2020
-    Updated:        Oct 12, 2025
+    Updated:        Oct 19, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -244,14 +244,20 @@ PUB box(x1, y1, x2, y2, filled)
 '   (x2, y2): lower-right corner
     if ( filled )
         prim_begin(RECTS)
-        vertex_2f(x1, y1)
-        vertex_2f(x2, y2)
+            vertex_2f(x1, y1)
+            vertex_2f(x2, y2)
         prim_end()
     else
-        line(x1, y1, x2, y1)
-        line(x1, y2, x2, y2)
-        line(x1, y1, x1, y2)
-        line(x2, y1, x2, y2)
+        prim_begin(core.LINES)
+            vertex_2f(x1, y1)
+            vertex_2f(x2, y1)
+            vertex_2f(x1, y2)
+            vertex_2f(x2, y2)
+            vertex_2f(x1, y1)
+            vertex_2f(x1, y2)
+            vertex_2f(x2, y1)
+            vertex_2f(x2, y2)
+        prim_end()
 
 
 PUB brightness(): lvl
