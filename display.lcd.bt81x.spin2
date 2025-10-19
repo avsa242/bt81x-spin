@@ -1097,7 +1097,7 @@ PUB prim_begin(prim)
     case prim
         BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L, EDGE_STRIP_A, ...
         EDGE_STRIP_B, RECTS:
-            prim := core.BEGIN | prim
+            prim := core.PRIM_BEGIN | prim
             coproc_cmd(prim)
         other:
             return
@@ -1105,7 +1105,7 @@ PUB prim_begin(prim)
 
 PUB prim_end()
 ' End drawing a graphics primitive
-    coproc_cmd(core.END)
+    coproc_cmd(core.PRIM_END)
 
 
 PUB progress_bar(x, y, width, height, opts, val, range)

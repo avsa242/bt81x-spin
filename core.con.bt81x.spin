@@ -4,7 +4,7 @@
     Description:    BT81x-specific constants
     Author:         Jesse Burt
     Started:        Sep 25, 2019
-    Updated:        Oct 12, 2025
+    Updated:        Oct 19, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -343,7 +343,7 @@ CON
         WIDTH                   = 12
         HEIGHT                  = 0
 
-    BEGIN                       = $1F_00_00_00
+    PRIM_BEGIN                  = $1F_00_00_00
         LINES                   = $03
 
     VERTEX2F                    = $40_00_00_00
@@ -356,7 +356,7 @@ CON
         HANDLE                  = 7
         CELL                    = 0
 
-    END                         = $21_00_00_00
+    PRIM_END                    = $21_00_00_00
 
     CLR                         = $26_00_00_00
         COLOR                   = 2

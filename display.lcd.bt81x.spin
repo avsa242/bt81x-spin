@@ -1,12 +1,12 @@
 {
----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
     Filename:       display.lcd.bt81x.spin
     Description:    Driver for the Bridgetek Advanced Embedded Video Engine (EVE)
     Author:         Jesse Burt
     Started:        Sep 25, 2019
     Updated:        Oct 19, 2025
     Copyright (c) 2025 - See end of file for terms of use.
----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 }
 
 CON
@@ -369,9 +369,9 @@ PUB clk_spread_ena(state): curr_state
 ' Enable output clock spreading, to reduce switching noise
 '   Valid values: TRUE (-1 or 1), FALSE (0)
 '   Any other value polls the chip and returns the current setting
-    case ||(state)
+    case abs(state)
         0, 1:
-            state := ||(state) & 1
+            state := abs(state) & 1
             writereg(core.CSPREAD, 1, @state)
         other:
             curr_state := 0
@@ -1098,7 +1098,7 @@ PUB prim_begin(prim)
     case prim
         BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L, EDGE_STRIP_A, ...
         EDGE_STRIP_B, RECTS:
-            prim := core.BEGIN | prim
+            prim := core.PRIM_BEGIN | prim
             coproc_cmd(prim)
         other:
             return
@@ -1106,7 +1106,7 @@ PUB prim_begin(prim)
 
 PUB prim_end()
 ' End drawing a graphics primitive
-    coproc_cmd(core.END)
+    coproc_cmd(core.PRIM_END)
 
 
 PUB progress_bar(x, y, width, height, opts, val, range)
@@ -1443,9 +1443,9 @@ PUB ts_host_mode_ena(state): curr_state
 '   Any other value polls the chip and returns the current setting
     curr_state := 0
     readreg(core.TOUCH_CFG, 2, @curr_state)
-    case ||(state)
+    case abs(state)
         0, 1:
-            state := ||(state) << core.HOSTMODE
+            state := abs(state) << core.HOSTMODE
             state := ((curr_state & core.HOSTMODE_MASK) | state) & core.TOUCH_CFG_MASK
             writereg(core.TOUCH_CFG, 2, @state)
         other:
@@ -1475,9 +1475,9 @@ PUB ts_low_pwr_mode(state): curr_state
 '   Any other value polls the chip and returns the current setting
     curr_state := 0
     readreg(core.TOUCH_CFG, 2, @curr_state)
-    case ||(state)
+    case abs(state)
         0, 1:
-            state := ||(state) << core.LOWPWR
+            state := abs(state) << core.LOWPWR
             state := ((curr_state & core.LOWPWR) | state) & core.TOUCH_CFG_MASK
             writereg(core.TOUCH_CFG, 2, @state)
         other:
