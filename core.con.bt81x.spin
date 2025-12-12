@@ -4,7 +4,7 @@
     Description:    BT81x-specific constants
     Author:         Jesse Burt
     Started:        Sep 25, 2019
-    Updated:        Oct 19, 2025
+    Updated:        Dec 12, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -103,7 +103,22 @@ CON
     GPIO_DIR                    = RAM_REG + $090
     GPIO                        = RAM_REG + $094
     GPIOX_DIR                   = RAM_REG + $098
+
     GPIOX                       = RAM_REG + $09c
+    GPIOX_REGMASK               = $0000_fe0f
+        DISP_LEVEL              = 15
+        DRV_STRENGTH_GPIO       = 13
+        DRV_STRENGTH_DISP       = 12
+        DRV_STRENGTH_SPI        = 10
+        INT_OUTPUT_MODE         = 9
+        GPIO3_OUT_STATE         = 3
+        GPIO2_OUT_STATE         = 2
+        GPIO1_OUT_STATE         = 1
+        GPIO0_OUT_STATE         = 0
+        INT_OUTPUT_MODE_MASK    = (1 << INT_OUTPUT_MODE) ^ GPIOX_REGMASK
+        INT_OUTPUT_PUSHPULL     = (1 << INT_OUTPUT_MODE)
+        INT_OUTPUT_OPENDRAIN    = (0 << INT_OUTPUT_MODE)
+
 '3020A0..3020A4 RESERVED
     INT_FLAGS                   = RAM_REG + $0a8
     INT_EN                      = RAM_REG + $0ac

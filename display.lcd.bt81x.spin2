@@ -4,7 +4,7 @@
     Description:    Driver for the Bridgetek Advanced Embedded Video Engine (EVE)
     Author:         Jesse Burt
     Started:        Dec 31, 2020
-    Updated:        Oct 19, 2025
+    Updated:        Dec 12, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -937,6 +937,59 @@ PUB disp_set_hsize(pclks)
 '   Valid values: 0..4095 (clamped to range)
     pclks := 0 #> pclks <# 4095
     writereg(core.HSIZE, 2, @pclks)
+
+
+PUB int_ena(e)
+' Enable INT_N pin when interrupt(s) are asserted
+'   e:
+'       true (non-zero values)
+'       false (0)
+'       other values: ignored
+    if ( e )
+        e := 1
+
+    writereg(core.INT_EN, 1, @e)
+
+
+PUB int_mask(m): c
+' Set INT_N pin interrupt mask
+'   m:
+'       7: touchscreen conversions completed
+'       6: command FIFO flag
+'       5: command FIFO empty
+'       4: audio playback ended
+'       3: sound effect ended
+'       2: touchscreen tag value change
+'       1: touch detected
+'       0: display list swap occurred
+    c := 0
+    readreg(core.INT_MASK, 2, @c)
+    case m
+        $00..$ff:
+            writereg(core.INT_MASK, 2, @m)
+        other:
+            return c
+
+
+PUB int_output_type(t): c
+' Set INT_N pin output type/mode
+'   t:
+'       0:              open-drain (default)
+'       1:              push-pull
+'       other values:   returns the current setting
+    c := 0
+    readreg(core.GPIOX, 2, @c)
+    case t
+        0, 1:
+            t := (c & core.INT_OUTPUT_MODE_MASK) | (t << core.INT_OUTPUT_MODE)
+            writereg(core.GPIOX, 2, @t)
+        other:
+            return c
+
+PUB interrupt(): f
+' Get interrupt flags
+    f := 0
+    readreg(core.INT_FLAGS, 2, @f)
 
 
 PUB is_dither_ena(): s
