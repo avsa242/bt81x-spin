@@ -262,49 +262,51 @@ PUB box(x1, y1, x2, y2, filled)
         prim_end()
 
 
-PUB brightness(): lvl
+PUB brightness(): b
 ' Get display brightness
     return readreg(core.PWM_DUTY)
 
 
-PUB set_brightness(lvl)
+PUB set_brightness(b)
 ' Set display brightness
 '   Valid values: 0..128 (clamped to range; default 128)
 '   Any other value polls the chip and returns the current setting
-    writereg(core.PWM_DUTY, 1, (0 #> lvl <# 128) )
+    writereg(core.PWM_DUTY, 1, (0 #> b <# 128) )
 
 
-PUB button(x, y, width, height, font, opts, ptr_str) | i, j
+PUB button(x, y, w, h, fn, o, p_str) | i, j
 ' Draw a button
 '   Valid values:
 '       (x, y): upper-left corner of button (0..display dimensions-1)
-'       width, height: dimensions of button, in pixels
-'       font: 0..31
-'       opts: OPT_3D (0), OPT_FLAT (256)
-'       ptr_str: Pointer to string to be displayed on button
+'       w, h:   dimensions of button, in pixels
+'       fn:     0..31
+'       o:      render options
+'                   OPT_3D (0):     3D effect
+'                   OPT_FLAT (256): flat apperance
+'       p_str:  pointer to string to be displayed on button
     x := 0 #> x <# _disp_xmax
     y := 0 #> y <# _disp_ymax
-    width := 0 #> width <# _disp_xmax
-    height := 0 #> height <# _disp_ymax
+    w := 0 #> w <# _disp_xmax
+    h := 0 #> h <# _disp_ymax
     coproc_cmd(core.CMD_BUTTON)
     coproc_cmd((y << 16) + x)
-    coproc_cmd((height << 16) + width)
-    coproc_cmd((opts << 16) + font)
-    j := (strsize(ptr_str) + 4) / 4
+    coproc_cmd((h << 16) + w)
+    coproc_cmd((o << 16) + fn)
+    j := (strsize(p_str) + 4) / 4
     repeat i from 1 to j
-        coproc_cmd( byte[ptr_str][3] << 24 + ...
-                    byte[ptr_str][2] << 16 + ...
-                    byte[ptr_str][1] << 8 + ...
-                    byte[ptr_str][0] )
-        ptr_str += 4
+        coproc_cmd( byte[p_str][3] << 24 + ...
+                    byte[p_str][2] << 16 + ...
+                    byte[p_str][1] << 8 + ...
+                    byte[p_str][0] )
+        p_str += 4
 
 
-PUB button_ptr(ptr_btndef) | x, y, width, height, font, opts, ptr_str
-' Draw a button, reading from definition at ptr_btndef
+PUB button_ptr(p_btn) | x, y, w, h, fn, o, p_str
+' Draw a button, reading from definition at p_btn
 '   Structure:
-'       x, y, width, height, font, options, pointer to string
-    longmove(@x, ptr_btndef, 7)
-    button(x, y, width, height, font, opts, ptr_str)
+'       x, y, w, h, fn, options, pointer to string
+    longmove(@x, p_btn, 7)
+    button(x, y, w, h, fn, o, p_str)
 
 
 PUB clear()
@@ -313,112 +315,127 @@ PUB clear()
     clear_buffers(TRUE, TRUE, TRUE)
 
 
-PUB clear_buffers(color, stencil, tag)
+PUB clear_buffers(c, s, t)
 ' Clear buffers to preset values
-'   Valid values: FALSE (0), TRUE (-1 or 1) for color, stencil, tag
-    coproc_cmd(core.CLR |   ((color & 1) << core.COLOR) | ...
-                            ((stencil & 1) << core.STENCIL) | ...
-                            (tag & 1))
+'   c:  color buffer
+'   s:  stencil buffer
+'   t:  tag buffer
+'       true (non-zero):    clear
+'       false (0):          don't clear
+    c := (c <> 0) & 1
+    s := (s <> 0) & 1
+    t := (t <> 0) & 1
+    coproc_cmd(core.CLR |   (c << core.COLOR) | ...
+                            (s << core.STENCIL) | ...
+                            t)
 
 
 PUB clear_color(r, g, b)
 ' Set color value used by a following clear()
-'   Valid values: 0..255 for r, g, b
-'   Any other value will be clipped to min/max limits
+'   r, g, b:
+'       0..255 each (clamped to range)
     r := 0 #> r <# 255
     g := 0 #> g <# 255
     b := 0 #> b <# 255
     coproc_cmd(core.CLR_COLOR_RGB | (r << 16) | (g << 8) | b)
 
 
-PUB clear_screen(color)
-' Clear screen using color (RGB24)
-    clear_color((color >> 16) & $FF, (color >> 8) & $FF, color & $FF)
+PUB clear_screen(c)
+' Clear screen with set color
+'   c:
+'       color (RGB24)
+    clear_color((c >> 16) & $FF, (c >> 8) & $FF, c & $FF)
     clear()
 
 
-PUB clk_freq(): freq
+PUB clk_freq(): f
 ' Get clock frequency
 '   Returns: MHz
     powered(TRUE)
     return ( readreg(core.FREQ, 4) / 1_000_000)
 
 
-PUB clk_set_freq(freq) | tmp
-' Set clock frequency, in MHz
-'   Valid values: 24, 36, 48, *60, 72
-'   Any other value is ignored
+PUB clk_set_freq(f) | tmp
+' Set EVE system clock frequency
+'   f: (MHz)
+'       24, 36, 48, 60 (default), 72
+'       other values:   ignored
 '   NOTE: Changing this value incurs a 300ms delay
-    case freq
+    case f
         24, 36, 48, 60, 72:
-            tmp := lookdown(freq: 24, 36, 48, 60, 72)
+            tmp := lookdown(f: 24, 36, 48, 60, 72)  ' map freq -> 0..4
             tmp := ((lookup(tmp: 0, 0, 1, 1, 1) << 6) | tmp) + 1
             sleep()
             cmd(core.CLKSEL1, tmp)
             powered(TRUE)
             waitms(core.TPOR)
-            writereg(core.FREQ, 4, (freq * 1_000_000) )
+            writereg(core.FREQ, 4, (f * 1_000_000) )
         other:
             return
 
 
-PUB clk_spread_ena(state): curr_state
+PUB clk_spread_ena(e): c
 ' Enable output clock spreading, to reduce switching noise
-'   Valid values: TRUE (-1 or 1), FALSE (0)
-'   Any other value polls the chip and returns the current setting
-    case abs(state)
+'   e:
+'       TRUE (-1 or 1), FALSE (0)
+'       other values:   returns the current setting
+    case abs(e)
         0, 1:
-            writereg(core.CSPREAD, 1, state & 1)
+            writereg(core.CSPREAD, 1, e & 1)
         other:
             return ( readreg(core.CSPREAD) & 1) == 1
 
 
 PUB color_alpha(a)
 ' Specify alpha value (opacity/transparency) of subsequent drawn elements
-'   a:  0..255 (default is 255 or 100% or solid)
+'   a:
+'       0..255 (default is 255 or 100% or solid)
     coproc_cmd(core.COLOR_A | (0 #> a <# 255) )
 
 
 PUB color_rgb(r, g, b)
-' Specify color for following graphics primitive
-'   Valid values: 0..$ff (RGB 8, 8, 8)
+' Specify the color for the following graphics primitive
+'   r, g, b:
+'       $00..$ff each (clamped to range)
     r := 0 #> r <# 255
     g := 0 #> g <# 255
     b := 0 #> b <# 255
     coproc_cmd(core.COLOR_RGB | (r << core.RED) | (g << core.GREEN) | b)
 
 
-PUB color_rgb24(rgb24)
-' Specify color for following graphics primitive
-'   Valid values: 0..$ff_ff_ff (RGB24)
-    rgb24 := 0 #> rgb24 <# $ff_ff_ff
-    coproc_cmd(core.COLOR_RGB | rgb24)
+PUB color_rgb24(c)
+' Specify the color for the following graphics primitive
+'   c:
+'       0..$ff_ff_ff (RGB24)
+    c := 0 #> c <# $ff_ff_ff
+    coproc_cmd(core.COLOR_RGB | c)
 
 
-PUB coproc_cmd(command)
+PUB coproc_cmd(c)
 ' Queue a coprocessor command
-'   NOTE: This method will always write 4 bytes to the FIFO,
-'       per Bridgetek AN033
-    writereg(core.CMDB_WRITE, 4, command)
+'   NOTE: This method will always write 4 bytes to the FIFO, per Bridgetek AN033
+    writereg(core.CMDB_WRITE, 4, c)
 
 
-PUB coproc_err(): flag
+con FAULT = $fff
+PUB coproc_err(): f
 ' Flag indicating coprocessor error
 '   Returns:
-'       TRUE if the coprocessor has returned a fault, FALSE otherwise
-    return ( readreg(core.CMD_READ, 2) == $FFF)
+'       true (-1):  the coprocessor has returned a fault
+'       false (0):  no fault
+    return ( readreg(core.CMD_READ, 2) == FAULT )
 
 
-PUB cpu_reset(mask)
+PUB cpu_reset(r=%111)
 ' Reset any combination of audio, touch, and coprocessor engines
-'   Valid values (bitfield: 2..0):
+'   r(bitfield: 2..0):
 '       RST_AUDIO (4): Audio engine
 '       RST_TOUCH (2): Touch engine
 '       RST_COPRO (1): Coprocessor engine
 '   Example:
-'       cpu_reset(%010) will reset only the touch engine
-'       cpu_reset(%110) will reset the audio and touch engines
-    writereg(core.CPURESET, 2, (mask & core.CPURESET_MASK) )
+'       cpu_reset(%010) or cpu_reset(RST_TOUCH) will reset only the touch engine
+'       cpu_reset(%110) or cpu_reset(RST_AUDIO | RST_TOUCH) will reset the audio and touch engines
+    writereg(core.CPURESET, 2, (r & core.CPURESET_MASK) )
 
 
 PUB cpu_state(): s
@@ -444,8 +461,12 @@ PUB dev_id(): id
     return readreg(core.ID)
 
 
-PUB dial(x, y, radius, opts, val)
+PUB dial(x, y, r, o, v)
 ' Draw a dial
+'   x, y:   center coordinates (clamped to visible screen coordinates)
+'   r:      dial radius
+'   o:      render options
+'   v:      dial value ('angle' drawn)
     x := 0 #> x <# _disp_xmax
     y := 0 #> y <# _disp_ymax
 
@@ -455,125 +476,140 @@ PUB dial(x, y, radius, opts, val)
     coproc_cmd(val)
 
 
-PUB disp_hcycle(): pclks
+PUB disp_hcycle(): c
 ' Get horizontal total cycle count
 '   Returns: pixel clocks
     return readreg(core.HCYCLE, 2)
 
 
-PUB disp_height(pixels)
+PUB disp_height(h)
 ' Set display height, in pixels
-    disp_set_vsize(pixels)
+    disp_set_vsize(h)
 
 
-PUB disp_hoffset(): pclkc
+PUB disp_hoffset(): c
 ' Get horizontal display start offset
 '   Returns: pixel clock cycles
     return readreg(core.HOFFSET, 2)
 
 
-PUB disp_hsync0(pclk_cycles): curr_cyc
+PUB disp_hsync0(o): c'xxx why does this have a parameter?
 ' Get horizontal sync fall offset
 '   Returns: pixel clock cycles
     return readreg(core.HSYNC0, 2)
 
 
-PUB disp_hsync1(): pclkc
+PUB disp_hsync1(): c
 ' Get horizontal sync rise offset
 '   Returns: pixel clock cycles
     return readreg(core.HSYNC1, 2)
 
 
-PUB disp_pix_clk_div(): divisor
+PUB disp_pix_clk_div(): d
 ' Get pixel clock divisor
     return readreg(core.PCLK, 2)
 
 
-PUB disp_rdy(): status
+PUB disp_rdy(): f | tmp[2]
 ' Flag indicating display coprocessor is ready
-'   Returns: TRUE (-1) if coprocessor is idle/ready, FALSE (0) if busy
-    return ( readreg(core.CMD_READ, 4) == readreg(core.CMD_WRITE, 4) )
+'   Returns:
+'       TRUE (-1):  coprocessor is idle/ready
+'       FALSE (0):  coprocessor is busy
+    tmp[0] := tmp[1] := 0
+    readreg(core.CMD_READ, 8, @tmp)
+    return ( tmp[0] == tmp[1] )
 
 
-PUB disp_rot(orientation)
+PUB disp_rot(r)
 ' Rotate the display
-'   Valid values:
-'       ROT_LAND (0), ROT_INV_LAND (1), ROT_MIR_LAND (4), ROT_MIR_INV_LAND (5):
-'           Landscape, inverted landscape, mirrored landscape,
-'           mirrored inverted landscape
-'       ROT_PORT (2), ROT_INV_PORT (3), ROT_MIR_PORT (6), ROT_MIR_INV_PORT (7):
-'           Portrait, inverted portrait, mirrored portrait,
-'           mirrored inverted portrait
-'   Any other value is ignored
-    case orientation
+'   r:
+'       ROT_LAND (0):           landscape
+'       ROT_INV_LAND (1):       landscape (inverted)
+'       ROT_MIR_LAND (4):       landscape (mirrored)
+'       ROT_MIR_INV_LAND (5):   landscape (mirrored, inverted)
+'       ROT_PORT (2):           portrait
+'       ROT_INV_PORT (3):       portrait (inverted)
+'       ROT_MIR_PORT (6):       portrait (mirrored)
+'       ROT_MIR_INV_PORT (7):   portrait (mirrored, inverted)
+'       other values:           ignored
+    case r
         ROT_LAND, ROT_INV_LAND, ROT_PORT, ROT_INV_PORT, ROT_MIR_LAND, ROT_MIR_INV_LAND, ...
         ROT_MIR_PORT, ROT_MIR_INV_PORT:
             coproc_cmd(core.CMD_SETROTATE)
-            coproc_cmd(orientation)
+            coproc_cmd(r)
         other:
             return
 
 
-PUB disp_set_hoffset(pclkc)
-' Set horizontal display start offset, in pixel clock cycles
-'   Valid values: 0..4095
-'   Any other value polls the chip and returns the current setting
-    writereg(core.HOFFSET, 2, (0 #> pclkc <# 4095) )
+PUB disp_set_hoffset(c)
+' Set horizontal display start offset
+'   c: (pixel clock cycles)
+'       0..4095 (clamped to range)
+    writereg(core.HOFFSET, 2, (0 #> c <# 4095) )
 
 
-PUB disp_set_hcycle(pclks)
-' Set horizontal total cycle count, in pixel clocks
-'   Valid values: 0..4095 (clamped to range)
-    writereg(core.HCYCLE, 2, (0 #> pclks <# 4095) )
+PUB disp_set_hcycle(c)
+' Set horizontal total cycle count
+'   c: (pixel clocks)
+'       0..4095 (clamped to range)
+    writereg(core.HCYCLE, 2, (0 #> c <# 4095) )
 
 
-PUB disp_set_hsync0(pclkc)
-' Set horizontal sync fall offset, in pixel clock cycles
-'   Valid values: 0..4095 (clamped to range)
-    writereg(core.HSYNC0, 2, (0 #> pclkc <# 4095) )
+PUB disp_set_hsync0(c)
+' Set horizontal sync fall offset
+'   c: (pixel clock cycles)
+'       0..4095 (clamped to range)
+    writereg(core.HSYNC0, 2, (0 #> c <# 4095) )
 
 
-PUB disp_set_hsync1(pclkc)
-' Set horizontal sync rise offset, in pixel clock cycles
-'   Valid values: 0..4095 (clamped to range)
-    writereg(core.HSYNC1, 2, (0 #> pclkc <# 4095) )
+PUB disp_set_hsync1(c)
+' Set horizontal sync rise offset
+'   c: (pixel clock cycles)
+'       0..4095 (clamped to range)
+    writereg(core.HSYNC1, 2, (0 #> c <# 4095) )
 
 
-PUB disp_set_pix_clk_div(divisor)
+PUB disp_set_pix_clk_div(d)
 ' Set pixel clock divisor
-'   Valid values: 0..1023 (clamped to range)
+'   d:
+'       0..1023 (clamped to range)
 '   NOTE: A setting of 0 disables the pixel clock output
-    writereg(core.PCLK, 2, (0 #> divisor <# 1023) )
+    writereg(core.PCLK, 2, (0 #> d <# 1023) )
 
 
-PUB disp_set_voffset(lns)
-' Set vertical display start offset, in lines
-'   Valid values: 0..4095 (clamped to range)
-    writereg(core.VOFFSET, 2, (0 #> lns <# 4095) )
+PUB disp_set_voffset(o)
+' Set vertical display start offset
+'   o: (lines)
+'       0..4095 (clamped to range)
+    writereg(core.VOFFSET, 2, (0 #> o <# 4095) )
 
 
-PUB disp_set_vsize(lns)
+PUB disp_set_vsize(l)
 ' Set vertical display line count
-'   Valid values: 0..4095 (clamped to range)
-    writereg(core.VSIZE, 2, (0 #> lns <# 4095) )
+'   l: (lines)
+'       0..4095 (clamped to range)
+    writereg(core.VSIZE, 2, (0 #> l <# 4095) )
 
 
-PUB disp_set_vcycle(lns)
-' Set vertical total cycle count, in lns
-'   Valid values: 0..4095 (clamped to range)
-    writereg(core.VCYCLE, 2, (0 #> lns <# 4095) )
+PUB disp_set_vcycle(l)
+' Set vertical total cycle count
+'   l: (lines)
+'       0..4095 (clamped to range)
+    writereg(core.VCYCLE, 2, (0 #> l <# 4095) )
 
 
-PUB disp_set_vsync0(lns)
-' Set vertical sync fall offset, in lns
-'   Valid values: 0..1023 (clamped to range)
-    writereg(core.VSYNC0, 2, (0 #> lns <# 1023) )
+PUB disp_set_vsync0(l)
+' Set vertical sync fall offset
+'   l: (lines)
+'       0..1023 (clamped to range)
+    writereg(core.VSYNC0, 2, (0 #> l <# 1023) )
 
 
-PUB disp_set_vsync1(lns)
-' Set vertical sync rise offset, in lns
-'   Valid values: 0..1023 (clamped to range)
-    writereg(core.VSYNC1, 2, (0 #> lns <# 1023) )
+PUB disp_set_vsync1(l)
+' Set vertical sync rise offset
+'   l: (lines)
+'       0..1023 (clamped to range)
+    writereg(core.VSYNC1, 2, (0 #> l <# 1023) )
 
 
 PUB disp_timings(hc, ho, hs0, hs1, vc, vo, vs0, vs1)
@@ -588,57 +624,60 @@ PUB disp_timings(hc, ho, hs0, hs1, vc, vo, vs0, vs1)
     disp_set_vsync1(vs1)
 
 
-PUB disp_vcycle(): lns
+PUB disp_vcycle(): l
 ' Get vertical total cycle count
 '   Returns: lines
     return readreg(core.VCYCLE, 2)
 
 
-PUB disp_voffset(): lns
+PUB disp_voffset(): l
 ' Get vertical display start offset
 '   Returns: lines
     return readreg(core.VOFFSET, 2)
 
 
-PUB disp_vsize(): lns
+PUB disp_vsize(): l
 ' Get vertical display line count
 '   Returns: lines
     return readreg(core.VSIZE, 2)
 
 
-PUB disp_vsync0(): lns
+PUB disp_vsync0(): l
 ' Get vertical sync fall offset
 '   Returns: lines
     return readreg(core.VSYNC0, 2)
 
 
-PUB disp_vsync1(): lns
+PUB disp_vsync1(): l
 ' Get vertical sync rise offset
 '   Returns: lines
     return readreg(core.VSYNC1, 2)
 
 
-PUB disp_width(pixels)
-' Set display width, in pixels
-    disp_set_hsize(pixels)
+PUB disp_width(p)'xxx redefine as build-time alias to disp_set_hsize()
+' Set display width
+'   p:  pixels
+    disp_set_hsize(p)
 
 
-PUB dither_ena(state)
+PUB dither_ena(d)
 ' Enable dithering on RGB output
-'   Valid values: *TRUE (non-zero), FALSE (0)
-    state := ((state <> 0) & 1)
-    writereg(core.DITHER, 1, state)
+'   d:
+'       TRUE (non-zero):    enable (default)
+'       FALSE (0):          disable
+    d := ( (d <> 0) & 1)
+    writereg(core.DITHER, 1, d)
 
 
-PUB dl_append_from_flash(fl_addr, nr_bytes)'xxx api tentative
+PUB dl_append_from_flash(fl_addr, len)'xxx api tentative
 ' Append data from flash to the display list
-'   fl_addr: flash memory address to start reading from
-'   nr_bytes: number of bytes to append to the display list
+'   fl_addr:    flash memory address to start reading from
+'   len:        number of bytes to append to the display list
 '   NOTE: fl_addr must be 64-byte aligned
-'   NOTE: nr_bytes must be a multiple of 4
+'   NOTE: len must be a multiple of 4
     coproc_cmd(core.CMD_APPENDF)
     coproc_cmd(fl_addr)
-    coproc_cmd(nr_bytes)
+    coproc_cmd(len)
 
 
 PUB dl_end()
@@ -647,7 +686,7 @@ PUB dl_end()
     coproc_cmd(core.CMD_SWAP)
 
 
-PUB dl_ptr(): dl_ptr
+PUB dl_ptr(): p
 ' Returns: Current address pointer offset within display list RAM
     return readreg(core.CMD_DL, 2)
 
@@ -657,20 +696,19 @@ PUB dl_start()
     coproc_cmd(core.CMD_DLSTART)
 
 
-PUB dl_swap_mode(mode): dl_status
+PUB dl_swap_mode(md): c
 ' Set when the graphics engine will render the screen
-'   Valid values:
-'       DLSWAP_LINE (1): Render screen immediately after current line is
-'           scanned out (may cause visual tearing)
-'       DLSWAP_FRAME (2): Render screen immediately after current frame is
-'           scanned out
-'   Any other value polls the chip and returns the buffer readiness
-'   Returns:
-'       0 - buffer ready
-'       1 - buffer not ready
-    case mode
+'   md:
+'       DLSWAP_LINE (1):    Render screen immediately after current line is
+'                           scanned out (may cause visual tearing)
+'       DLSWAP_FRAME (2):   Render screen immediately after current frame is
+'                           scanned out
+'       other values:       returns the current buffer readiness
+'                               0: buffer ready
+'                               1: buffer not ready
+    case md
         DLSWAP_LINE, DLSWAP_FRAME:
-            writereg(core.DLSWAP, 1, mode)
+            writereg(core.DLSWAP, 1, md)
         other:
             return ( readreg(core.DLSWAP) & %11 )
 
@@ -709,7 +747,7 @@ PUB flash_fastmode()'XXX api tentative
     coproc_cmd(core.CMD_FLASHFAST)
 
 
-PUB flash_rx(ram_addr, nr_bytes): b'XXX api tentative
+PUB flash_rx(ram_addr, nr_bytes): b'XXX api tentative; revisit: what's with the params? not used...
 ' Read a block of data from the SPI Flash interface, and write to EVE RAM_G
 '   ram_addr: address in EVE RAM_G to write to
 '   nr_bytes: number of bytes to read
@@ -729,127 +767,157 @@ PUB flash_status(): s'xxx api tentative
 
 PUB flash_tx(p_src, len)'XXX api tentative
 ' Write a block of data over the EVE <-> SPI Flash interface
-'   p_src: pointer to buffer of data to write from
-'   len: number of bytes to write
+'   p_src:  pointer to buffer of data to write from
+'   len:    number of bytes to write
     coproc_cmd(core.CMD_FLASHSPITX)
     coproc_cmd(len)
     repeat while len--
         coproc_cmd(byte[p_src++])
 
 
-PUB flash_rdblk_lsbf(ram_addr, fl_addr, nr_bytes)'XXX api tentative
+PUB flash_rdblk_lsbf(ram_addr, fl_addr, len)'XXX api tentative
 ' Read a block of data from flash to EVE RAM
-'   ram_addr: address in EVE RAM_G to write to
-'   fl_addr: flash memory address to start reading from
-'   nr_bytes: number of bytes to read
+'   ram_addr:   address in EVE RAM_G ($00_0000..$0f_ffff) to write to
+'   fl_addr:    flash memory address ($80_0000..$107f_ffff) to start reading from
+'   len:        number of bytes to read
 '   NOTE: ram_addr must be 4-byte aligned
 '   NOTE: fl_addr must be 64-byte aligned
-'   NOTE: nr_bytes must be a multiple of 4
+'   NOTE: len must be a multiple of 4
     coproc_cmd(core.CMD_FLASHREAD)
     coproc_cmd(ram_addr)
     coproc_cmd(fl_addr)
-    coproc_cmd(nr_bytes)
+    coproc_cmd(len)
 
 
-PUB flash_bytemove(fl_addr, ptr_buff, nr_bytes)'XXX api tentative
+PUB flash_bytemove(fl_addr, p_src, len)'XXX api tentative
 ' Write a block of data to flash from Propeller RAM
-'   fl_addr: flash memory address to start writing to
-'   ptr_buff: pointer to buffer of data to write
-'   nr_bytes: number of bytes to write
+'   fl_addr:    flash memory address ($80_0000..$107f_ffff) to start writing to
+'   p_src:      pointer to buffer of data to write
+'   len:        number of bytes to write
 '   NOTE: fl_addr must be 256-byte aligned
-'   NOTE: nr_bytes must be a multiple of 256
+'   NOTE: len must be a multiple of 256
     coproc_cmd(core.CMD_FLASHWRITE)
     coproc_cmd(fl_addr)
-    coproc_cmd(nr_bytes)
-    repeat while nr_bytes--                     ' keep going if > 0, and take one from the total
-        coproc_cmd(byte[ptr_buff++])            ' write from the buffer and advance to next byte
+    coproc_cmd(len)
+    repeat while len--                          ' keep going if > 0, and take one from the total
+        coproc_cmd(byte[p_src++])               ' write from the buffer and advance to next byte
 
 
-PUB flash_wrblk_lsbf(fl_addr, ram_addr, nr_bytes)'XXX api tentative
+PUB flash_wrblk_lsbf(fl_addr, ram_addr, len)'XXX api tentative
 ' Write a block of data to flash from EVE RAM
-'   fl_addr: flash memory address to start writing to
-'   ram_addr: address in EVE RAM_G to read from
-'   nr_bytes: number of bytes to write
+'   fl_addr:    flash memory address ($80_0000..$107f_ffff) to start writing to
+'   ram_addr:   address in EVE RAM_G ($00_0000..$0f_ffff) to read from
+'   len:        number of bytes to write
 '   NOTE: If the data matches the existing contents of flash, nothing is done. Otherwise, the
 '       flash is erased in 4kB units, and the data is written.
 '   NOTE: ram_addr must be 4-byte aligned
 '   NOTE: fl_addr must be 4096-byte aligned
-'   NOTE: nr_bytes must be a multiple of 4096
+'   NOTE: len must be a multiple of 4096
     coproc_cmd(core.CMD_FLASHREAD)
     coproc_cmd(fl_addr)                         ' destination
     coproc_cmd(ram_addr)                        ' source
-    coproc_cmd(nr_bytes)
+    coproc_cmd(len)
 
 
-PUB glyph_height(fnt_handle): h | offs
+PUB glyph_height(f): h | offs
 ' Get height of a font
-'   fnt_handle: font handle/number (e.g., 31)
-'   Returns: height of font in pixels
+'   f:          font handle/number (e.g., 31)
+'   Returns:    height of font in pixels
     return readreg( (core.ROM_FONT_ROOT + ...
-                    ( core.FNT_BLK_SZ * (fnt_handle-16) ) ) + core.SCR_HEIGHT, 4)
+                    ( core.FNT_BLK_SZ * (f-16) ) ) + core.SCR_HEIGHT, 4)
 
 
-PUB glyph_width(fnt_handle, ch): w | offs
+PUB glyph_width(f, ch): w | offs
 ' Get width of a glyph
-'   fnt_handle: font handle/number (e.g., 31)
-'   ch: glyph/character (e.g., "g")
-'   Returns: width of glyph in pixels
-    return readreg( (core.ROM_FONT_ROOT + (core.FNT_BLK_SZ * (fnt_handle-16)) ) + ch )
+'   f:          font handle/number (e.g., 31)
+'   ch:         glyph/character (e.g., "g")
+'   Returns:    width of glyph in pixels
+    return readreg( (core.ROM_FONT_ROOT + (core.FNT_BLK_SZ * (f-16) ) ) + ch )
 
 
-PUB gauge(x, y, radius, opts, major, minor, val, range)
+PUB gauge(x, y, r, o, dmaj, dmin, val, rng)
 ' Draw a gauge
 '   (x, y): screen coordinates (gauge center)
-'   radius: radius of gauge, in pixels
-'   opts: rendering options (bitwise-or options together as needed)
-'       OPT_3D (default): 3D effect
-'       OPT_FLAT: no 3D effect
-'       OPT_NOBACK: background isn't drawn
-'       OPT_NOTICKS: tick marks aren't drawn
-'       OPT_NOPOINTER: pointer isn't drawn
-'   major: number of major subdivisions to draw on gauge (1..10)
-'   minor: number of minor subdivisions to draw on gauge (1..10)
-'   val: value to indicate on the gauge (u16)
-'   range: maximum value drawable on the gauge (u16)
+'   r:      radius of gauge, in pixels
+'   o:      rendering options (bitwise-OR options together as needed)
+'           OPT_3D (0):             3D effect (default)
+'           OPT_FLAT (256):         no 3D effect
+'           OPT_NOBACK (4096):      background isn't drawn
+'           OPT_NOTICKS (8192):     tick marks aren't drawn
+'           OPT_NOPOINTER (16384):  pointer isn't drawn
+'   dmaj:   number of major subdivisions to draw on gauge (0..10)
+'   dmin:   number of minor subdivisions to draw on gauge (0..10)
+'   val:    value to indicate on the gauge (0..65535)
+'   rng:    maximum value drawable on the gauge (0..65535)
     x := 0 #> x <# _disp_xmax
     y := 0 #> y <# _disp_ymax
-    radius := 0 #> radius <# _disp_xmax
+    r := 0 #> r <# _disp_xmax
 
     coproc_cmd(core.CMD_GAUGE)
     coproc_cmd((y << 16) | x)
-    coproc_cmd((opts << 16) | radius)
-    coproc_cmd(( (0 #> minor <# 10) << 16) | (0 #> major <# 10) )
-    coproc_cmd((range << 16) | val)
+    coproc_cmd((o << 16) | r)
+    coproc_cmd(( (0 #> dmin <# 10) << 16) | (0 #> dmaj <# 10) )
+    coproc_cmd((rng << 16) | val)
 
 
-PUB gpio_state(): state
+PUB gpio_state(): s
 ' Get GPIO pins state
+'   (see gpio_set_state() for bitfields)
     return readreg(core.GPIOX, 2)
 
 
-PUB gpio_set_state(state)
+PUB gpio_set_state(s)
 ' Set GPIO pins state
-    writereg(core.GPIOX, 2, (state & $ffff) )
+'   s: (bitfields)
+'       15: DISP pin
+'       13: GPIO0..3, CTP_RST_N pin drive strength
+'           %00:    5mA (default)
+'           %01:    10mA
+'           %10:    15mA
+'           %11:    20mA
+'       12: PCLK, DISP, VSYNC, HSYNC, DE, R, G, B, BACKLIGHT pins drive strength
+'           %0:     1.2mA (default)
+'           %1:     2.4mA
+'       10: MISO, MOSI, INT_N, IO2, IO3, SPIM_* pins drive strength
+'           %00:    5mA (default)
+'           %01:    10mA
+'           %10:    15mA
+'           %11:    20mA
+'       9:  INT_N output mode (active low)
+'           %0:     open-drain (default)
+'           %1:     push-pull
+'       3:  GPIO3 output state/level (default: 0/low)
+'       2:  GPIO2 output state/level (default: 0/low)
+'       1:  GPIO1 output state/level (default: 0/low)
+'       0:  GPIO0 output state/level (default: 0/low)
+    writereg(core.GPIOX, 2, (s & core.GPIOX_REGMASK) )
 
 
-PUB gpio_dir(): mask
+PUB gpio_dir(): m
 ' Get GPIO pins direction
+'   (see gpio_set_dir() for bitfields)
     return readreg(core.GPIOX_DIR, 2)
 
 
-PUB gpio_set_dir(mask)
+PUB gpio_set_dir(m)
 ' Set GPIO pins direction
-    writereg(core.GPIOX_DIR, 2, (mask & $ffff) )
+'   m: (bitmask, 0=input, 1=output)
+'       15: DISP pin
+'       3:  GPIO3
+'       2:  GPIO2
+'       1:  GPIO1
+'       0:  GPIO0
+    writereg(core.GPIOX_DIR, 2, (m & core.GPIOX_DIR_REGMASK) )
 
 
 PUB gradient(x0, y0, rgb0, x1, y1, rgb1)
 ' Draw a smooth color gradient
-'   (x0, y0): screen coordinates of point 0 of gradient
-'   rgb0: color of point 0 (RGB24)
-'   (x1, y1): screen coordinates of point 1 of gradient
-'   rgb1: color of point 1 (RGB24)
-'   NOTE: use in conjunction with scissor_rect() is recommended to specify the region to draw the
-'       gradient (the gradient will otherwise fill the entire screen)
+'   (x0, y0):   screen coordinates of point 0 of gradient
+'   rgb0:       color of point 0 (RGB24)
+'   (x1, y1):   screen coordinates of point 1 of gradient
+'   rgb1:       color of point 1 (RGB24)
+'   NOTE: To limit the gradient to a region of the screen, call scissor_rect()
+'       (the gradient will otherwise fill the entire screen)
     x0 := 0 #> x0 <# _disp_xmax
     y0 := 0 #> y0 <# _disp_ymax
     rgb0 := $00_00_00 #> rgb0 <# $FF_FF_FF
@@ -866,13 +934,17 @@ PUB gradient(x0, y0, rgb0, x1, y1, rgb1)
 
 PUB gradient_trans(x0, y0, argb0, x1, y1, argb1)
 ' Draw a smooth color gradient, with transparency
-'   (x0, y0): screen coordinates of point 0 of gradient
-'   argb0: color of point 0 (ARGB32)
-'   (x1, y1): screen coordinates of point 1 of gradient
-'   argb1: color of point 1 (ARGB32)
-'   NOTE: 'A' is the alpha channel. $00 == fully transparent, $ff == fully opaque
-'   NOTE: use in conjunction with scissor_rect() is recommended to specify the region to draw the
-'       gradient (the gradient will otherwise fill the entire screen)
+'   (x0, y0):   screen coordinates of point 0 of gradient
+'   argb0:      color of point 0 (ARGB32)
+'   (x1, y1):   screen coordinates of point 1 of gradient
+'   argb1:      color of point 1 (ARGB32)
+'   NOTE: 'a' is the alpha/transparency channel. $00 == fully transparent, $ff == fully opaque
+'       Examples:
+'           $ff_ff_00_00 is red, fully opaque/solid
+'           $7f_ff_00_00 is red, approximately 50% transparent
+'           $7f_00_ff_00 is green, approximately 50% transparent
+'   NOTE: To limit the gradient to a region of the screen, call scissor_rect()
+'       (the gradient will otherwise fill the entire screen)
     x0 := 0 #> x0 <# _disp_xmax
     y0 := 0 #> y0 <# _disp_ymax
     x1 := 0 #> x1 <# _disp_xmax
@@ -885,15 +957,16 @@ PUB gradient_trans(x0, y0, argb0, x1, y1, argb1)
     coproc_cmd(argb1)
 
 
-PUB disp_hsize(): pclks
+PUB disp_hsize(): p
 ' Get horizontal display pixel count
     return readreg(core.HSIZE, 2)
 
 
-PUB disp_set_hsize(pclks)
+PUB disp_set_hsize(p)
 ' Set horizontal display pixel count
-'   Valid values: 0..4095 (clamped to range)
-    writereg(core.HSIZE, 2, (0 #> pclks <# 4095) )
+'   p:
+'       0..4095 (clamped to range)
+    writereg(core.HSIZE, 2, (0 #> p <# 4095) )
 
 
 PUB int_ena(e)
@@ -902,23 +975,36 @@ PUB int_ena(e)
 '       true (non-zero values)
 '       false (0)
 '       other values: ignored
+'   NOTE: The INT_N pin is active low
     if ( e )
         e := 1
 
     writereg(core.INT_EN, 1, e)
 
 
+con
+
+    ' interrupt flags
+    INT_TSCONV          = 1 << 7
+    INT_FIFO_FLAG       = 1 << 6
+    INT_FIFO_EMPTY      = 1 << 5
+    INT_AUDIO_ENDED     = 1 << 4
+    INT_SOUND_ENDED     = 1 << 3
+    INT_TSTAG_CHANGED   = 1 << 2
+    INT_TOUCHED         = 1 << 1
+    INT_DLSWAPPED       = 1 << 0
+
 PUB int_mask(m): c
 ' Set INT_N pin interrupt mask
 '   m:
-'       7: touchscreen conversions completed
-'       6: command FIFO flag
-'       5: command FIFO empty
-'       4: audio playback ended
-'       3: sound effect ended
-'       2: touchscreen tag value change
-'       1: touch detected
-'       0: display list swap occurred
+'       INT_TSCONV (128):       touchscreen conversions completed
+'       INT_FIFO_FLAG (64):     command FIFO flag
+'       INT_FIFO_EMPTY (32):    command FIFO empty
+'       INT_AUDIO_ENDED (16):   audio playback ended
+'       INT_SOUND_ENDED (8):    sound effect ended
+'       INT_TSTAG_CHANGED (4):  touchscreen tag value change
+'       INT_TOUCHED (2):        touch detected
+'       INT_DLSWAPPED (1):      display list swap occurred
     c := readreg(core.INT_MASK)
     case m
         $00..$ff:
@@ -927,12 +1013,18 @@ PUB int_mask(m): c
             return c
 
 
+con
+
+    ' INT_N pin output modes
+    INT_OPENDRAIN   = 0
+    INT_PUSHPULL    = 1
+
 PUB int_outp_type(t): c
 ' Set INT_N pin output type/mode
 '   t:
-'       0:              open-drain (default)
-'       1:              push-pull
-'       other values:   returns the current setting
+'       INT_OPENDRAIN (0):  open-drain (default)
+'       INT_PUSHPULL (1):   push-pull
+'       other values:       returns the current setting
     c := readreg(core.GPIOX, 2)
     case t
         0, 1:
@@ -953,17 +1045,19 @@ PUB is_dither_ena(): s
     return ( (readreg(core.DITHER) & 1) == 1 )
 
 
-PUB keys(x, y, width, height, font, opts, ptr_str) | i, j
-' Draw a horizontal row of keys
+PUB keys(x, y, w, h, fn, o, p_str) | i, j
+' Draw a horizontal row of text keyboard keys
 '   (x, y): upper-left corner of keyboard
-'   (width, height): dimensions of keyboard, in pixels
-'   font: 0..31
-'   opts: rendering options
-'       OPT_FLAT: no 3D effect (default on)
-'       OPT_CENTER: keys are drawn at minimum size, centered within (width, height)
-'           (otherwise, the keys are drawn expanded to fill the available space)
-'       ASCII values: the key with the matching label in ptr_str is drawn 'pressed' (like OPT_FLAT)
-'   ptr_str: string containing each key's label (one char per key)
+'   (w, h): dimensions of keyboard, in pixels
+'   fn:     0..31
+'   o:      rendering options
+'           OPT_3D (0):         3D effect (default)
+'           OPT_FLAT (256):     no 3D effect
+'           OPT_CENTER (1536):  keys are drawn at minimum size and centered within w, h
+'                               (otherwise, the keys are drawn expanded to fill the available space)
+'           ASCII values:       the key with the matching label in p_str is drawn 'pressed'
+'                               (i.e., looks like it was drawn with option OPT_FLAT)
+'   p_str:  string containing each key's label (one char per key)
 '   Example:
 '       keys(10, 10, 140, 30, 26, "2", @"12345")
 '           would draw a row of keys '1', '2', '3', '4', '5'
@@ -972,15 +1066,15 @@ PUB keys(x, y, width, height, font, opts, ptr_str) | i, j
     y := 0 #> y <# _disp_ymax
     coproc_cmd(core.CMD_KEYS)
     coproc_cmd((y << 16) | x)
-    coproc_cmd((height << 16) | width)
-    coproc_cmd((opts << 16) | font)
-    j := (strsize(ptr_str) + 4) / 4
+    coproc_cmd((h << 16) | w)
+    coproc_cmd((o << 16) | fn)
+    j := (strsize(p_str) + 4) / 4
     repeat i from 1 to j
-        coproc_cmd( (byte[ptr_str][3] << 24) + ...
-                    (byte[ptr_str][2] << 16) + ...
-                    (byte[ptr_str][1] << 8) + ...
-                    byte[ptr_str][0] )
-        ptr_str += 4
+        coproc_cmd( (byte[p_str][3] << 24) + ...
+                    (byte[p_str][2] << 16) + ...
+                    (byte[p_str][1] << 8) + ...
+                    byte[p_str][0] )
+        p_str += 4
 
 
 PUB line(x1, y1, x2, y2)
@@ -993,12 +1087,13 @@ PUB line(x1, y1, x2, y2)
     prim_end()
 
 
-PUB line_width(pixels)
-' Set width of line, in pixels
+PUB line_width(w)
+' Set width of line
+'   w:  width in pixels
 '   NOTE: This affects the line() and box() primitives
-    pixels := 1 #> pixels <# 255
-    pixels <<= 4
-    coproc_cmd(core.LINE_WIDTH | pixels)
+    w := 1 #> w <# 255
+    w <<= 4
+    coproc_cmd(core.LINE_WIDTH | w)
 
 
 PUB model_id(): id
@@ -1015,18 +1110,18 @@ PUB model_id(): id
     id.byte[3] := 0
 
 
-PUB num(x, y, font, opts, val)
+PUB num(x, y, fn, o, v)
 ' Draw a 32-bit number, with radix/base specified by set_base()
 '   (x, y): upper-left pixel of text
-'   font: 0..31
-'   opts: rendering options
-'       OPT_CENTERX (512): horizontally center text
-'       OPT_CENTERY (1024): vertically center text
-'       OPT_CENTER (1536): horizontally and vertically center text
-'       OPT_SIGNED (256): draw a signed number (default unsigned 32bit)
-'       OPT_RIGHTX (2048): right-justify (x coordinate will be right-most pixel)
-'       width 1..9: pad 'val' with leading zeroes as necessary to draw 'width' digits
-'   val: number to draw
+'   fn:     0..31
+'   o:      rendering options
+'           OPT_CENTERX (512):  horizontally center text
+'           OPT_CENTERY (1024): vertically center text
+'           OPT_CENTER (1536):  horizontally and vertically center text
+'           OPT_SIGNED (256):   draw a signed number (default unsigned 32bit)
+'           OPT_RIGHTX (2048):  right-justify (x coordinate will be right-most pixel)
+'           width 1..9:         pad 'val' with leading zeroes as necessary to draw 'width' digits
+'   v:      number to draw
 '   Example: num(150, 20, 31, OPT_RIGHTX | 3, 42)
 '       would draw the number 42 right-justified, with 3 digits
 ' NOTE: If no preceeding set_base() is used, decimal will be used
@@ -1034,19 +1129,19 @@ PUB num(x, y, font, opts, val)
     y := 0 #> y <# _disp_ymax
     coproc_cmd(core.CMD_NUMBER)
     coproc_cmd((y << 16) | x)
-    coproc_cmd((opts << 16) | font)
+    coproc_cmd((opts << 16) | fn)
     coproc_cmd(val)
 
 
-PUB pix_clk_polarity(edge): curr_edge
+PUB pix_clk_polarity(p): c
 ' Set pixel clock polarity
-'   Valid values:
-'       PCLKCPOL_RISING (0): Output on pixel clock rising edge
-'       PCLKCPOL_FALLING (1): Output on pixel clock falling edge
-'   Any other value polls the chip and returns the current setting
-    case edge
+'   p:
+'       PCLKCPOL_RISING (0):    Output on pixel clock rising edge
+'       PCLKCPOL_FALLING (1):   Output on pixel clock falling edge
+'       other values:           returns the current setting
+    case p
         PCLKPOL_RISING, PCLKPOL_FALLING:
-            writereg(core.PCLK_POL, 1, edge)
+            writereg(core.PCLK_POL, 1, p)
         other:
             return readreg(core.PCLK_POL)
 
@@ -1075,34 +1170,37 @@ PUB plot(x, y)
     prim_end()
 
 
-PUB point_size(radius)
+PUB point_size(r)
 ' Set point size/radius of following plot(), in 1/16th pixels
-    radius := 0 #> radius <# 8191
-    coproc_cmd(core.POINT_SIZE | radius)
+    r := 0 #> r <# 8191
+    coproc_cmd(core.POINT_SIZE | r)
 
 
-PUB powered(state)
+PUB powered(p)
 ' Enable display power
+'   p:
+'       TRUE (non-zero):    power on
+'       FALSE (0):          power off
+'       other values:       ignored
 '   NOTE: Affects digital core circuits, clock, PLL and oscillator
-'   Valid values: TRUE (non-zero), FALSE (0)
-    if ( state )
+    if ( p )
         cmd(core.ACTIVE, 0)
     else
         cmd(core.PWRDOWN1, 0)
 
 
-PUB prim_begin(prim)
+PUB prim_begin(p)
 ' Begin drawing a graphics primitive
 '   Valid values:
 '       BITMAPS (1), POINTS (2), LINES (3), LINE_STRIP (4), EDGE_STRIP_R (5), EDGE_STRIP_L (6),
 '       EDGE_STRIP_A (7), EDGE_STRIP_B (8), RECTS (9)
 '   Any other value is ignored
 '       (nothing added to display list and address pointer is NOT incremented)
-    case prim
+    case p
         BITMAPS, POINTS, LINES, LINE_STRIP, EDGE_STRIP_R, EDGE_STRIP_L, EDGE_STRIP_A, ...
         EDGE_STRIP_B, RECTS:
-            prim := core.PRIM_BEGIN | prim
-            coproc_cmd(prim)
+            p := core.PRIM_BEGIN | p
+            coproc_cmd(p)
         other:
             return
 
@@ -1112,25 +1210,27 @@ PUB prim_end()
     coproc_cmd(core.PRIM_END)
 
 
-PUB progress_bar(x, y, width, height, opts, val, range)
+PUB progress_bar(x, y, w, h, o, v, r)
 ' Draw a progress bar
 '   (x, y): screen coordinates
-'   (width, height): dimensions
-'       Radius of bar (r) is the minimum of (width, height) / 2
-'       Radius of inner progress line is r*(7/8)
-'   opts: rendering options
-'       OPT_FLAT: no 3D effect
-'   val: displayed value of progress bar (unsigned16, 0..range, inclusive)
-'   range: maximum value of progress bar (unsigned16)
+'   (w, h): dimensions
+'           NOTE: Radius of bar (r) is the minimum of (w, h) / 2
+'           NOTE: Radius of inner progress line is r*(7/8)
+'           NOTE: If w > h, progress bar will be horizontal
+'           NOTE: If h >= w, progress bar will be vertical
+'   o:      rendering options
+'           OPT_FLAT (256): no 3D effect
+'   v:      displayed value of progress bar (0..65535, 0..r, inclusive)
+'   r:      maximum value of progress bar (0..65535)
     x := 0 #> x <# _disp_xmax
     y := 0 #> y <# _disp_ymax
-    width := 0 #> width <# _disp_xmax
-    height := 0 #> height <# _disp_ymax
+    w := 0 #> w <# _disp_xmax
+    h := 0 #> h <# _disp_ymax
     coproc_cmd(core.CMD_PROGRESS)
     coproc_cmd((y << 16) | x)
-    coproc_cmd((height << 16) | width)
-    coproc_cmd((val << 16) | opts)
-    coproc_cmd(range)
+    coproc_cmd((h << 16) | w)
+    coproc_cmd((v << 16) | o)
+    coproc_cmd(r)
 
 
 PUB rd_err(p_dest)
@@ -1162,12 +1262,12 @@ PUB reset_copro() | p_tmp, tmp
     writereg(core.COPRO_PATCH_PTR, 2, p_tmp)    ' restore coprocessor pointer
 
 
-PUB scissor_rect(x, y, width, height)
+PUB scissor_rect(x, y, w, h)
 ' Specify scissor clip rectangle
 '   (x, y): screen coordinates
-'   (width, height): size of area to clip
+'   (w, h): size of area to clip
     scissor_xy(x, y)
-    scissor_sz(width, height)
+    scissor_sz(w, h)
 
 
 PUB scissor_xy(x, y)
@@ -1177,69 +1277,71 @@ PUB scissor_xy(x, y)
     coproc_cmd(core.SCISSOR_XY | (x << core.SCISSOR_X) | y)
 
 
-PUB scissor_sz(width, height)
+PUB scissor_sz(w, h)
 ' Specify size of scissor clip rectangle
-    width := 0 #> width <# 2048
-    height := 0 #> height <# 2048
-    coproc_cmd(core.SCISSOR_SIZE | (width << core.WIDTH) | height)
+    w := 0 #> w <# 2048
+    h := 0 #> h <# 2048
+    coproc_cmd(core.SCISSOR_SIZE | (w << core.WIDTH) | h)
 
 
-PUB scrollbar(x, y, width, height, opts, val, size, range)
+PUB scrollbar(x, y, w, h, o, v, s, rng)
 ' Draw a scrollbar
 '   (x, y): upper-left coordinates
-'   (width, height): dimensions
-'   opts:
-'       OPT_3D (0): 3D effect
-'       OPT_FLAT (256): no 3D effect
-'   val: displayed value of scroll bar (unsigned16, left-most or top-most edge)
-'   size: size of displayed scroll value (unsigned16, relative to val)
-'   range: full-scale range of values (unsigned16)
-'   NOTE: val+size shouldn't exceed range
-'   NOTE: If width is greater than height, the scroll bar will be drawn horizontally,
-'       else it will be drawn vertically
+'   (w, h): dimensions
+'           NOTE: If w > h, progress bar will be horizontal
+'           NOTE: If h >= w, progress bar will be vertical
+'   o:      render options
+'           OPT_3D (0):     3D effect
+'           OPT_FLAT (256): no 3D effect
+'   v:      displayed value of scroll bar (0..65535, left-most or top-most edge)
+'   s:      size of displayed scroll value (0..65535, relative to v)
+'   rng:    full-scale range of values (0..65535)
+'   NOTE:   v+s shouldn't exceed rng
     x := 0 #> x <# _disp_xmax
     y := 0 #> y <# _disp_ymax
-    width := 0 #> width <# _disp_xmax
-    height := 0 #> height <# _disp_ymax
+    w := 0 #> w <# _disp_xmax
+    h := 0 #> h <# _disp_ymax
     coproc_cmd(core.CMD_SCROLLBAR)
     coproc_cmd((y << 16) | x)
-    coproc_cmd((height << 16) | width)
-    coproc_cmd((val << 16) | opts)
-    coproc_cmd((range << 16) | size)
+    coproc_cmd((h << 16) | w)
+    coproc_cmd((v << 16) | o)
+    coproc_cmd((rng << 16) | s)
 
 
-PUB set_base(radix)
+PUB set_base(b)
 ' Set base/radix for numbers drawn with the num() method
-'   Valid values: 2..36 (clamped to range)
-'   Any other value is ignored
+'   b:
+'       2..36 (clamped to range)
+'       other values:   ignored
     coproc_cmd(core.CMD_SETBASE)
-    coproc_cmd(2 #> radix <# 36)
+    coproc_cmd(2 #> b <# 36)
 
 
 PUB set_flash_source(fl_addr)
 ' Set source address in flash for data to be used by load_image(), play_video(), video_startf(),
 '   and inflate2()
-'   fl_addr: flash address
-'   NOTE: fl_addr must be 64-byte aligned
+'   fl_addr:    flash address
+'   NOTE:       fl_addr must be 64-byte aligned
     coproc_cmd(core.CMD_FLASHSOURCE)
     coproc_cmd(fl_addr)
 
 
-PUB setup_font(mem_ptr, fnt_sz, fnt_ptr, fnt_nr, first_ch)
+PUB setup_font(mem_ptr, fsz, p_fnt, fn, fch)
 ' Upload and set up a custom font
-'   mem_ptr: pointer within EVE's memory where the font will be placed
-'       ($00_0000..$0f_ffff-size of .raw file)
-'   fnt_sz: size of font .raw file (this must fit in Propeller RAM alongside the application)
-'   fnt_ptr: pointer to font .raw file in RAM
-'   first_ch: first printable character in font (usually 32)
+'   mem_ptr:    pointer within EVE's memory where the font will be placed
+'               ($00_0000..$0f_ffff-size of .raw file)
+'   fsz:        size of font .raw file (this must fit in Propeller RAM alongside the application)
+'   p_fnt:      pointer to font .raw file in RAM
+'   fn:         font number
+'   fch:        first printable character in font (usually 32)
 '   NOTE: This requires an OpenType or TrueType font file converted to a .raw file,
 '       generated by Bridgetek's EVE Asset Builder using the Font Converter tab
-    writereg(mem_ptr, fnt_sz, fnt_ptr)
+    writereg(mem_ptr, fsz, p_fnt)
     dl_start()
         coproc_cmd(core.CMD_SETFONT2)
-        coproc_cmd(0 #> fnt_nr <# 31)
+        coproc_cmd(0 #> fn <# 31)
         coproc_cmd(mem_ptr)
-        coproc_cmd(first_ch)
+        coproc_cmd(fch)
     dl_end()
 
 
@@ -1249,26 +1351,26 @@ PUB sleep()
     cmd(core.SLEEP, 0)
 
 
-PUB slider(x, y, width, height, opts, val, range)
-' Draw a slider
+PUB slider(x, y, w, h, o, v, rng)
+' Draw a slider (e.g., for a scrollbar)
 '   (x, y): upper-left coordinates
-'   (width, height): dimensions
-'   opts:
-'       OPT_3D (0): 3D effect
-'       OPT_FLAT (256): no 3D effect
-'   val: displayed value of slider (unsigned16, left-most or top-most edge)
-'   range: full-scale range of values (unsigned16)
-'   NOTE: If width is greater than height, the slider will be drawn horizontally,
-'       else it will be drawn vertically
+'   (w, h): dimensions
+'           NOTE: If w > h, progress bar will be horizontal
+'           NOTE: If h >= w, progress bar will be vertical
+'   o:      render options
+'           OPT_3D (0):     3D effect
+'           OPT_FLAT (256): no 3D effect
+'   v:      displayed value of slider (0..65535, left-most or top-most edge)
+'   rng:    full-scale range of vues (0..65535)
     x := 0 #> x <# _disp_xmax
     y := 0 #> y <# _disp_ymax
-    width := 0 #> width <# _disp_xmax
-    height := 0 #> height <# _disp_ymax
+    w := 0 #> w <# _disp_xmax
+    h := 0 #> h <# _disp_ymax
     coproc_cmd(core.CMD_SLIDER)
     coproc_cmd((y << 16) | x)
-    coproc_cmd((height << 16) | width)
-    coproc_cmd((val << 16) | opts)
-    coproc_cmd(range)
+    coproc_cmd((h << 16) | w)
+    coproc_cmd((v << 16) | o)
+    coproc_cmd(rng)
 
 
 PUB soft_reset()
@@ -1276,25 +1378,25 @@ PUB soft_reset()
     cmd(core.RST_PULSE, 0)
 
 
-PUB spinner(x, y, style, scale)
+PUB spinner(x, y, md, s)
 ' Draw a spinner/busy indicator
 '   (x, y): upper-left screen coordinates
-'   style: 0..3
-'       0: circle of dots
-'       1: line of dots
-'       2: rotating clock hand
-'       3: two orbiting dots
-'   scale: scaling of spinner
-'       0: no scaling
-'       1: half-screen
-'       2: full-screen
+'   md:     display mode/style
+'               0: circle of dots
+'               1: line of dots
+'               2: rotating clock hand
+'               3: two orbiting dots
+'   s:      scaling of spinner
+'               0: no scaling
+'               1: half-screen
+'               2: full-screen
     x := 0 #> x <# _disp_xmax
     y := 0 #> y <# _disp_ymax
-    style := 0 #> style <# 3
-    scale := 0 #> scale <# 2
+    md := 0 #> md <# 3
+    s := 0 #> s <# 2
     coproc_cmd(core.CMD_SPINNER)
     coproc_cmd(y << 16 + x)
-    coproc_cmd(scale << 16 + style)
+    coproc_cmd(s << 16 + md)
 
 
 PUB standby()
@@ -1308,50 +1410,54 @@ PUB stop_op()
     coproc_cmd(core.CMD_STOP)
 
 
-PUB str(x, y, font, opts, ptr_str) | i, j
+PUB str(x, y, fn, o, p_str) | i, j
 ' Draw a text string
 '   (x, y): upper-left screen coordinates
-'   font: 0..31 handle of bitmapped font
-'   opts: rendering options
-'   ptr_str: pointer to string to draw
+'   fn:     0..31 number/handle of bitmapped font
+'   o:      rendering options
+'           OPT_CENTERX (512):  horizontally center text
+'           OPT_CENTERY (1024): vertically center text
+'           OPT_CENTER (1536):  horizontally and vertically center text
+'           OPT_RIGHTX (2048):  right-justify (x coordinate will be right-most pixel)
+'   p_str:  pointer to string to draw
     coproc_cmd(core.CMD_TEXT)
     coproc_cmd(( (0 #> y <# _disp_ymax) << 16) + (0 #> x <# _disp_xmax) )
-    coproc_cmd((opts << 16) + font)
-    j := (strsize(ptr_str) + 4) >> 2 { / 4 }
+    coproc_cmd((o << 16) + fn)
+    j := (strsize(p_str) + 4) >> 2 { / 4 }
     repeat i from 1 to j
-        coproc_cmd( (byte[ptr_str][3] << 24) + ...
-                    (byte[ptr_str][2] << 16) + ...
-                    (byte[ptr_str][1] << 8) + ...
-                    byte[ptr_str][0] )
-        ptr_str += 4
+        coproc_cmd( (byte[p_str][3] << 24) + ...
+                    (byte[p_str][2] << 16) + ...
+                    (byte[p_str][1] << 8) + ...
+                    byte[p_str][0] )
+        p_str += 4
 
 
-PUB swizzle(mode): curr_mode
+PUB swizzle(md): c
 ' Control arrangement of output color pins
-'   Valid values:
+'   md:
 '       Constant(value)     Pixel order, bit order
-'      *SWIZZLE_RGBM(0)     RGB, MSB-first
-'       SWIZZLE_RGBL(1)     RGB, LSB-first
-'       SWIZZLE_BGRM(2)     BGR, MSB-first
-'       SWIZZLE_BGRL(3)     BGR, LSB-first
-'       SWIZZLE_BRGM(8)     BRG, MSB-first
-'       SWIZZLE_BRGL(9)     BRG, LSB-first
-'       SWIZZLE_GRBM(10)    GRB, MSB-first
-'       SWIZZLE_GRBL(11)    GRB, LSB-first
-'       SWIZZLE_GBRM(12)    GBR, MSB-first
-'       SWIZZLE_GBRL(13)    GBR, LSB-first
-'       SWIZZLE_RBGM(14)    RBG, MSB-first
-'       SWIZZLE_RBGL(15)    RBG, LSB-first
-'   Any other value polls the chip and returns the current setting
-    case mode
+'       SWIZZLE_RGBM(0):    RGB, MSB-first (default)
+'       SWIZZLE_RGBL(1):    RGB, LSB-first
+'       SWIZZLE_BGRM(2):    BGR, MSB-first
+'       SWIZZLE_BGRL(3):    BGR, LSB-first
+'       SWIZZLE_BRGM(8):    BRG, MSB-first
+'       SWIZZLE_BRGL(9):    BRG, LSB-first
+'       SWIZZLE_GRBM(10):   GRB, MSB-first
+'       SWIZZLE_GRBL(11):   GRB, LSB-first
+'       SWIZZLE_GBRM(12):   GBR, MSB-first
+'       SWIZZLE_GBRL(13):   GBR, LSB-first
+'       SWIZZLE_RBGM(14):   RBG, MSB-first
+'       SWIZZLE_RBGL(15):   RBG, LSB-first
+'       other values:       returns the current setting
+    case md
         %0000..%0011, %1000..%1111:
-            writereg(core.SWIZZLE, 1, mode)
+            writereg(core.SWIZZLE, 1, md)
         other:
             return readreg(core.SWIZZLE)
 
 
 PUB tag_active(): a
-' Tag that is currently active
+' Touchscreen tag ID that is currently active (e.g., ID of the object being touched)
 '   Returns: Tag number (u8)
 '       If tag is active:       1..255
 '       If no tag is active:    0
@@ -1360,71 +1466,83 @@ PUB tag_active(): a
 
 PUB tag_area(tag_nr, sx, sy, w, h)
 ' Define screen area to be associated with tag
-'   Valid values:
-'       tag_nr: 1..255 (must be the number of a tag previously defined with tag_attach() )
-'       sx, sy: Starting coordinates of region (within your display's maximum)
-'       w, h: Width, height from sx, sy
+'   tag_nr: 1..255 (must be the number of a tag previously defined with tag_attach() )
+'   sx, sy: Starting coordinates of region (within your display's maximum)
+'   w, h:   width, height from sx, sy
     coproc_cmd(core.CMD_TRACK)
     coproc_cmd(sx << 16 + sx)
     coproc_cmd(h << 16 + w)
     coproc_cmd(tag_nr)
 
 
-PUB tag_attach(val)
-' Attach tag value for the following objects drawn on the screen
-    coproc_cmd(core.ATTACH_TAG | (0 #> val <# 255) )
+PUB tag_attach(t)
+' Attach tag tue for the following objects drawn on the screen
+'   t:
+'       1..255: tag ID
+'       0:      no tag (end/terminate)
+    coproc_cmd(core.ATTACH_TAG | (0 #> t <# 255) )
 
 
-PUB tag_ena(state)
+PUB tag_ena(e)
 ' Enable numbered tags to be assigned to display regions
-'   Valid values: TRUE (non-zero), FALSE (0)
-    coproc_cmd(core.TAG_MASK | ((state <> 0) & 1))
+'   e:
+'       TRUE (non-zero):    enable
+'       FALSE (0):          disable
+    coproc_cmd(core.TAG_MASK | ( (e <> 0) & 1) )
 
 
-PUB text_wrap_wid(pixels)
-' Set pixel width for text wrapping
+PUB text_wrap_wid(w)
+' Set width for text wrapping
+'   w:
+'       width in pixels
 '   NOTE: This setting applies to the str() and button() (when using the OPT_FILL option) methods
     coproc_cmd(core.CMD_FILLWIDTH)
-    coproc_cmd( 0 #> pixels <# _disp_xmax )
+    coproc_cmd( 0 #> w <# _disp_xmax )
 
 
-PUB toggle(x, y, width, font, opts, state, ptr_str) | i, j
+PUB toggle(x, y, w, fn, o, s, p_str) | i, j
 ' Draw a horizontal toggle switch
 '   (x, y): screen coordinates to draw
-'   width: width of toggle
-'   font: font number
-'   opts: rendering options (OPT_3D, OPT_FLAT)
-'   state: state to draw switch in (0: off/left, 65535: on/right)
+'   w:      w of toggle
+'   fn:     font number
+'   o:      rendering options
+'               OPT_3D (0):     3D effect
+'               OPT_FLAT (256): no 3D effect
+'   s:      state to draw switch in
+'               0:      off/left
+'               65535:  on/right
 '   NOTE: String labels are UTF-8 formatted.
-'       A value of 255 separates label strings.
-'       Example: toggle(0, 0, 50, 26, 0, 0, string("on", $ff, "off"))
-'           would display a toggle switch in the off position
+'       Use a value of $ff/255 to separate the two switch strings.
+'       Example:
+'           toggle(0, 0, 50, 26, 0, 0, string("on", $ff, "off") )
+'           defines a toggle switch with possible values of "on" and "off" and would draw it
+'               in the off position
     x := 0 #> x <# _disp_xmax
     y := 0 #> y <# _disp_ymax
-    width := 0 #> width <# _disp_xmax
+    w := 0 #> w <# _disp_xmax
     coproc_cmd(core.CMD_TOGGLE)
     coproc_cmd((y << 16) | x)
-    coproc_cmd((font << 16) | width)
-    coproc_cmd((state << 16) | opts)
-    j := (strsize(ptr_str) + 4) / 4
+    coproc_cmd((fn << 16) | w)
+    coproc_cmd((s << 16) | o)
+    j := (strsize(p_str) + 4) / 4
     repeat i from 1 to j
-        coproc_cmd( (byte[ptr_str][3] << 24) + ...
-                    (byte[ptr_str][2] << 16) + ...
-                    (byte[ptr_str][1] << 8) + ...
-                    byte[ptr_str][0] )
-        ptr_str += 4
+        coproc_cmd( (byte[p_str][3] << 24) + ...
+                    (byte[p_str][2] << 16) + ...
+                    (byte[p_str][1] << 8) + ...
+                    byte[p_str][0] )
+        p_str += 4
 
 
-PUB ts_rd_cal_matrix(ptr_buff)
+PUB ts_rd_cal_matrix(p_dest)
 ' Read the currently used touchscreen calibration matrix into MCU RAM
-'   ptr_buff: pointer to minimum 24-byte array to hold calibration matrix
-    readreg(core.TOUCH_TRANSFORM_A, 24, ptr_buff)
+'   p_dest: pointer to minimum 24-byte array to hold calibration matrix
+    readreg(core.TOUCH_TRANSFORM_A, 24, p_dest)
 
 
-PUB ts_wr_cal_matrix(ptr_buff)
+PUB ts_wr_cal_matrix(p_src)
 ' Write the touchscreen calibration matrix to EVE
-'   ptr_buff: pointer to minimum 24-byte array containing a calibration matrix
-    writereg(core.TOUCH_TRANSFORM_A, 24, ptr_buff)
+'   p_src: pointer to minimum 24-byte array containing a calibration matrix
+    writereg(core.TOUCH_TRANSFORM_A, 24, p_src)
 
 
 PUB ts_cal()
@@ -1433,97 +1551,103 @@ PUB ts_cal()
     coproc_cmd(core.CMD_CALIBRATE)
 
 
-PUB ts_host_mode_ena(state): curr_state
+PUB ts_host_mode_ena(e): c
 ' Enable host mode (touchscreen data handled by the MCU, fed to the EVE)
-'   Valid values: TRUE (-1 or 1), FALSE (0)
-'   Any other value polls the chip and returns the current setting
-    curr_state := readreg(core.TOUCH_CFG, 2)
-    case abs(state)
+'   e:
+'       TRUE (-1 or 1): enable
+'       FALSE (0):      disable
+'       other values:   returns the current setting
+    c := readreg(core.TOUCH_CFG, 2)
+    case abs(e)
         0, 1:
-            state := abs(state) << core.HOSTMODE
-            state := ((curr_state & core.HOSTMODE_MASK) | state)
-            writereg(core.TOUCH_CFG, 2, state)
+            e := abs(e) << core.HOSTMODE
+            e := ((c & core.HOSTMODE_MASK) | e)
+            writereg(core.TOUCH_CFG, 2, e)
         other:
-            return ((curr_state >> core.HOSTMODE) & 1) == 1
+            return ((c >> core.HOSTMODE) & 1) == 1
 
 
-PUB ts_i2c_addr(addr): curr_addr
+PUB ts_i2c_addr(addr): c
 ' Set I2C slave address of attached touchscreen
-'   Valid values: $01..$7F
-'       Focaltec: $3B (default)
-'       Goodix: $5D
-'   NOTE: Slave address must be 7-bit format
-    curr_addr := readreg(core.TOUCH_CFG, 2)
+'   addr:
+'       $3b:    Focaltec (default)
+'       $5d:    Goodix
+'   NOTE: Slave address must be 7-bit format from $01 to $7f
+    c := readreg(core.TOUCH_CFG, 2)
     case addr
         $01..$7F:
             addr <<= core.TOUCH_ADDR
-            addr := ((curr_addr & core.TOUCH_ADDR) | addr)
+            addr := ((c & core.TOUCH_ADDR) | addr)
             writereg(core.TOUCH_CFG, 2, addr)
         other:
-            return ((curr_addr >> core.TOUCH_ADDR) & core.TOUCH_ADDR)
+            return ((c >> core.TOUCH_ADDR) & core.TOUCH_ADDR)
 
 
-PUB ts_low_pwr_mode(state): curr_state
+PUB ts_low_pwr_mode(md): c
 ' Enable touchscreen low-power mode
-'   Valid values: TRUE (-1 or 1), FALSE (0)
-'   Any other value polls the chip and returns the current setting
-    curr_state := readreg(core.TOUCH_CFG, 2)
-    case abs(state)
+'   md:
+'       TRUE (-1 or 1): enabled
+'       FALSE (0):      disabled
+'       other values:   returns the current setting
+    c := readreg(core.TOUCH_CFG, 2)
+    case abs(md)
         0, 1:
-            state := abs(state) << core.LOWPWR
-            state := ((curr_state & core.LOWPWR) | state)
-            writereg(core.TOUCH_CFG, 2, state)
+            md := abs(md) << core.LOWPWR
+            md := ((c & core.LOWPWR) | md)
+            writereg(core.TOUCH_CFG, 2, md)
         other:
-            return ((curr_state >> core.LOWPWR) & 1) == 1
+            return ((c >> core.LOWPWR) & 1) == 1
 
 
 PUB ts_oversample_factor(f)
 ' Set touchscreen oversampling factor
+'   f:
+'       0..15 (default: 7)
 '   NOTE: Higher values result in smoother touchscreen feedback, at the cost of
 '       higher current consumption)
-'   Valid values: 0..15 (default: 7)
     writereg(core.TOUCH_OVERSMP, 1, (f & $0f) )
 
 
-PUB ts_sample_clks(clks): curr_clks
+PUB ts_sample_clks(clks): c
 ' Set number of touchscreen sampler clocks
-'   Valid values: 0..7
-'   Any other value polls the chip and returns the current setting
-    curr_clks := readreg(core.TOUCH_CFG, 2)
+'   clks:
+'       0..7
+'       other values:   returns the current setting
+    c := readreg(core.TOUCH_CFG, 2)
     case clks
         0..7:
-            clks := ((curr_clks & core.SAMPLER_CLKS_MASK) | clks)
-            writereg(core.TOUCH_CFG, 2, curr_clks)
+            clks := ((c & core.SAMPLER_CLKS_MASK) | clks)
+            writereg(core.TOUCH_CFG, 2, c)
         other:
-            return curr_clks & core.SAMPLER_CLKS_BITS
+            return c & core.SAMPLER_CLKS_BITS
 
 
 PUB ts_type(): t
 ' Get touchscreen type supported by connected EVE chip
 '   Returns:
-'       0 - Capacitive (BT815)
-'       1 - Resistive (BT816)
+'       0:  Capacitive (BT815)
+'       1:  Resistive (BT816)
     return ( ( readreg(core.TOUCH_CFG, 2) >> core.WORKMODE) & 1 )
 
 
-PUB ts_sens(): lvl
+PUB ts_sens(): s
 ' Get touchscreen sensitivity
     return readreg(core.TOUCH_RZTHRESH, 2)
 
 
-PUB ts_set_sens(lvl)
+PUB ts_set_sens(s)
 ' Set touchscreen sensitivity
-'   Valid values:
+'   s:
 '       0 (least sensitive) .. 65535 (most sensitive/all touches valid)
 '   NOTE: Only applicable to resistive touchscreens (BT816)
-    writereg(core.TOUCH_RZTHRESH, 2, (0 #> lvl <# 65535) )
+    writereg(core.TOUCH_RZTHRESH, 2, (0 #> s <# 65535) )
 
 
 PUB ts_xy(): xy
 ' Coordinates of touch event
 '   Returns:
-'       [31..16]: u16 X coord ($8000 if not touched)
-'       [15..0]: u16 Y coord ($8000 if not touched)
+'       [31..16]:   u16 X coord ($8000 if not touched)
+'       [15..0]:    u16 Y coord ($8000 if not touched)
     return readreg(core.TOUCH_SCREEN_XY, 4)
 
 
@@ -1536,15 +1660,15 @@ PUB vertex_2f(x, y)
     coproc_cmd(core.VERTEX2F | (x << core.V2F_X) | y)
 
 
-PUB vertex_2ii(x, y, handle, cell)
+PUB vertex_2ii(x, y, h, cell)
 ' Start the operation of graphics primitive at the specified coordinates in pixel precision
 '   (x, y): upper-left screen coordinates (0..511, clamped to range)
-'   handle: bitmap handle (0..31, clamped to range)
-'   cell: index of the bitmap with same bitmap layout and format
+'   h:      bitmap handle (0..31, clamped to range)
+'   cell:   index of the bitmap with same bitmap layout and format
     coproc_cmd( core.VERTEX2II | ...
                 ((0 #> x <# 511) << core.X) | ...
                 ((0 #> y <# 511) << core.Y) | ...
-                ((0 #> handle <# 31) << core.HANDLE) | ...
+                ((0 #> h <# 31) << core.HANDLE) | ...
                 (0 #> cell <# 127) )
 
 
@@ -1554,20 +1678,22 @@ PUB wait_rdy()
     until disp_rdy()
 
 
-PUB widget_bgcolor(rgb)
-' Set background color for widgets (gauges, sliders, etc), as a 24-bit RGB number
-'   Valid values: $00_00_00..$FF_FF_FF (clamped to range)
-    rgb := $00_00_00 #> rgb <# $FF_FF_FF
+PUB widget_bgcolor(c)
+' Set background color for widgets (gauges, sliders, etc)
+'   c:
+'       $00_00_00..$FF_FF_FF (clamped to range)
+    c := $00_00_00 #> c <# $FF_FF_FF
     coproc_cmd(core.CMD_BGCOLOR)
-    coproc_cmd(rgb)
+    coproc_cmd(c)
 
 
-PUB widget_fgcolor(rgb)
-' Set foreground color for widgets (gauges, sliders, etc), as a 24-bit RGB number
-'   Valid values: $00_00_00..$FF_FF_FF (clamped to range)
-    rgb := $00_00_00 #> rgb <# $FF_FF_FF
+PUB widget_fgcolor(c)
+' Set foreground color for widgets (gauges, sliders, etc)
+'   c:
+'       $00_00_00..$FF_FF_FF (clamped to range)
+    c := $00_00_00 #> c <# $FF_FF_FF
     coproc_cmd(core.CMD_FGCOLOR)
-    coproc_cmd(rgb)
+    coproc_cmd(c)
 
 
 PRI cmd(cmd_word, param) | cmd_pkt

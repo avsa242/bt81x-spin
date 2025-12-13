@@ -4,7 +4,7 @@
     Description:    BT81x-specific constants
     Author:         Jesse Burt
     Started:        Sep 25, 2019
-    Updated:        Dec 12, 2025
+    Updated:        Dec 13, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -102,7 +102,9 @@ CON
     PLAY                        = RAM_REG + $08c
     GPIO_DIR                    = RAM_REG + $090
     GPIO                        = RAM_REG + $094
+
     GPIOX_DIR                   = RAM_REG + $098
+    GPIOX_DIR_REGMASK           = $0000_800f
 
     GPIOX                       = RAM_REG + $09c
     GPIOX_REGMASK               = $0000_fe0f
