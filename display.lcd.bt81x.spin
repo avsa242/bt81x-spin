@@ -4,7 +4,7 @@
     Description:    Driver for the Bridgetek Advanced Embedded Video Engine (EVE)
     Author:         Jesse Burt
     Started:        Sep 25, 2019
-    Updated:        Dec 12, 2025
+    Updated:        Dec 13, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -964,15 +964,15 @@ PUB int_mask(m): c
 '       1: touch detected
 '       0: display list swap occurred
     c := 0
-    readreg(core.INT_MASK, 2, @c)
+    readreg(core.INT_MASK, 1, @c)
     case m
         $00..$ff:
-            writereg(core.INT_MASK, 2, @m)
+            writereg(core.INT_MASK, 1, @m)
         other:
             return c
 
 
-PUB int_output_type(t): c
+PUB int_outp_type(t): c
 ' Set INT_N pin output type/mode
 '   t:
 '       0:              open-drain (default)
