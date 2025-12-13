@@ -906,7 +906,7 @@ PUB int_ena(e)
     if ( e )
         e := 1
 
-    writereg(core.INT_EN, 1, @e)
+    writereg(core.INT_EN, 1, e)
 
 
 PUB int_mask(m): c
@@ -920,11 +920,10 @@ PUB int_mask(m): c
 '       2: touchscreen tag value change
 '       1: touch detected
 '       0: display list swap occurred
-    c := 0
-    readreg(core.INT_MASK, 1, @c)
+    c := readreg(core.INT_MASK)
     case m
         $00..$ff:
-            writereg(core.INT_MASK, 1, @m)
+            writereg(core.INT_MASK, 1, m)
         other:
             return c
 
@@ -935,20 +934,18 @@ PUB int_outp_type(t): c
 '       0:              open-drain (default)
 '       1:              push-pull
 '       other values:   returns the current setting
-    c := 0
-    readreg(core.GPIOX, 2, @c)
+    c := readreg(core.GPIOX, 2)
     case t
         0, 1:
             t := (c & core.INT_OUTPUT_MODE_MASK) | (t << core.INT_OUTPUT_MODE)
-            writereg(core.GPIOX, 2, @t)
+            writereg(core.GPIOX, 2, t)
         other:
             return c
 
 
 PUB interrupt(): f
 ' Get interrupt flags
-    f := 0
-    readreg(core.INT_FLAGS, 2, @f)
+    return readreg(core.INT_FLAGS, 2)
 
 
 PUB is_dither_ena(): s
