@@ -494,7 +494,7 @@ PUB disp_hoffset(): c
     return readreg(core.HOFFSET, 2)
 
 
-PUB disp_hsync0(o): c'xxx why does this have a parameter?
+PUB disp_hsync0(): c
 ' Get horizontal sync fall offset
 '   Returns: pixel clock cycles
     return readreg(core.HSYNC0, 2)
@@ -653,12 +653,6 @@ PUB disp_vsync1(): l
 ' Get vertical sync rise offset
 '   Returns: lines
     return readreg(core.VSYNC1, 2)
-
-
-PUB disp_width(p)'xxx redefine as build-time alias to disp_set_hsize()
-' Set display width
-'   p:  pixels
-    disp_set_hsize(p)
 
 
 PUB dither_ena(d)
@@ -963,6 +957,7 @@ PUB disp_hsize(): p
     return readreg(core.HSIZE, 2)
 
 
+PUB disp_width=disp_set_hsize
 PUB disp_set_hsize(p)
 ' Set horizontal display pixel count
 '   p:
