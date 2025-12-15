@@ -4,7 +4,7 @@
     Description:    Driver for the Bridgetek Advanced Embedded Video Engine (EVE)
     Author:         Jesse Burt
     Started:        Sep 25, 2019
-    Updated:        Dec 13, 2025
+    Updated:        Dec 15, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -473,8 +473,8 @@ PUB dial(x, y, r, o, v)
 
     coproc_cmd(core.CMD_DIAL)
     coproc_cmd((y << 16) | x)
-    coproc_cmd((opts << 16) | (0 #> radius <# _disp_xmax) )
-    coproc_cmd(val)
+    coproc_cmd((o << 16) | (0 #> r <# _disp_xmax) )
+    coproc_cmd(v)
 
 
 PUB disp_hcycle(): c
@@ -1124,9 +1124,9 @@ PUB num(x, y, fn, o, v)
     x := 0 #> x <# _disp_xmax
     y := 0 #> y <# _disp_ymax
     coproc_cmd(core.CMD_NUMBER)
-    coproc_cmd((y << 16) | x)
-    coproc_cmd((opts << 16) | fn)
-    coproc_cmd(val)
+    coproc_cmd( (y << 16) | x)
+    coproc_cmd( (o << 16) | fn)
+    coproc_cmd(v)
 
 
 PUB pix_clk_polarity(p): c
