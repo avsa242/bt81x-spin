@@ -5,7 +5,7 @@
     Author:         Jesse Burt
     Started:        Dec 31, 2020
     Updated:        Aug 30, 2024
-    Copyright (c) 2024 - See end of file for terms of use.
+    Copyright (c) 2025 - See end of file for terms of use.
 ---------------------------------------------------------------------------------------------------
 
     NOTE: This demo will write touchscreen calibration data to the P2's flash
@@ -43,7 +43,7 @@ CON
 
 OBJ
 
-    mem:    "memory.mem.25xxxx" | CS=61, SCK=60, MOSI=59, MISO=58, SPI_FREQ=10_000_000
+    mem:    "memory.flash.25xxxx" | CS=61, SCK=60, MOSI=59, MISO=58, SPI_FREQ=10_000_000
     ser:    "com.serial.terminal.ansi" | SER_BAUD=2_000_000
     eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4, SPI_FREQ=20_000_000
 '   NOTE: Pull RST high (tip: tie to Propeller reset) and define as -1 if unused
@@ -256,7 +256,7 @@ PUB erase_tscal()
 
 DAT
 {
-Copyright 2024 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
