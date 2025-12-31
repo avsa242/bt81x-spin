@@ -1,0 +1,142 @@
+{
+---------------------------------------------------------------------------------------------------
+    Filename:       BT81X-ShowBMP.spin2
+    Description:    Demo of the BT81x driver
+        * Load/show BMP image from HUB RAM
+    Author:         Jesse Burt
+    Started:        Dec 31, 2025
+    Updated:        Dec 31, 2025
+    Copyright (c) 2025 - See end of file for terms of use.
+---------------------------------------------------------------------------------------------------
+
+    Requires: fileformats-spin: (https://github.com/avsa242/fileformats-spin)
+}
+{Spin2_v45}
+con
+
+    _clkfreq    = 180_000_000
+    _xtlfreq    = 20_000_000
+
+' Uncomment one of the following, depending on your display size/resolution
+'   NOTE: WIDTH, HEIGHT, XMAX, YMAX, CENTERX, CENTERY symbols are defined
+'   in the display timings file. The setup data is defined within at @_disp_setup.
+#include "eve3-lcdtimings.800x480.spinh"
+'#include "eve3-lcdtimings.480x272.spinh"
+'#include "eve3-lcdtimings.320x240.spinh"
+'#include "eve3-lcdtimings.320x102.spinh"
+
+
+obj
+
+    ser:    "com.serial.terminal.ansi" | SER_BAUD=2_000_000
+    eve:    "display.lcd.bt81x" | CS=0, SCK=1, MOSI=2, MISO=3, RST=4, SPI_FREQ=10_000_000
+        ' NOTE: If RST is not used, pull it high or tie to Propeller reset and define above as -1
+    bmp:    "file.image.bmp"                            ' BMP file i/o
+
+
+dat
+
+    ' BMP file to load (must fit in HUB RAM)
+    bmap file "picture.bmp"
+
+
+var
+
+    byte err[129]                                       ' buffer to hold error messages from EVE
+
+
+pub main() | pbase, lcd_img_st, s, handle, x, y, offs
+
+    setup()
+
+    ' read the BMP header
+    s := bmp.read(@bmap)
+
+    ' write the BMP to the LCD's RAM
+    pbase := 0                                          ' where in LCD RAM the colortable is stored
+    lcd_img_st := pbase + sizeof(bmp.colortable)        ' where the actual image data is stored
+    eve.ram_wrblock(pbase, @bmp.colortable, sizeof(bmp.colortable) )
+    if ( bmp.row_order() == bmp.TOP_DOWN )
+        eve.ram_wrblock(lcd_img_st, ...                 ' dest:     LCD RAM address
+                        bmp.imagedata_start_ram(), ...  ' src:      P2 RAM address
+                        bmp.imagedata_size() )          ' length:   image data size
+    else
+        offs := bmp.imagedata_start_ram()
+        repeat bmp.height() with y
+            eve.ram_wrblock(lcd_img_st+(y*bmp.bytes_per_line), ...
+                            offs, ...
+                            bmp.bytes_per_line() )
+            offs -= bmp.bytes_per_line()
+
+    handle := 0                                         ' 0..31 (optional if only one BMP)
+    x := 50                                             ' where to draw the BMP
+    y := 50
+    repeat
+        eve.wait_rdy()                                  ' wait for the display to be ready
+        eve.dl_start()                                  ' start a new display list
+            eve.set_bitmap_handle(handle)
+            eve.set_bitmap( lcd_img_st, ...
+                            eve.BM_PALETTED8, ...
+                            bmp.width(), ...
+                            bmp.height() )
+            eve.clear_screen($00_00_00)                 ' clear the screen black
+            eve.prim_begin(eve.BITMAPS)
+                ' BM_PALETTED8 mode: each color channel of the BMP must be drawn separately
+                eve.set_color_mask(eve.CM_ALPHA)
+                eve.set_palette_src(pbase+3)
+                eve.vertex_2ii(x, y, handle, 0)
+
+                eve.set_color_mask(eve.CM_RED)
+                eve.set_palette_src(pbase+2)
+                eve.vertex_2ii(x, y, handle, 0)
+
+                eve.set_color_mask(eve.CM_GREEN)
+                eve.set_palette_src(pbase+1)
+                eve.vertex_2ii(x, y, handle, 0)
+
+                eve.set_color_mask(eve.CM_BLUE)
+                eve.set_palette_src(pbase+0)
+                eve.vertex_2ii(x, y, handle, 0)
+            eve.prim_end()
+            if ( eve.coproc_err() )
+                ' read/show error messages from EVE, if there are any
+                bytefill(@err, 0, 129)
+                eve.rd_err(@err)
+                ser.strln(@err)
+        eve.dl_end()                                    ' end the display list and display it
+
+
+pub setup()
+
+    ser.start()
+    ser.clear()
+    ser.strln(@"Serial terminal started")
+
+    if ( eve.start(@_disp_setup) )
+        eve.preset_high_perf()                          ' defaults, but max clock
+        ser.strln(@"BT81x driver started")
+    else
+        ser.strln(@"BT81x driver failed to start - halting")
+        repeat
+
+
+dat
+{
+Copyright 2025 Jesse Burt
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+}
+
