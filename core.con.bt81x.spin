@@ -4,7 +4,7 @@
     Description:    BT81x-specific constants
     Author:         Jesse Burt
     Started:        Sep 25, 2019
-    Updated:        Dec 13, 2025
+    Updated:        Dec 31, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -51,6 +51,7 @@ CON
     RAM_CMD_END                 = $30_8fff
     FLASH_START                 = $80_0000
     FLASH_END                   = $107f_ffff
+    FLASH_BLKSZ                 = 32
 
     ID                          = RAM_REG + $000
         BT815                   = $08150100
@@ -336,13 +337,19 @@ CON
 
 ' Display List Commands
     DISPLAY                     = $00_00_00_00
+
+    BITMAP_SOURCE               = $01_00_00_00
+
     CLR_COLOR_RGB               = $02_00_00_00
+
     ATTACH_TAG                  = $03_00_00_00
 
     COLOR_RGB                   = $04_00_00_00
         RED                     = 16
         GREEN                   = 8
         BLUE                    = 0
+
+    BITMAP_HANDLE               = $05_00_00_00
 
     BLEND_FUNC                  = $0b_00_00_00
     COLOR_A                     = $10_00_00_00
@@ -362,6 +369,11 @@ CON
 
     PRIM_BEGIN                  = $1F_00_00_00
         LINES                   = $03
+
+    COLOR_MASK                  = $20_00_00_00
+        COLOR_MASK_BITMASK      = %1111
+
+    PALETTE_SOURCE              = $2a_00_00_00
 
     VERTEX2F                    = $40_00_00_00
         V2F_X                   = 15

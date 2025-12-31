@@ -4,7 +4,7 @@
     Description:    Driver for the Bridgetek Advanced Embedded Video Engine (EVE)
     Author:         Jesse Burt
     Started:        Sep 25, 2019
-    Updated:        Dec 15, 2025
+    Updated:        Dec 31, 2025
     Copyright (c) 2025 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
@@ -1229,6 +1229,15 @@ PUB progress_bar(x, y, w, h, o, v, r)
     coproc_cmd(r)
 
 
+pub ram_wrblock(raddr, p_src, len)
+' Write a block of data from HUB RAM to EVE RAM_G
+'   raddr:  RAM_G address ($00_0000..$0f_ffff)
+'   p_src:  pointer to source data in HUB RAM
+'   len:    length/number of bytes to write
+    if ( (raddr >= core.RAM_G_START) and (raddr <= core.RAM_G_END) )
+        writereg(core.RAM_G_START+raddr, len, p_src)
+
+
 PUB rd_err(p_dest)
 ' Read errors/faults reported by the coprocessor, in plaintext
 '   NOTE: ptr_buff must be at least 128 bytes long
@@ -1314,6 +1323,98 @@ PUB set_base(b)
     coproc_cmd(2 #> b <# 36)
 
 
+con
+
+    ' Bitmap formats
+    ' symbol                                    bpp     A   R   G   B
+    BM_ARGB1555                         = 0     ' 16    1   5   5   5
+    BM_L1                               = 1     ' 1     1   0   0   0
+    BM_L4                               = 2     ' 4     4   0   0   0
+    BM_L8                               = 3     ' 8     8   0   0   0
+    BM_RGB332                           = 4     ' 8     0   3   3   2
+    BM_ARGB2                            = 5     ' 8     2   2   2   2
+    BM_ARGB4                            = 6     ' 16    4   4   4   4
+    BM_RGB565                           = 7     ' 16    0   5   6   5
+    BM_TEXT8X8                          = 9     ' -     -   -   -   -
+    BM_TEXTVGA                          = 10    ' -     -   -   -   -
+    BM_BARGRAPH                         = 11    ' -     -   -   -   -
+    BM_PALETTED565                      = 14    ' 8     0   5   6   5
+    BM_PALETTED4444                     = 15    ' 8     4   4   4   4
+    BM_PALETTED8                        = 16    ' 8     8   8   8   8
+    BM_L2                               = 17    ' 2     2   0   0   0
+    BM_COMPRESSED_RGBA_ASTC_4x4_KHR     = 37808 ' 8.00
+    BM_COMPRESSED_RGBA_ASTC_5x4_KHR     = 37809 ' 6.40
+    BM_COMPRESSED_RGBA_ASTC_5x5_KHR     = 37810 ' 5.12
+    BM_COMPRESSED_RGBA_ASTC_6x5_KHR     = 37811 ' 4.27
+    BM_COMPRESSED_RGBA_ASTC_6x6_KHR     = 37812 ' 3.56
+    BM_COMPRESSED_RGBA_ASTC_8x5_KHR     = 37813 ' 3.20
+    BM_COMPRESSED_RGBA_ASTC_8x6_KHR     = 37814 ' 2.67
+    BM_COMPRESSED_RGBA_ASTC_8x8_KHR     = 37815 ' 2.00
+    BM_COMPRESSED_RGBA_ASTC_10x5_KHR    = 37816 ' 2.56
+    BM_COMPRESSED_RGBA_ASTC_10x6_KHR    = 37817 ' 2.13
+    BM_COMPRESSED_RGBA_ASTC_10x8_KHR    = 37818 ' 1.60
+    BM_COMPRESSED_RGBA_ASTC_10x10_KHR   = 37819 ' 1.28
+    BM_COMPRESSED_RGBA_ASTC_12x10_KHR   = 37820 ' 1.07
+    BM_COMPRESSED_RGBA_ASTC_12X12_KHR   = 37821 ' 0.89
+
+pub set_bitmap(src, fmt, w, h)
+' Setup bitmap image
+'   src:    source address of bitmap
+'           EVE RAM_G:  $00_0000..$0f_ffff
+'           FLASH:      $80_0000..$107f_ffff (end depends on the size of the attached flash chip)
+'   fmt:    bitmap format (see BM_FMT symbols)
+'   w:      bitmap width (1..511)
+'   h:      bitmap height (1..511)
+    coproc_cmd(core.CMD_SETBITMAP)
+    if ( (src >= core.FLASH_START) and (src <= core.FLASH_END) )
+        ' flash region requires the address be specified in terms of block number
+        ' round the address to the nearest 32-byte block
+        src := src-core.FLASH_START
+        src /= core.FLASH_BLKSZ
+        src := core.FLASH_START | src
+    coproc_cmd(src)
+    coproc_cmd( (fmt & $ffff) | (w << 16) )
+    coproc_cmd(h)
+
+
+con
+
+    CM_RED  = 1 << 3
+    CM_GREEN= 1 << 2
+    CM_BLUE = 1 << 1
+    CM_ALPHA= 1 << 0
+
+pub set_color_mask(m)
+' Enable/disable writing of individual color components (bitmask)
+'   bitmask: (setting a bit enables the channel, clearing it disables it)
+'       3 (CM_RED):     red channel
+'       2 (CM_GREEN):   green channel
+'       1 (CM_BLUE):    blue channel
+'       0 (CM_ALPHA):   alpha/transparency channel
+'   Example:
+'       lcd.set_color_mask(lcd.CM_RED | lcd.CM_GREEN) ' enable the red and green color channels
+
+    m &= core.COLOR_MASK_BITMASK
+    coproc_cmd(core.COLOR_MASK | m)
+
+
+pub set_color_mask_rgba(r, g, b, a)
+' Enable/disable writing of individual color components (discrete parameters)
+'   r:  red channel
+'   g:  green channel
+'   b:  blue channel
+'   a:  alpha/transparency channel
+'       true (non-zero values): enable writing channel
+'       false (0):              disable writing channel
+    r := (r <> 0) & 1
+    g := (g <> 0) & 1
+    b := (b <> 0) & 1
+    a := (a <> 0) & 1
+    m := (r << 3) | (g << 2) | (b << 1) | a
+
+    coproc_cmd(core.COLOR_MASK | m)
+
+
 PUB set_flash_source(fl_addr)
 ' Set source address in flash for data to be used by load_image(), play_video(), video_startf(),
 '   and inflate2()
@@ -1321,6 +1422,13 @@ PUB set_flash_source(fl_addr)
 '   NOTE:       fl_addr must be 64-byte aligned
     coproc_cmd(core.CMD_FLASHSOURCE)
     coproc_cmd(fl_addr)
+
+
+pub set_palette_src(raddr)
+' Set a pointer to a bitmap's palette data in EVE RAM
+'   raddr:  RAM_G region ($00_0000..$0f_ffff)
+    if ( (raddr >= core.RAM_G_START) and (raddr <= core.RAM_G_END) )
+        coproc_cmd(core.PALETTE_SOURCE | raddr)
 
 
 PUB setup_font(mem_ptr, fsz, p_fnt, fn, fch)
