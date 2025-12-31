@@ -45,7 +45,7 @@ var
     byte err[129]                                       ' buffer to hold error messages from EVE
 
 
-pub main() | pbase, lcd_img_st, s, handle, x, y, offs
+pub main() | pbase, lcd_img_st, s, handle, x, y, offs, bmfmt
 
     setup()
 
@@ -53,20 +53,36 @@ pub main() | pbase, lcd_img_st, s, handle, x, y, offs
     s := bmp.read(@bmap)
 
     ' write the BMP to the LCD's RAM
-    pbase := 0                                          ' where in LCD RAM the colortable is stored
-    lcd_img_st := pbase + sizeof(bmp.colortable)        ' where the actual image data is stored
-    eve.ram_wrblock(pbase, @bmp.colortable, sizeof(bmp.colortable) )
-    if ( bmp.row_order() == bmp.TOP_DOWN )
-        eve.ram_wrblock(lcd_img_st, ...                 ' dest:     LCD RAM address
-                        bmp.imagedata_start_ram(), ...  ' src:      P2 RAM address
-                        bmp.imagedata_size() )          ' length:   image data size
+    if ( bmp.bpp() <= 8 )
+        bmfmt := eve.BM_PALETTED8
+        pbase := 0                                          ' where in LCD RAM the colortable is stored
+        lcd_img_st := pbase + sizeof(bmp.colortable)        ' where the actual image data is stored
+        eve.ram_wrblock(pbase, @bmp.colortable, sizeof(bmp.colortable) )
+        if ( bmp.row_order() == bmp.TOP_DOWN )
+            eve.ram_wrblock(lcd_img_st, ...                 ' dest:     LCD RAM address
+                            bmp.imagedata_start_ram(), ...  ' src:      P2 RAM address
+                            bmp.imagedata_size() )          ' length:   image data size
+        else
+            offs := bmp.imagedata_start_ram()
+            repeat bmp.height() with y
+                eve.ram_wrblock(lcd_img_st+(y*bmp.bytes_per_line), ...
+                                offs, ...
+                                bmp.bytes_per_line() )
+                offs -= bmp.bytes_per_line()
     else
-        offs := bmp.imagedata_start_ram()
-        repeat bmp.height() with y
-            eve.ram_wrblock(lcd_img_st+(y*bmp.bytes_per_line), ...
-                            offs, ...
-                            bmp.bytes_per_line() )
-            offs -= bmp.bytes_per_line()
+        bmfmt := eve.BM_RGB565
+        lcd_img_st := 0        ' where the actual image data is stored
+        if ( bmp.row_order() == bmp.TOP_DOWN )
+            eve.ram_wrblock(lcd_img_st, ...                 ' dest:     LCD RAM address
+                            bmp.imagedata_start_ram(), ...  ' src:      P2 RAM address
+                            bmp.imagedata_size() )          ' length:   image data size
+        else
+            offs := bmp.imagedata_start_ram()
+            repeat bmp.height() with y
+                eve.ram_wrblock(lcd_img_st+(y*bmp.bytes_per_line), ...
+                                offs, ...
+                                bmp.bytes_per_line() )
+                offs -= bmp.bytes_per_line()
 
     handle := 0                                         ' 0..31 (optional if only one BMP)
     x := 50                                             ' where to draw the BMP
@@ -76,27 +92,30 @@ pub main() | pbase, lcd_img_st, s, handle, x, y, offs
         eve.dl_start()                                  ' start a new display list
             eve.set_bitmap_handle(handle)
             eve.set_bitmap( lcd_img_st, ...
-                            eve.BM_PALETTED8, ...
+                            bmfmt, ...
                             bmp.width(), ...
                             bmp.height() )
             eve.clear_screen($00_00_00)                 ' clear the screen black
             eve.prim_begin(eve.BITMAPS)
                 ' BM_PALETTED8 mode: each color channel of the BMP must be drawn separately
-                eve.set_color_mask(eve.CM_ALPHA)
-                eve.set_palette_src(pbase+3)
-                eve.vertex_2ii(x, y, handle, 0)
+                if ( bmfmt == eve.BM_PALETTED8 )
+                    eve.set_color_mask(eve.CM_ALPHA)
+                    eve.set_palette_src(pbase+3)
+                    eve.vertex_2ii(x, y, handle, 0)
 
-                eve.set_color_mask(eve.CM_RED)
-                eve.set_palette_src(pbase+2)
-                eve.vertex_2ii(x, y, handle, 0)
+                    eve.set_color_mask(eve.CM_RED)
+                    eve.set_palette_src(pbase+2)
+                    eve.vertex_2ii(x, y, handle, 0)
 
-                eve.set_color_mask(eve.CM_GREEN)
-                eve.set_palette_src(pbase+1)
-                eve.vertex_2ii(x, y, handle, 0)
+                    eve.set_color_mask(eve.CM_GREEN)
+                    eve.set_palette_src(pbase+1)
+                    eve.vertex_2ii(x, y, handle, 0)
 
-                eve.set_color_mask(eve.CM_BLUE)
-                eve.set_palette_src(pbase+0)
-                eve.vertex_2ii(x, y, handle, 0)
+                    eve.set_color_mask(eve.CM_BLUE)
+                    eve.set_palette_src(pbase+0)
+                    eve.vertex_2ii(x, y, handle, 0)
+                else
+                    eve.vertex_2ii(x, y, handle, 0)
             eve.prim_end()
             if ( eve.coproc_err() )
                 ' read/show error messages from EVE, if there are any
