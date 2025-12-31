@@ -1377,6 +1377,15 @@ pub set_bitmap(src, fmt, w, h)
     coproc_cmd(h)
 
 
+pub set_bitmap_handle(h)
+' Set handle number for the following bitmap image
+'   h:  0..31
+'   NOTE: By default, 16..31 are used for the built-in/ROM fonts and 15 is used as a scratch bitmap
+'       for gradient(), button(), and keys()
+    if ( (h >= 0) and (h <= 31) )
+        coproc_cmd(core.BITMAP_HANDLE | h)
+
+
 con
 
     CM_RED  = 1 << 3
